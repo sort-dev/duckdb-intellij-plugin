@@ -9,6 +9,12 @@ version = "0.1.0"
 
 repositories {
     mavenCentral()
+    // dev.brikk snapshots (quack-jdbc pre-release builds) — Central Portal snapshots, scoped
+    // tightly so no other dependency ever resolves from a snapshots repo.
+    maven("https://central.sonatype.com/repository/maven-snapshots/") {
+        mavenContent { snapshotsOnly() }
+        content { includeGroupByRegex("""dev\.brikk.*""") }
+    }
     intellijPlatform {
         defaultRepositories()
     }
@@ -23,6 +29,11 @@ dependencies {
     // at runtime those queries go through the user's configured data source. (duckdb_jdbc with
     // natives is ~50 MB; bundling it would dwarf the plugin for something the driver provides.)
     testImplementation("org.duckdb:duckdb_jdbc:1.2.1")
+
+    // TESTS ONLY: the GizmoSQL quack driver (brikk build) — QuackDriverFactsTest extracts the
+    // driver class and URL scheme from the jar itself (acceptsURL needs no server), keeping
+    // config/duckdb-brikk-drivers.xml honest. The plugin does not bundle or link this jar.
+    testImplementation("dev.brikk.duckdb:quack-jdbc:0.3.0-brikk-SNAPSHOT")
 
     intellijPlatform {
         // Same platform window as doris-intellij: compiled against DataGrip 2026.1 (build 261),

@@ -13,12 +13,14 @@
 
   <!-- Remote DuckDB via GizmoSQL using the quack-jdbc driver (NOT Arrow/ADBC based — it decodes
        the serialized results directly, so no add-opens / Arrow memory flags are needed).
-       PLACEHOLDERS pending the dev.brikk.duckdb:quack-jdbc release: driver-class and the URL
-       scheme below must match the jar's META-INF/services/java.sql.Driver and accepted prefix.
-       No <artifact> yet — until it's on a public repo the jar is attached manually in the driver
-       settings (or we bundle it in a later release). -->
+       Driver class + jdbc:quack:// scheme are FACTS extracted from
+       dev.brikk.duckdb:quack-jdbc:0.3.0-brikk-SNAPSHOT by QuackDriverFactsTest (the brikk build
+       keeps upstream's com.gizmodata package — relabel if/when the fork becomes permanent).
+       No <artifact> yet: snapshots aren't a driver-download source, so the jar is attached
+       manually in the driver settings until a release lands (then: downloadable artifact or
+       bundle — see IDEAS.md). -->
   <driver id="duckdb-brikk-quack" name="DuckDB (Brikk) — GizmoSQL (quack)" dialect="DuckDBBrikk"
-          forced-dbms="DUCKDB_BRIKK" driver-class="dev.brikk.duckdb.jdbc.QuackDriver">
+          forced-dbms="DUCKDB_BRIKK" driver-class="com.gizmodata.quack.jdbc.sql.QuackDriver">
     <url-template name="default"
       template="jdbc:quack://{host::localhost}[:{port::31337}][/{database:path}?][\?&lt;&amp;,user={user:param},password={password:param},useEncryption={useEncryption:param:true},{:identifier}={:param}&gt;]"/>
     <option name="auto-sync" value="true"/>
