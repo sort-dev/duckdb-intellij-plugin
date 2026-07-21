@@ -1,0 +1,26 @@
+<drivers>
+  <!-- Local/embedded DuckDB under the DuckDB (Brikk) dialect. Reuses DataGrip's built-in
+       downloadable DuckDB artifact BY NAME (DataGrip matches artifacts by name, not id;
+       rolling = latest published driver, which also serves the in-process metadata/validator
+       queries version-matched to what the user actually runs). -->
+  <driver id="duckdb-brikk-native" name="DuckDB (Brikk) — Local" dialect="DuckDBBrikk"
+          forced-dbms="DUCKDB_BRIKK" driver-class="org.duckdb.DuckDBDriver">
+    <url-template name="default" template="jdbc:duckdb:{file::identifier.db}"/>
+    <url-template name="In-memory" template="jdbc:duckdb:"/>
+    <artifact name="DuckDB" use="true" rolling="true"/>
+    <option name="auto-sync" value="true"/>
+  </driver>
+
+  <!-- Remote DuckDB via GizmoSQL using the quack-jdbc driver (NOT Arrow/ADBC based — it decodes
+       the serialized results directly, so no add-opens / Arrow memory flags are needed).
+       PLACEHOLDERS pending the dev.brikk.duckdb:quack-jdbc release: driver-class and the URL
+       scheme below must match the jar's META-INF/services/java.sql.Driver and accepted prefix.
+       No <artifact> yet — until it's on a public repo the jar is attached manually in the driver
+       settings (or we bundle it in a later release). -->
+  <driver id="duckdb-brikk-quack" name="DuckDB (Brikk) — GizmoSQL (quack)" dialect="DuckDBBrikk"
+          forced-dbms="DUCKDB_BRIKK" driver-class="dev.brikk.duckdb.jdbc.QuackDriver">
+    <url-template name="default"
+      template="jdbc:quack://{host::localhost}[:{port::31337}][/{database:path}?][\?&lt;&amp;,user={user:param},password={password:param},useEncryption={useEncryption:param:true},{:identifier}={:param}&gt;]"/>
+    <option name="auto-sync" value="true"/>
+  </driver>
+</drivers>

@@ -1,0 +1,48 @@
+<idea-plugin>
+    <id>dev.sort.duckdb-intellij-plugin</id>
+    <name>DuckDB (Brikk)</name>
+    <vendor url="https://sort.dev" email="jayson@sort.dev">Sortdev SRL</vendor>
+
+    <description><![CDATA[
+        <p>A dedicated DuckDB experience for DataGrip and IntelliJ-family IDEs: a real
+        <b>DuckDB (Brikk)</b> SQL dialect (Postgres-based, matching DuckDB's own parser lineage)
+        and ready-to-use data-source templates for <b>local DuckDB</b> and
+        <b>GizmoSQL servers</b> (Arrow-free quack-jdbc driver).</p>
+
+        <p><i>Early stage.</i> The stock IDE treats DuckDB as a generic data source with the
+        Generic SQL dialect; this plugin exists to give DuckDB SQL first-class treatment —
+        <code>SELECT * EXCLUDE(...)</code>, <code>QUALIFY</code>, <code>GROUP BY ALL</code>,
+        lambdas, <code>PIVOT</code>, FROM-first queries — using the architecture proven by the
+        <a href="https://plugins.jetbrains.com/plugin/32777">SQL Dialect for Apache Doris</a>
+        plugin.</p>
+
+        <p><i>This is an independent, community plugin developed by Sortdev SRL, not affiliated
+        with DuckDB Labs, the DuckDB Foundation, or GizmoSQL. "DuckDB" is a trademark of the
+        DuckDB Foundation, used only to identify the database this plugin supports.</i></p>
+    ]]></description>
+
+    <change-notes><![CDATA[
+        <b>0.1.0</b> — initial seed: DuckDB (Brikk) dialect (Postgres-based), local + GizmoSQL
+        (quack) driver templates.
+    ]]></change-notes>
+
+    <depends>com.intellij.modules.platform</depends>
+    <depends>com.intellij.database</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <lang.parserDefinition language="DuckDBBrikk" implementationClass="dev.sort.duckdb.sql.DuckdbParserDefinition"/>
+        <sql.dialect dbms="DUCKDB_BRIKK" implementationClass="dev.sort.duckdb.sql.DuckdbSqlDialect" order="first"/>
+    </extensions>
+
+    <extensions defaultExtensionNs="com.intellij.database">
+        <dbms id="DUCKDB_BRIKK" instance="dev.sort.duckdb.DuckdbDbms.DUCKDB_BRIKK"/>
+        <!-- DuckDB is Postgres-derived; PG machinery is the right family default for everything
+             we don't override. NOTE (doris lesson): before FIRST live data-source testing, the
+             model facade / dialect / introspector trio must agree or connecting throws ClassCast —
+             a DuckdbModelFacade (PgMetaModel) is the known follow-up, deliberately absent from the
+             headless seed. -->
+        <extensionFallback dbms="DUCKDB_BRIKK" fallbackDbms="POSTGRES"/>
+        <errorHandler dbms="DUCKDB_BRIKK" implementationClass="com.intellij.database.dialects.generic.GenericDatabaseErrorHandler"/>
+        <driversConfig config="config/duckdb-brikk-drivers.xml"/>
+    </extensions>
+</idea-plugin>
