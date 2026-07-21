@@ -42,9 +42,15 @@ class DuckdbSyntaxProbeTest : BasePlatformTestCase() {
         board.append("=== ${files.size - red.size}/${files.size} green ===")
         println(board)
 
-        // Baseline contract: these families are known-green on the PG substrate and must stay so.
-        val mustBeGreen = files.map { it.name }.filter { it.startsWith("00-") || it.startsWith("01-") }
+        // Baseline contract: known-green files (PG-shared syntax + Tier-1 lenient-boundary wins)
+        // must stay green. Extend this list every time a family flips — never shrink it.
+        val greenLocked = setOf(
+            "00-", "01-", // PG-shared baselines
+            "16-", "19-", "21-", "23-", "26-", // PG-shared: read_*, json ops, slicing, VALUES/RETURNING, recursive CTE
+            "13-", "14-", "15-", "17-", "24-", // Tier-1 lenient boundaries (FROM-first/PIVOT, ATTACH, COPY, SUMMARIZE, MACRO)
+        )
+        val mustBeGreen = files.map { it.name }.filter { f -> greenLocked.any { f.startsWith(it) } }
         val regressed = mustBeGreen.filter { it in red }
-        assertTrue("baseline-green corpus files regressed: $regressed", regressed.isEmpty())
+        assertTrue("green-locked corpus files regressed: $regressed", regressed.isEmpty())
     }
 }

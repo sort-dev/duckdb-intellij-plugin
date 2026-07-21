@@ -32,16 +32,19 @@
     <extensions defaultExtensionNs="com.intellij">
         <lang.parserDefinition language="DuckDBBrikk" implementationClass="dev.sort.duckdb.sql.DuckdbParserDefinition"/>
         <sql.dialect dbms="DUCKDB_BRIKK" implementationClass="dev.sort.duckdb.sql.DuckdbSqlDialect" order="first"/>
+        <!-- Stage-1 livability: suppress the PG substrate's false red on DuckDB-only syntax
+             (display-only; the scoreboard test keeps counting truth; Stage 3's PREPARE validator
+             becomes the real error authority). -->
+        <highlightErrorFilter implementation="dev.sort.duckdb.sql.DuckdbHighlightErrorFilter"/>
     </extensions>
 
     <extensions defaultExtensionNs="com.intellij.database">
         <dbms id="DUCKDB_BRIKK" instance="dev.sort.duckdb.DuckdbDbms.DUCKDB_BRIKK"/>
         <!-- DuckDB is Postgres-derived; PG machinery is the right family default for everything
-             we don't override. NOTE (doris lesson): before FIRST live data-source testing, the
-             model facade / dialect / introspector trio must agree or connecting throws ClassCast —
-             a DuckdbModelFacade (PgMetaModel) is the known follow-up, deliberately absent from the
-             headless seed. -->
+             we don't override. The modelFacade below completes the facade/dialect/introspector
+             agreement (doris ClassCast lesson) — all three sit on the PG family. -->
         <extensionFallback dbms="DUCKDB_BRIKK" fallbackDbms="POSTGRES"/>
+        <modelFacade dbms="DUCKDB_BRIKK" implementationClass="dev.sort.duckdb.DuckdbModelFacade"/>
         <errorHandler dbms="DUCKDB_BRIKK" implementationClass="com.intellij.database.dialects.generic.GenericDatabaseErrorHandler"/>
         <driversConfig config="config/duckdb-brikk-drivers.xml"/>
     </extensions>
