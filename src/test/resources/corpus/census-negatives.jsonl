@@ -1,0 +1,250 @@
+{"sql": "select approx_top_k(i, 0) from range(5) t(i);", "expectedError": "k value must be > 0", "origin": "aggregate/aggregates/approx_top_k.test:42"}
+{"sql": "select approx_top_k(i, -1) from range(5) t(i);", "expectedError": "k value must be > 0", "origin": "aggregate/aggregates/approx_top_k.test:47"}
+{"sql": "select approx_top_k(i, 999999999999999) from range(5) t(i);", "expectedError": "k value must be < 1000000", "origin": "aggregate/aggregates/approx_top_k.test:52"}
+{"sql": "select approx_top_k(i, NULL) from range(5) t(i);", "expectedError": "NULL", "origin": "aggregate/aggregates/approx_top_k.test:57"}
+{"sql": "select min(arg, NULL) from t1;", "expectedError": "Invalid Input Error: Invalid input for MIN/MAX: n value cannot be NULL", "origin": "aggregate/aggregates/arg_min_max_n.test:43"}
+{"sql": "SELECT min(arg, -1) FROM t1;", "expectedError": "Invalid Input Error: Invalid input for MIN/MAX: n value must be > 0", "origin": "aggregate/aggregates/arg_min_max_n.test:48"}
+{"sql": "select min(arg, 1000000) from t1;", "expectedError": "Invalid Input Error: Invalid input for MIN/MAX: n value must be < 1000000", "origin": "aggregate/aggregates/arg_min_max_n.test:53"}
+{"sql": "select max(arg, NULL) from t1;", "expectedError": "Invalid Input Error: Invalid input for MIN/MAX: n value cannot be NULL", "origin": "aggregate/aggregates/arg_min_max_n.test:43"}
+{"sql": "SELECT max(arg, -1) FROM t1;", "expectedError": "Invalid Input Error: Invalid input for MIN/MAX: n value must be > 0", "origin": "aggregate/aggregates/arg_min_max_n.test:48"}
+{"sql": "select max(arg, 1000000) from t1;", "expectedError": "Invalid Input Error: Invalid input for MIN/MAX: n value must be < 1000000", "origin": "aggregate/aggregates/arg_min_max_n.test:53"}
+{"sql": "select arg_min(arg, val, NULL) from t1;", "expectedError": "Invalid Input Error: Invalid input for arg_min/arg_max: n value cannot be NULL", "origin": "aggregate/aggregates/arg_min_max_n.test:62"}
+{"sql": "SELECT arg_min(arg, val, -1) FROM t1;", "expectedError": "Invalid Input Error: Invalid input for arg_min/arg_max: n value must be > 0", "origin": "aggregate/aggregates/arg_min_max_n.test:67"}
+{"sql": "select arg_min(arg, val, 1000000) from t1;", "expectedError": "Invalid Input Error: Invalid input for arg_min/arg_max: n value must be < 1000000", "origin": "aggregate/aggregates/arg_min_max_n.test:72"}
+{"sql": "select arg_max(arg, val, NULL) from t1;", "expectedError": "Invalid Input Error: Invalid input for arg_min/arg_max: n value cannot be NULL", "origin": "aggregate/aggregates/arg_min_max_n.test:62"}
+{"sql": "SELECT arg_max(arg, val, -1) FROM t1;", "expectedError": "Invalid Input Error: Invalid input for arg_min/arg_max: n value must be > 0", "origin": "aggregate/aggregates/arg_min_max_n.test:67"}
+{"sql": "select arg_max(arg, val, 1000000) from t1;", "expectedError": "Invalid Input Error: Invalid input for arg_min/arg_max: n value must be < 1000000", "origin": "aggregate/aggregates/arg_min_max_n.test:72"}
+{"sql": "select min_by(arg, val, NULL) from t1;", "expectedError": "Invalid Input Error: Invalid input for arg_min/arg_max: n value cannot be NULL", "origin": "aggregate/aggregates/arg_min_max_n.test:62"}
+{"sql": "SELECT min_by(arg, val, -1) FROM t1;", "expectedError": "Invalid Input Error: Invalid input for arg_min/arg_max: n value must be > 0", "origin": "aggregate/aggregates/arg_min_max_n.test:67"}
+{"sql": "select min_by(arg, val, 1000000) from t1;", "expectedError": "Invalid Input Error: Invalid input for arg_min/arg_max: n value must be < 1000000", "origin": "aggregate/aggregates/arg_min_max_n.test:72"}
+{"sql": "select max_by(arg, val, NULL) from t1;", "expectedError": "Invalid Input Error: Invalid input for arg_min/arg_max: n value cannot be NULL", "origin": "aggregate/aggregates/arg_min_max_n.test:62"}
+{"sql": "SELECT max_by(arg, val, -1) FROM t1;", "expectedError": "Invalid Input Error: Invalid input for arg_min/arg_max: n value must be > 0", "origin": "aggregate/aggregates/arg_min_max_n.test:67"}
+{"sql": "select max_by(arg, val, 1000000) from t1;", "expectedError": "Invalid Input Error: Invalid input for arg_min/arg_max: n value must be < 1000000", "origin": "aggregate/aggregates/arg_min_max_n.test:72"}
+{"sql": "SELECT SUM(s) FROM strings GROUP BY g ORDER BY g;", "expectedError": null, "origin": "aggregate/aggregates/test_aggregate_types.test:106"}
+{"sql": "SELECT AVG(s) FROM strings GROUP BY g ORDER BY g;", "expectedError": null, "origin": "aggregate/aggregates/test_aggregate_types.test:110"}
+{"sql": "SELECT AVG(b) FROM booleans GROUP BY g ORDER BY g;", "expectedError": null, "origin": "aggregate/aggregates/test_aggregate_types.test:171"}
+{"sql": "SELECT COUNT(1, 2);", "expectedError": null, "origin": "aggregate/aggregates/test_aggregate_types_scalar.test:15"}
+{"sql": "SELECT SUM('hello');", "expectedError": null, "origin": "aggregate/aggregates/test_aggregate_types_scalar.test:31"}
+{"sql": "SELECT SUM(DATE '1992-02-02');", "expectedError": null, "origin": "aggregate/aggregates/test_aggregate_types_scalar.test:35"}
+{"sql": "SELECT SUM();", "expectedError": null, "origin": "aggregate/aggregates/test_aggregate_types_scalar.test:39"}
+{"sql": "SELECT SUM(1, 2);", "expectedError": null, "origin": "aggregate/aggregates/test_aggregate_types_scalar.test:43"}
+{"sql": "SELECT MIN();", "expectedError": null, "origin": "aggregate/aggregates/test_aggregate_types_scalar.test:52"}
+{"sql": "SELECT MAX();", "expectedError": null, "origin": "aggregate/aggregates/test_aggregate_types_scalar.test:66"}
+{"sql": "SELECT FIRST();", "expectedError": null, "origin": "aggregate/aggregates/test_aggregate_types_scalar.test:80"}
+{"sql": "SELECT FIRST(1, 2);", "expectedError": null, "origin": "aggregate/aggregates/test_aggregate_types_scalar.test:84"}
+{"sql": "SELECT LAST();", "expectedError": null, "origin": "aggregate/aggregates/test_aggregate_types_scalar.test:93"}
+{"sql": "SELECT LAST(1, 2);", "expectedError": null, "origin": "aggregate/aggregates/test_aggregate_types_scalar.test:97"}
+{"sql": "SELECT AVG(True);", "expectedError": null, "origin": "aggregate/aggregates/test_aggregate_types_scalar.test:106"}
+{"sql": "SELECT AVG('hello');", "expectedError": null, "origin": "aggregate/aggregates/test_aggregate_types_scalar.test:110"}
+{"sql": "SELECT AVG(DATE '1992-02-02');", "expectedError": null, "origin": "aggregate/aggregates/test_aggregate_types_scalar.test:114"}
+{"sql": "SELECT AVG();", "expectedError": null, "origin": "aggregate/aggregates/test_aggregate_types_scalar.test:118"}
+{"sql": "SELECT AVG(1, 2);", "expectedError": null, "origin": "aggregate/aggregates/test_aggregate_types_scalar.test:122"}
+{"sql": "SELECT STRING_AGG();", "expectedError": null, "origin": "aggregate/aggregates/test_aggregate_types_scalar.test:136"}
+{"sql": "SELECT STRING_AGG(1, 2, 3);", "expectedError": null, "origin": "aggregate/aggregates/test_aggregate_types_scalar.test:140"}
+{"sql": "select approx_count_distinct(*);", "expectedError": null, "origin": "aggregate/aggregates/test_approximate_distinct_count.test:11"}
+{"sql": "select argmin();", "expectedError": null, "origin": "aggregate/aggregates/test_arg_min_max.test:12"}
+{"sql": "select argmin(*);", "expectedError": null, "origin": "aggregate/aggregates/test_arg_min_max.test:26"}
+{"sql": "select argmax();", "expectedError": null, "origin": "aggregate/aggregates/test_arg_min_max.test:40"}
+{"sql": "select argmax(*);", "expectedError": null, "origin": "aggregate/aggregates/test_arg_min_max.test:54"}
+{"sql": "select arg_min_null();", "expectedError": null, "origin": "aggregate/aggregates/test_arg_min_max_null.test:12"}
+{"sql": "select arg_min_null(*);", "expectedError": null, "origin": "aggregate/aggregates/test_arg_min_max_null.test:26"}
+{"sql": "select arg_max_null();", "expectedError": null, "origin": "aggregate/aggregates/test_arg_min_max_null.test:40"}
+{"sql": "select arg_max_null(*);", "expectedError": null, "origin": "aggregate/aggregates/test_arg_min_max_null.test:54"}
+{"sql": "SELECT histogram(n, [10, 20, NULL]) FROM obs;", "expectedError": "Histogram bin entry cannot be NULL", "origin": "aggregate/aggregates/test_binned_histogram.test:124"}
+{"sql": "SELECT histogram(n, NULL::BIGINT[]) FROM obs;", "expectedError": "Histogram bin list cannot be NULL", "origin": "aggregate/aggregates/test_binned_histogram.test:130"}
+{"sql": "select bool_or(0);", "expectedError": null, "origin": "aggregate/aggregates/test_bool.test:9"}
+{"sql": "select bool_and(0);", "expectedError": null, "origin": "aggregate/aggregates/test_bool.test:13"}
+{"sql": "select bool_or();", "expectedError": null, "origin": "aggregate/aggregates/test_bool.test:27"}
+{"sql": "select bool_and();", "expectedError": null, "origin": "aggregate/aggregates/test_bool.test:31"}
+{"sql": "select bool_or(*);", "expectedError": null, "origin": "aggregate/aggregates/test_bool.test:35"}
+{"sql": "select bool_and(*);", "expectedError": null, "origin": "aggregate/aggregates/test_bool.test:39"}
+{"sql": "select corr();", "expectedError": null, "origin": "aggregate/aggregates/test_corr.test:9"}
+{"sql": "select corr(*);", "expectedError": null, "origin": "aggregate/aggregates/test_corr.test:23"}
+{"sql": "SELECT corr(a,b) FROM (values (1e301, 0), (-1e301, 0)) tbl(a,b);", "expectedError": null, "origin": "aggregate/aggregates/test_corr.test:55"}
+{"sql": "SELECT corr(b,a) FROM (values (1e301, 0), (-1e301, 0)) tbl(a,b);", "expectedError": null, "origin": "aggregate/aggregates/test_corr.test:59"}
+{"sql": "SELECT COUNT(DISTINCT *) FROM integers;", "expectedError": null, "origin": "aggregate/aggregates/test_count.test:42"}
+{"sql": "SELECT COVAR_POP();", "expectedError": null, "origin": "aggregate/aggregates/test_covar.test:6"}
+{"sql": "SELECT COVAR_POP(1, 2, 3);", "expectedError": null, "origin": "aggregate/aggregates/test_covar.test:10"}
+{"sql": "SELECT COVAR_POP(COVAR_POP(1));", "expectedError": null, "origin": "aggregate/aggregates/test_covar.test:14"}
+{"sql": "SELECT COVAR_SAMP();", "expectedError": null, "origin": "aggregate/aggregates/test_covar.test:19"}
+{"sql": "SELECT COVAR_SAMP(1, 2, 3);", "expectedError": null, "origin": "aggregate/aggregates/test_covar.test:23"}
+{"sql": "SELECT COVAR_SAMP(COVAR_SAMP(1));", "expectedError": null, "origin": "aggregate/aggregates/test_covar.test:27"}
+{"sql": "select entropy();", "expectedError": null, "origin": "aggregate/aggregates/test_entropy.test:12"}
+{"sql": "select entropy(*);", "expectedError": null, "origin": "aggregate/aggregates/test_entropy.test:26"}
+{"sql": "select histogram();", "expectedError": null, "origin": "aggregate/aggregates/test_histogram.test:125"}
+{"sql": "select histogram(*);", "expectedError": null, "origin": "aggregate/aggregates/test_histogram.test:129"}
+{"sql": "SELECT COUNT(1, 2, 3);", "expectedError": null, "origin": "aggregate/aggregates/test_incorrect_aggregate.test:5"}
+{"sql": "SELECT COUNT(COUNT(1));", "expectedError": null, "origin": "aggregate/aggregates/test_incorrect_aggregate.test:9"}
+{"sql": "SELECT STDDEV_SAMP();", "expectedError": null, "origin": "aggregate/aggregates/test_incorrect_aggregate.test:13"}
+{"sql": "SELECT STDDEV_SAMP(1, 2, 3);", "expectedError": null, "origin": "aggregate/aggregates/test_incorrect_aggregate.test:17"}
+{"sql": "SELECT STDDEV_SAMP(STDDEV_SAMP(1));", "expectedError": null, "origin": "aggregate/aggregates/test_incorrect_aggregate.test:21"}
+{"sql": "SELECT SUM();", "expectedError": null, "origin": "aggregate/aggregates/test_incorrect_aggregate.test:25"}
+{"sql": "SELECT SUM(1, 2, 3);", "expectedError": null, "origin": "aggregate/aggregates/test_incorrect_aggregate.test:29"}
+{"sql": "SELECT SUM(SUM(1));", "expectedError": null, "origin": "aggregate/aggregates/test_incorrect_aggregate.test:33"}
+{"sql": "SELECT FIRST();", "expectedError": null, "origin": "aggregate/aggregates/test_incorrect_aggregate.test:37"}
+{"sql": "SELECT FIRST(1, 2, 3);", "expectedError": null, "origin": "aggregate/aggregates/test_incorrect_aggregate.test:41"}
+{"sql": "SELECT FIRST(FIRST(1));", "expectedError": null, "origin": "aggregate/aggregates/test_incorrect_aggregate.test:45"}
+{"sql": "SELECT MAX();", "expectedError": null, "origin": "aggregate/aggregates/test_incorrect_aggregate.test:49"}
+{"sql": "SELECT MAX(1, 2, 3);", "expectedError": null, "origin": "aggregate/aggregates/test_incorrect_aggregate.test:53"}
+{"sql": "SELECT MAX(MAX(1));", "expectedError": null, "origin": "aggregate/aggregates/test_incorrect_aggregate.test:57"}
+{"sql": "SELECT MIN();", "expectedError": null, "origin": "aggregate/aggregates/test_incorrect_aggregate.test:61"}
+{"sql": "SELECT MIN(1, 2, 3);", "expectedError": null, "origin": "aggregate/aggregates/test_incorrect_aggregate.test:65"}
+{"sql": "SELECT MIN(MIN(1));", "expectedError": null, "origin": "aggregate/aggregates/test_incorrect_aggregate.test:69"}
+{"sql": "select kurtosis();", "expectedError": null, "origin": "aggregate/aggregates/test_kurtosis.test:9"}
+{"sql": "select kurtosis(*);", "expectedError": null, "origin": "aggregate/aggregates/test_kurtosis.test:23"}
+{"sql": "select kurtosis(i) from (values (2e304), (2e305), (2e306), (2e307)) tbl(i);", "expectedError": null, "origin": "aggregate/aggregates/test_kurtosis.test:33"}
+{"sql": "select mode();", "expectedError": null, "origin": "aggregate/aggregates/test_mode.test:15"}
+{"sql": "select mode(*);", "expectedError": null, "origin": "aggregate/aggregates/test_mode.test:29"}
+{"sql": "SELECT \n    user_id, \n    list(DISTINCT cause ORDER BY \"date\" DESC) FILTER(cause IS NOT NULL) AS causes\nFROM user_causes \nGROUP BY user_id;", "expectedError": "Binder Error: In a DISTINCT aggregate, ORDER BY expressions must appear in the argument list", "origin": "aggregate/aggregates/test_order_by_aggregate.test:79"}
+{"sql": "SELECT \"dest\", mode() WITHIN GROUP (ORDER BY \"arr_delay\", \"arr_time\") AS \"median_delay\"\nFROM \"flights\"\nGROUP BY \"dest\";", "expectedError": null, "origin": "aggregate/aggregates/test_ordered_aggregates.test:112"}
+{"sql": "SELECT \"dest\", duck(0.5) WITHIN GROUP (ORDER BY \"arr_delay\") AS \"duck_delay\"\nFROM \"flights\"\nGROUP BY \"dest\";", "expectedError": null, "origin": "aggregate/aggregates/test_ordered_aggregates.test:119"}
+{"sql": "select percentile_disc() within group(order by i) from generate_series(0,100) tbl(i);", "expectedError": null, "origin": "aggregate/aggregates/test_ordered_aggregates.test:126"}
+{"sql": "select percentile_disc(0.25, 0.5) within group(order by i) from generate_series(0,100) tbl(i);", "expectedError": null, "origin": "aggregate/aggregates/test_ordered_aggregates.test:130"}
+{"sql": "select percentile_cont() within group(order by i) from generate_series(0,100) tbl(i);", "expectedError": null, "origin": "aggregate/aggregates/test_ordered_aggregates.test:135"}
+{"sql": "select percentile_cont(0.25, 0.5) within group(order by i) from generate_series(0,100) tbl(i);", "expectedError": null, "origin": "aggregate/aggregates/test_ordered_aggregates.test:139"}
+{"sql": "SELECT percentile_disc(CAST('NaN' AS REAL)) WITHIN GROUP (ORDER BY 1);", "expectedError": null, "origin": "aggregate/aggregates/test_ordered_aggregates.test:144"}
+{"sql": "SELECT percentile_disc([]) WITHIN GROUP (ORDER BY LAST);", "expectedError": null, "origin": "aggregate/aggregates/test_ordered_aggregates.test:149"}
+{"sql": "select mode(0.25) within group(order by i) from generate_series(0,100) tbl(i);", "expectedError": null, "origin": "aggregate/aggregates/test_ordered_aggregates.test:154"}
+{"sql": "select percentile_disc('duck') within group(order by i) from generate_series(0,100) tbl(i);", "expectedError": null, "origin": "aggregate/aggregates/test_ordered_aggregates.test:159"}
+{"sql": "select percentile_cont('duck') within group(order by i) from generate_series(0,100) tbl(i);", "expectedError": null, "origin": "aggregate/aggregates/test_ordered_aggregates.test:164"}
+{"sql": "SELECT percentile_disc(sum(1)) WITHIN GROUP (ORDER BY 1 DESC);", "expectedError": null, "origin": "aggregate/aggregates/test_ordered_aggregates.test:169"}
+{"sql": "SELECT percentile_disc(strftime(DATE '1-11-25',NULL)) WITHIN GROUP (ORDER BY 1 DESC);", "expectedError": null, "origin": "aggregate/aggregates/test_ordered_aggregates.test:174"}
+{"sql": "SELECT percentile_cont(CASE 1 WHEN 2 THEN 3 END) WITHIN GROUP (ORDER BY 1 DESC);", "expectedError": null, "origin": "aggregate/aggregates/test_ordered_aggregates.test:178"}
+{"sql": "SELECT percentile_disc(-.5) WITHIN GROUP (order by col ASC) \nFROM VALUES (11000), (3100), (2900), (2800), (2600), (2500) AS tab(col);", "expectedError": null, "origin": "aggregate/aggregates/test_ordered_aggregates.test:186"}
+{"sql": "SELECT percentile_disc([-.25, .5, .75]) WITHIN GROUP (order by col ASC) \nFROM VALUES (11000), (3100), (2900), (2800), (2600), (2500) AS tab(col);", "expectedError": null, "origin": "aggregate/aggregates/test_ordered_aggregates.test:191"}
+{"sql": "SELECT percentile_disc(-.5) WITHIN GROUP (order by col DESC) \nFROM VALUES (11000), (3100), (2900), (2800), (2600), (2500) AS tab(col);", "expectedError": null, "origin": "aggregate/aggregates/test_ordered_aggregates.test:186"}
+{"sql": "SELECT percentile_disc([-.25, .5, .75]) WITHIN GROUP (order by col DESC) \nFROM VALUES (11000), (3100), (2900), (2800), (2600), (2500) AS tab(col);", "expectedError": null, "origin": "aggregate/aggregates/test_ordered_aggregates.test:191"}
+{"sql": "select product();", "expectedError": null, "origin": "aggregate/aggregates/test_product.test:6"}
+{"sql": "select product(*);", "expectedError": null, "origin": "aggregate/aggregates/test_product.test:20"}
+{"sql": "SELECT quantile_cont(r, NULL) FROM quantile;", "expectedError": null, "origin": "aggregate/aggregates/test_quantile_cont.test:18"}
+{"sql": "SELECT quantile_cont(interval (r/100) second, 0.5) FROM quantile;", "expectedError": null, "origin": "aggregate/aggregates/test_quantile_cont.test:112"}
+{"sql": "SELECT quantile_cont(r, -1.1) FROM quantile;", "expectedError": null, "origin": "aggregate/aggregates/test_quantile_cont.test:150"}
+{"sql": "SELECT quantile_cont(r, 1.1) FROM quantile;", "expectedError": null, "origin": "aggregate/aggregates/test_quantile_cont.test:154"}
+{"sql": "SELECT quantile_cont(r, \"string\") FROM quantile;", "expectedError": null, "origin": "aggregate/aggregates/test_quantile_cont.test:158"}
+{"sql": "SELECT quantile_cont(r, NULL) FROM quantile;", "expectedError": null, "origin": "aggregate/aggregates/test_quantile_cont.test:162"}
+{"sql": "SELECT quantile_cont(r::string, 0.5) FROM quantile;", "expectedError": null, "origin": "aggregate/aggregates/test_quantile_cont.test:166"}
+{"sql": "SELECT quantile_cont(r) FROM quantile;", "expectedError": null, "origin": "aggregate/aggregates/test_quantile_cont.test:170"}
+{"sql": "SELECT quantile_cont(r, 0.1, 50) FROM quantile;", "expectedError": null, "origin": "aggregate/aggregates/test_quantile_cont.test:174"}
+{"sql": "SELECT quantile_cont(r, random()) FROM quantile;", "expectedError": null, "origin": "aggregate/aggregates/test_quantile_cont.test:321"}
+{"sql": "SELECT quantile_cont(interval (r/100) second, [0.25, 0.5, 0.75]) FROM quantiles;", "expectedError": null, "origin": "aggregate/aggregates/test_quantile_cont_list.test:41"}
+{"sql": "SELECT quantile_cont(r, [-0.25, 0.5, 0.75]) FROM quantiles;", "expectedError": null, "origin": "aggregate/aggregates/test_quantile_cont_list.test:142"}
+{"sql": "SELECT quantile_cont(r, (0.25, 0.5, 1.1)) FROM quantiles;", "expectedError": null, "origin": "aggregate/aggregates/test_quantile_cont_list.test:146"}
+{"sql": "SELECT quantile_cont(r, [0.25, 0.5, NULL]) FROM quantiles;", "expectedError": null, "origin": "aggregate/aggregates/test_quantile_cont_list.test:150"}
+{"sql": "SELECT quantile_cont(r, [\"0.25\", \"0.5\", \"0.75\"]) FROM quantiles;", "expectedError": null, "origin": "aggregate/aggregates/test_quantile_cont_list.test:154"}
+{"sql": "SELECT quantile_cont(r::string, [0.25, 0.5, 0.75]) FROM quantiles;", "expectedError": null, "origin": "aggregate/aggregates/test_quantile_cont_list.test:158"}
+{"sql": "SELECT quantile_cont(r, [0.25, 0.5, 0.75], 50) FROM quantiles;", "expectedError": null, "origin": "aggregate/aggregates/test_quantile_cont_list.test:162"}
+{"sql": "SELECT quantile_disc(r, -1.1) FROM quantile;", "expectedError": null, "origin": "aggregate/aggregates/test_quantile_disc.test:202"}
+{"sql": "SELECT quantile_disc(r, 1.1) FROM quantile;", "expectedError": null, "origin": "aggregate/aggregates/test_quantile_disc.test:206"}
+{"sql": "SELECT quantile_disc(r, \"string\") FROM quantile;", "expectedError": null, "origin": "aggregate/aggregates/test_quantile_disc.test:210"}
+{"sql": "SELECT quantile_disc(r, NULL) FROM quantile;", "expectedError": null, "origin": "aggregate/aggregates/test_quantile_disc.test:214"}
+{"sql": "SELECT quantile_disc(r) FROM quantile;", "expectedError": null, "origin": "aggregate/aggregates/test_quantile_disc.test:218"}
+{"sql": "SELECT quantile_disc(r, 0.1, 50) FROM quantile;", "expectedError": null, "origin": "aggregate/aggregates/test_quantile_disc.test:222"}
+{"sql": "SELECT quantile_cont(r, q) FROM quantile;", "expectedError": null, "origin": "aggregate/aggregates/test_quantile_disc.test:226"}
+{"sql": "SELECT quantile_disc(r, [-0.1, 0.5, 0.9]) FROM quantiles;", "expectedError": null, "origin": "aggregate/aggregates/test_quantile_disc_list.test:186"}
+{"sql": "SELECT quantile_disc(r, (0.1, 0.5, 1.1)) FROM quantiles;", "expectedError": null, "origin": "aggregate/aggregates/test_quantile_disc_list.test:190"}
+{"sql": "SELECT quantile_disc(r, [0.1, 0.5, NULL]) FROM quantiles;", "expectedError": null, "origin": "aggregate/aggregates/test_quantile_disc_list.test:194"}
+{"sql": "SELECT quantile_disc(r, [\"0.1\", \"0.5\", \"0.9\"]) FROM quantiles;", "expectedError": null, "origin": "aggregate/aggregates/test_quantile_disc_list.test:198"}
+{"sql": "SELECT quantile_disc(r, [0.1, 0.5, 0.9], 50) FROM quantiles;", "expectedError": null, "origin": "aggregate/aggregates/test_quantile_disc_list.test:202"}
+{"sql": "select regr_avgx();", "expectedError": null, "origin": "aggregate/aggregates/test_regression.test:19"}
+{"sql": "select regr_avgx(*);", "expectedError": null, "origin": "aggregate/aggregates/test_regression.test:23"}
+{"sql": "select regr_avgy();", "expectedError": null, "origin": "aggregate/aggregates/test_regression.test:27"}
+{"sql": "select regr_avgy(*);", "expectedError": null, "origin": "aggregate/aggregates/test_regression.test:41"}
+{"sql": "select regr_count();", "expectedError": null, "origin": "aggregate/aggregates/test_regression.test:45"}
+{"sql": "select regr_count(*);", "expectedError": null, "origin": "aggregate/aggregates/test_regression.test:59"}
+{"sql": "select regr_slope();", "expectedError": null, "origin": "aggregate/aggregates/test_regression.test:63"}
+{"sql": "select regr_slope(*);", "expectedError": null, "origin": "aggregate/aggregates/test_regression.test:77"}
+{"sql": "select regr_r2();", "expectedError": null, "origin": "aggregate/aggregates/test_regression.test:81"}
+{"sql": "select regr_r2(0, 1e230*i) from range(5) tbl(i);", "expectedError": null, "origin": "aggregate/aggregates/test_regression.test:96"}
+{"sql": "select regr_r2(1e230*i, i) from range(5) tbl(i);", "expectedError": null, "origin": "aggregate/aggregates/test_regression.test:100"}
+{"sql": "select regr_r2(*);", "expectedError": null, "origin": "aggregate/aggregates/test_regression.test:114"}
+{"sql": "select regr_sxx();", "expectedError": null, "origin": "aggregate/aggregates/test_regression.test:118"}
+{"sql": "select regr_sxx(0, 2e230*i) from range(5) tbl(i);", "expectedError": null, "origin": "aggregate/aggregates/test_regression.test:122"}
+{"sql": "select regr_syy();", "expectedError": null, "origin": "aggregate/aggregates/test_regression.test:141"}
+{"sql": "select regr_sxy(*);", "expectedError": null, "origin": "aggregate/aggregates/test_regression.test:155"}
+{"sql": "select regr_sxy();", "expectedError": null, "origin": "aggregate/aggregates/test_regression.test:159"}
+{"sql": "select regr_syy(*);", "expectedError": null, "origin": "aggregate/aggregates/test_regression.test:173"}
+{"sql": "select regr_intercept();", "expectedError": null, "origin": "aggregate/aggregates/test_regression.test:177"}
+{"sql": "select regr_intercept(*);", "expectedError": null, "origin": "aggregate/aggregates/test_regression.test:192"}
+{"sql": "select sem();", "expectedError": null, "origin": "aggregate/aggregates/test_sem.test:9"}
+{"sql": "select sem(*);", "expectedError": null, "origin": "aggregate/aggregates/test_sem.test:23"}
+{"sql": "select skewness();", "expectedError": null, "origin": "aggregate/aggregates/test_skewness.test:9"}
+{"sql": "select skewness(*);", "expectedError": null, "origin": "aggregate/aggregates/test_skewness.test:23"}
+{"sql": "select skewness(i) from (values (-2e307), (0), (2e307)) tbl(i);", "expectedError": null, "origin": "aggregate/aggregates/test_skewness.test:40"}
+{"sql": "select stddev(a) from (values (1e301), (-1e301)) tbl(a);", "expectedError": null, "origin": "aggregate/aggregates/test_stddev.test:139"}
+{"sql": "select var_samp(a) from (values (1e301), (-1e301)) tbl(a);", "expectedError": null, "origin": "aggregate/aggregates/test_stddev.test:143"}
+{"sql": "select var_pop(a) from (values (1e301), (-1e301)) tbl(a);", "expectedError": null, "origin": "aggregate/aggregates/test_stddev.test:147"}
+{"sql": "SELECT STRING_AGG();", "expectedError": null, "origin": "aggregate/aggregates/test_string_agg.test:16"}
+{"sql": "SELECT STRING_AGG('a', 'b', 'c');", "expectedError": null, "origin": "aggregate/aggregates/test_string_agg.test:20"}
+{"sql": "SELECT STRING_AGG(STRING_AGG('a',','));", "expectedError": null, "origin": "aggregate/aggregates/test_string_agg.test:24"}
+{"sql": "SELECT STRING_AGG(x,','), STRING_AGG(x,y) FROM strings;", "expectedError": null, "origin": "aggregate/aggregates/test_string_agg.test:51"}
+{"sql": "SELECT STRING_AGG(1, 2);", "expectedError": "No function matches", "origin": "aggregate/aggregates/test_string_agg.test:70"}
+{"sql": "SELECT g, STRING_AGG(x, y ORDER BY x ASC) FROM strings GROUP BY g ORDER BY 1;", "expectedError": null, "origin": "aggregate/aggregates/test_string_agg.test:133"}
+{"sql": "SELECT g, STRING_AGG(x, y ORDER BY x DESC) FROM strings GROUP BY g ORDER BY 1;", "expectedError": null, "origin": "aggregate/aggregates/test_string_agg.test:137"}
+{"sql": "SELECT g, STRING_AGG(DISTINCT y, ',' ORDER BY x DESC) FILTER (WHERE g < 4)\nFROM strings\nGROUP BY g\nORDER BY 1;", "expectedError": "Binder Error: In a DISTINCT aggregate, ORDER BY expressions must appear in the argument list", "origin": "aggregate/aggregates/test_string_agg.test:172"}
+{"sql": "SELECT first(DISTINCT i ORDER BY random() * i)\nFROM (VALUES \n\t(900),\n\t(2600),\n\t(2100),\n\t(2100),\n\t(1800)\n\t) AS t(i);", "expectedError": "Binder Error: In a DISTINCT aggregate, ORDER BY expressions must appear in the argument list", "origin": "aggregate/aggregates/test_string_agg.test:211"}
+{"sql": "SELECT first(DISTINCT random() * i ORDER BY i)\nFROM (VALUES \n\t(900),\n\t(2600),\n\t(2100),\n\t(2100),\n\t(1800)\n\t) AS t(i);", "expectedError": "Binder Error: In a DISTINCT aggregate, ORDER BY expressions must appear in the argument list", "origin": "aggregate/aggregates/test_string_agg.test:223"}
+{"sql": "SELECT SUM(b)::BIGINT FROM bigints;", "expectedError": null, "origin": "aggregate/aggregates/test_sum.test:74"}
+{"sql": "SELECT (sum(n) WITHIN GROUP(ORDER BY ABS(n)))::BIGINT FROM doubles;", "expectedError": null, "origin": "aggregate/aggregates/test_sum.test:94"}
+{"sql": "SELECT g, STRING_AGG(DISTINCT y ORDER BY y, '_' ) FILTER (WHERE g < 4)\nFROM strings\nGROUP BY g\nORDER BY 1;", "expectedError": "ORDER BY non-integer literal has no effect", "origin": "aggregate/distinct/grouped/string_agg.test:57"}
+{"sql": "SELECT DISTINCT ON (2) i FROM integers;", "expectedError": "Binder Error: ORDER term out of range - should be between 1 and 1", "origin": "aggregate/distinct/test_distinct_on.test:130"}
+{"sql": "SELECT DISTINCT ON(i, 'literal') i FROM integers;", "expectedError": "DISTINCT ON non-integer literal has no effect", "origin": "aggregate/distinct/test_distinct_on.test:136"}
+{"sql": "PREPARE v1 AS select distinct on (?) 42;", "expectedError": "Parameter not supported in DISTINCT ON clause", "origin": "aggregate/distinct/test_distinct_on.test:150"}
+{"sql": "SELECT (g+i)%2 + SUM(i), SUM(i), SUM(g) FROM integers GROUP BY ALL ORDER BY 1;", "expectedError": null, "origin": "aggregate/group/group_by_all.test:107"}
+{"sql": "SELECT SUM(i) FROM integers GROUP BY ALL ORDER BY g;", "expectedError": "GROUP BY ALL will only group entries in the SELECT list", "origin": "aggregate/group/group_by_all_order.test:32"}
+{"sql": "SELECT SUM(SUM(41)), COUNT(*);", "expectedError": null, "origin": "aggregate/group/test_group_by.test:21"}
+{"sql": "SELECT b % 2 AS f, COUNT(SUM(a)) FROM test GROUP BY f;", "expectedError": null, "origin": "aggregate/group/test_group_by.test:92"}
+{"sql": "SELECT i, SUM(j), j FROM integers GROUP BY i ORDER BY i;", "expectedError": null, "origin": "aggregate/group/test_group_by.test:121"}
+{"sql": "SELECT 1 AS k, SUM(i) FROM integers GROUP BY k+1 ORDER BY 2;", "expectedError": "aliases cannot be used as part of an expression in the GROUP BY", "origin": "aggregate/group/test_group_by.test:187"}
+{"sql": "SELECT i % 2 AS k, SUM(i) FROM integers WHERE i IS NOT NULL GROUP BY 42 HAVING i%2>0;", "expectedError": null, "origin": "aggregate/group/test_group_by_alias.test:38"}
+{"sql": "SELECT i % 2 AS k, SUM(k) FROM integers GROUP BY k;", "expectedError": null, "origin": "aggregate/group/test_group_by_alias.test:73"}
+{"sql": "SELECT (10-i) AS k, SUM(i) FROM integers GROUP BY k ORDER BY i;", "expectedError": null, "origin": "aggregate/group/test_group_by_alias.test:90"}
+{"sql": "SELECT * FROM tbl GROUP BY DEFAULT;", "expectedError": "cannot contain DEFAULT", "origin": "aggregate/group/test_group_by_error.test:11"}
+{"sql": "SELECT * FROM tbl GROUP BY SUM(41);", "expectedError": "cannot contain aggregates", "origin": "aggregate/group/test_group_by_error.test:16"}
+{"sql": "select course, count(*) from students group by cube () order by 1, 2;", "expectedError": null, "origin": "aggregate/grouping_sets/cube.test:171"}
+{"sql": "select course, count(*) from students group by cube (cube (course)) order by 1, 2;", "expectedError": null, "origin": "aggregate/grouping_sets/cube.test:175"}
+{"sql": "select course, count(*) from students group by cube (grouping_sets (course)) order by 1, 2;", "expectedError": null, "origin": "aggregate/grouping_sets/cube.test:179"}
+{"sql": "select course, type, count(*) from students group by cube (course, type, course, type, course, type, course, type, course, type, course, type, (course, type), (course, type), course, type) order by 1, 2, 3;", "expectedError": null, "origin": "aggregate/grouping_sets/cube.test:184"}
+{"sql": "select course, type, count(*) from students group by cube (course, type, course, type, course), cube(type, course, type, course), cube(type, course, type, (course, type), (course, type), course, type) order by 1, 2, 3;", "expectedError": null, "origin": "aggregate/grouping_sets/cube.test:188"}
+{"sql": "SELECT GROUPING();", "expectedError": null, "origin": "aggregate/grouping_sets/grouping.test:186"}
+{"sql": "SELECT GROUPING() FROM students;", "expectedError": null, "origin": "aggregate/grouping_sets/grouping.test:190"}
+{"sql": "SELECT GROUPING(NULL) FROM students;", "expectedError": null, "origin": "aggregate/grouping_sets/grouping.test:194"}
+{"sql": "SELECT GROUPING(course) FROM students;", "expectedError": null, "origin": "aggregate/grouping_sets/grouping.test:198"}
+{"sql": "SELECT GROUPING(course) FROM students GROUP BY ();", "expectedError": null, "origin": "aggregate/grouping_sets/grouping.test:202"}
+{"sql": "SELECT GROUPING(type) FROM students GROUP BY course;", "expectedError": null, "origin": "aggregate/grouping_sets/grouping.test:206"}
+{"sql": "SELECT GROUPING(course) FROM students WHERE GROUPING(course)=0 GROUP BY course;", "expectedError": null, "origin": "aggregate/grouping_sets/grouping.test:210"}
+{"sql": "SELECT GROUPING(course, course, course, course, course, course, course, course, course, course, course, course, course, course, course, course, course, course, course, course, course, course, course, course, course, course, course, course, course, course, course, course, course, course, course, course, course, course, course, course, course, course, course, course, course, course, course, course, course, course, course, course, course, course, course, course, course, course, course, course, course, course, course, course, course, course, course, course, course, course, course, course, course, course, course, course, course, course, course, course), course, type, COUNT(*) FROM students GROUP BY CUBE(course, type) ORDER BY 1, 2, 3, 4;", "expectedError": null, "origin": "aggregate/grouping_sets/grouping.test:215"}
+{"sql": "select course from students group by ();", "expectedError": null, "origin": "aggregate/grouping_sets/grouping_sets.test:275"}
+{"sql": "select course, count(*) from students group by rollup () order by 1, 2;", "expectedError": null, "origin": "aggregate/grouping_sets/rollup.test:131"}
+{"sql": "select course, count(*) from students group by rollup (rollup (course)) order by 1, 2;", "expectedError": null, "origin": "aggregate/grouping_sets/rollup.test:135"}
+{"sql": "select course, count(*) from students group by rollup (grouping_sets (course)) order by 1, 2;", "expectedError": null, "origin": "aggregate/grouping_sets/rollup.test:139"}
+{"sql": "SELECT a FROM test WHERE a=13 HAVING a > 11;", "expectedError": null, "origin": "aggregate/having/test_scalar_having.test:45"}
+{"sql": "SELECT a FROM test WHERE a=13 HAVING SUM(a) > 11;", "expectedError": null, "origin": "aggregate/having/test_scalar_having.test:51"}
+{"sql": "SELECT * FROM exam QUALIFY row_number() OVER w = 1 WINDOW w AS (ORDER BY mark);", "expectedError": null, "origin": "aggregate/qualify/test_qualify.test:198"}
+{"sql": "SELECT b, avg(a) AS avga FROM test GROUP BY b QUALIFY avga > 10;", "expectedError": null, "origin": "aggregate/qualify/test_qualify.test:203"}
+{"sql": "SELECT b FROM test QUALIFY avga() > 10;", "expectedError": null, "origin": "aggregate/qualify/test_qualify.test:208"}
+{"sql": "SELECT b, SUM(a) FROM test GROUP BY b QUALIFY row_number() OVER (PARTITION BY b) > sum;", "expectedError": null, "origin": "aggregate/qualify/test_qualify.test:213"}
+{"sql": "ALTER TABLE test ADD COLUMN i INTEGER;", "expectedError": null, "origin": "alter/add_col/test_add_col_incorrect.test:11"}
+{"sql": "ALTER VIEW x ADD COLUMN i INTEGER;", "expectedError": null, "origin": "alter/add_col/test_add_col_incorrect.test:19"}
+{"sql": "ALTER TABLE i ADD COLUMN j INT, ADD COLUMN k INT;", "expectedError": null, "origin": "alter/add_col/test_add_col_incorrect.test:24"}
+{"sql": "ALTER TABLE test ADD COLUMN l INTEGER;", "expectedError": null, "origin": "alter/add_col/test_add_col_transactions.test:20"}
+{"sql": "INSERT INTO test (i, j) VALUES (3, 3);", "expectedError": null, "origin": "alter/add_col/test_add_col_transactions.test:49"}
+{"sql": "UPDATE test SET j=100;", "expectedError": null, "origin": "alter/add_col/test_add_col_transactions.test:69"}
+{"sql": "ALTER TABLE main_t1 ADD COLUMN j test_int;", "expectedError": null, "origin": "alter/add_col/test_add_col_user_type.test:23"}
+{"sql": "INSERT INTO test VALUES (1, 2, 'oops');", "expectedError": "<REGEX>:Constraint Error.*Duplicate key \"i: 1, j: 2\" violates primary key constraint.*", "origin": "alter/add_pk/test_add_multi_column_pk.test:20"}
+{"sql": "INSERT INTO test VALUES (NULL, 2, 'nada');", "expectedError": "<REGEX>:Constraint Error.*NOT NULL constraint failed: test.i.*", "origin": "alter/add_pk/test_add_multi_column_pk.test:25"}
+{"sql": "INSERT INTO test VALUES (2, 1);", "expectedError": "<REGEX>:Constraint Error.*Duplicate key \"j: 1\" violates primary key constraint.*", "origin": "alter/add_pk/test_add_pk.test:25"}
+{"sql": "INSERT INTO test VALUES (2, NULL);", "expectedError": "<REGEX>:Constraint Error.*NOT NULL constraint failed.*", "origin": "alter/add_pk/test_add_pk.test:30"}
+{"sql": "ALTER TABLE test ADD PRIMARY KEY (i);", "expectedError": "<REGEX>:Constraint Error.*contains duplicates on indexed column.*", "origin": "alter/add_pk/test_add_pk.test:37"}
+{"sql": "ALTER TABLE test ADD PRIMARY KEY (j);", "expectedError": "<REGEX>:Catalog Error.*an index with that name already exists for this table: PRIMARY_test_j.*", "origin": "alter/add_pk/test_add_pk.test:42"}
+{"sql": "INSERT INTO reverse VALUES (1, 2);", "expectedError": "<REGEX>:Constraint Error.*Duplicate key \"j: 2, i: 1\" violates primary key constraint.*", "origin": "alter/add_pk/test_add_pk.test:58"}
+{"sql": "INSERT INTO reverse (j, i) VALUES (2, 1);", "expectedError": "<REGEX>:Constraint Error.*Duplicate key \"j: 2, i: 1\" violates primary key constraint.*", "origin": "alter/add_pk/test_add_pk.test:63"}
+{"sql": "INSERT INTO test VALUES (2, 1);", "expectedError": "<REGEX>:Constraint Error.*violates primary key constraint.*", "origin": "alter/add_pk/test_add_pk_alter_in_tx.test:25"}
+{"sql": "INSERT INTO test VALUES (2, 1);", "expectedError": "<REGEX>:Constraint Error.*violates primary key constraint.*", "origin": "alter/add_pk/test_add_pk_alter_in_tx.test:33"}
+{"sql": "ALTER TABLE test ADD PRIMARY KEY (i_do_not_exist);", "expectedError": "<REGEX>:Catalog Error.*table \"test\" does not have a column named \"i_do_not_exist\".*", "origin": "alter/add_pk/test_add_pk_catalog_error.test:11"}
+{"sql": "ALTER TABLE i_do_not_exist ADD PRIMARY KEY (i, j);", "expectedError": "<REGEX>:Catalog Error.*Table with name i_do_not_exist does not exist!.*", "origin": "alter/add_pk/test_add_pk_catalog_error.test:16"}
+{"sql": "INSERT INTO uniq VALUES (1, 100);", "expectedError": "<REGEX>:Constraint Error.*Duplicate key \"i: 1\" violates unique constraint.*", "origin": "alter/add_pk/test_add_pk_catalog_error.test:29"}
+{"sql": "INSERT INTO uniq VALUES (1, 101);", "expectedError": "<REGEX>:Constraint Error.*Duplicate key \"i: 1\" violates.*constraint.*", "origin": "alter/add_pk/test_add_pk_catalog_error.test:37"}
+{"sql": "INSERT INTO uniq VALUES (NULL, 100);", "expectedError": "<REGEX>:Constraint Error.*NOT NULL constraint failed: uniq.i.*", "origin": "alter/add_pk/test_add_pk_catalog_error.test:42"}
+{"sql": "INSERT INTO test VALUES (2, 1);", "expectedError": "<REGEX>:Constraint Error.*Duplicate key \"j: 1\" violates primary key constraint.*", "origin": "alter/add_pk/test_add_pk_commit.test:23"}
+{"sql": "ALTER TABLE duplicates ADD PRIMARY KEY (i);", "expectedError": "<REGEX>:Constraint Error.*contains duplicates on indexed column.*", "origin": "alter/add_pk/test_add_pk_invalid_data.test:14"}
+{"sql": "ALTER TABLE nulls ADD PRIMARY KEY (i, j);", "expectedError": "<REGEX>:Constraint Error.*NOT NULL constraint failed.*", "origin": "alter/add_pk/test_add_pk_invalid_data.test:27"}

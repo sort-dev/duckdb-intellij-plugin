@@ -9,12 +9,6 @@ version = "0.1.0"
 
 repositories {
     mavenCentral()
-    // dev.brikk snapshots (quack-jdbc pre-release builds) — Central Portal snapshots, scoped
-    // tightly so no other dependency ever resolves from a snapshots repo.
-    maven("https://central.sonatype.com/repository/maven-snapshots/") {
-        mavenContent { snapshotsOnly() }
-        content { includeGroupByRegex("""dev\.brikk.*""") }
-    }
     intellijPlatform {
         defaultRepositories()
     }
@@ -33,11 +27,11 @@ dependencies {
     // TESTS ONLY: the GizmoSQL quack driver (brikk build) — QuackDriverFactsTest extracts the
     // driver class and URL scheme from the jar itself (acceptsURL needs no server), keeping
     // config/duckdb-brikk-drivers.xml honest. The plugin does not bundle or link this jar.
-    testImplementation("dev.brikk.duckdb:quack-jdbc:0.3.0-brikk-SNAPSHOT")
+    testImplementation("dev.brikk.duckdb:quack-jdbc:0.3.0")
 
     // TESTS ONLY (for now): the sqllogictest format layer + expander — powers the upstream
     // duckdb test/sql census harvest (SltHarvestSmokeTest exercises the API contract).
-    testImplementation("dev.brikk.ducklake:slt-format:0.2.0-SNAPSHOT")
+    testImplementation("dev.brikk.ducklake:slt-format:0.2.0")
 
     intellijPlatform {
         // Same platform window as doris-intellij: compiled against DataGrip 2026.1 (build 261),
@@ -94,4 +88,29 @@ kotlin {
     compilerOptions {
         jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
     }
+}
+
+// --- census harvest tooling (manual task; output is committed corpus) ---
+
+sourceSets {
+    create("tools")
+}
+
+dependencies {
+    "toolsImplementation"("dev.brikk.ducklake:slt-format:0.2.0")
+}
+
+// Usage: ./gradlew harvestCensus [-PduckdbSrc=/path/to/duckdb-checkout]
+// Reads <duckdbSrc>/test/sql/**.test, samples per family via slt-format, writes
+// src/test/resources/corpus/census/ + census-negatives.jsonl. Commit the output.
+val harvestCensus by tasks.registering(JavaExec::class) {
+    classpath = sourceSets["tools"].runtimeClasspath
+    mainClass = "dev.sort.duckdb.tools.SltCensusHarvestKt"
+    val src = providers.gradleProperty("duckdbSrc")
+        .getOrElse(layout.projectDirectory.dir("../references/duckdb-upstream").asFile.absolutePath)
+    args(
+        src,
+        layout.projectDirectory.dir("src/test/resources/corpus/census").asFile.absolutePath,
+        layout.projectDirectory.file("src/test/resources/corpus/census-negatives.jsonl").asFile.absolutePath,
+    )
 }
