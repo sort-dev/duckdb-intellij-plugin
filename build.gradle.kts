@@ -35,6 +35,10 @@ dependencies {
     // config/duckdb-brikk-drivers.xml honest. The plugin does not bundle or link this jar.
     testImplementation("dev.brikk.duckdb:quack-jdbc:0.3.0-brikk-SNAPSHOT")
 
+    // TESTS ONLY (for now): the sqllogictest format layer + expander — powers the upstream
+    // duckdb test/sql census harvest (SltHarvestSmokeTest exercises the API contract).
+    testImplementation("dev.brikk.ducklake:slt-format:0.2.0-SNAPSHOT")
+
     intellijPlatform {
         // Same platform window as doris-intellij: compiled against DataGrip 2026.1 (build 261),
         // one artifact serving 261+262. Remote SDK so any clone/CI can build without an IDE.
