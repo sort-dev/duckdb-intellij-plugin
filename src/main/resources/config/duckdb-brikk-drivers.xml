@@ -26,7 +26,7 @@
          password field and stays in secure storage. No user concept. `tls` enables HTTPS
          (driver default false); tokenEnv/tokenFile/timeouts can be appended as extra params. -->
     <url-template name="default"
-      template="jdbc:quack://{host::localhost}[:{port::31337}][/{database:path}?][\?&lt;&amp;,password={password:param},tls={tls:param:false},{:identifier}={:param}&gt;]"/>
+      template="jdbc:quack://{host::localhost}[:{port::9494}][/{database:path}?][\?&lt;&amp;,password={password:param},tls={tls:param:false},{:identifier}={:param}&gt;]"/>
     <artifact name="Quack JDBC (Brikk)" use="true" rolling="true"/>
     <option name="auto-sync" value="true"/>
   </driver>
