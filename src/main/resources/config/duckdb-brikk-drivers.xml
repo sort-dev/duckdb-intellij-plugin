@@ -1,13 +1,14 @@
 <drivers>
-  <!-- Local/embedded DuckDB under the DuckDB (Brikk) dialect. Reuses DataGrip's built-in
-       downloadable DuckDB artifact BY NAME (DataGrip matches artifacts by name, not id;
-       rolling = latest published driver, which also serves the in-process metadata/validator
-       queries version-matched to what the user actually runs). -->
+  <!-- Local/embedded DuckDB under the DuckDB (Brikk) dialect. Uses OUR pinned
+       "DuckDB JDBC (Brikk)" artifact (config/duckdb-brikk-artifacts.xml) rather than DataGrip's
+       built-in "DuckDB" artifact: the built-in resolves from JetBrains' registry, which lags
+       Maven Central badly (their 1.3.1 vs Central's 1.5.5.0) — with our artifact, driver
+       auto-download always matches the engine version this plugin is built and graded against. -->
   <driver id="duckdb-brikk-native" name="DuckDB (Brikk) — Local" dialect="DuckDBBrikk"
           forced-dbms="DUCKDB_BRIKK" driver-class="org.duckdb.DuckDBDriver">
     <url-template name="default" template="jdbc:duckdb:{file::identifier.db}"/>
     <url-template name="In-memory" template="jdbc:duckdb:"/>
-    <artifact name="DuckDB" use="true" rolling="true"/>
+    <artifact name="DuckDB JDBC (Brikk)" use="true" rolling="true"/>
     <option name="auto-sync" value="true"/>
   </driver>
 
