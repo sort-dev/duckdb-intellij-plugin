@@ -1,11 +1,11 @@
--- from settings/default_null_order_extended.test:5
+-- from settings/allowed_configs.test:5
 PRAGMA enable_verification;
 
--- from settings/default_null_order_extended.test:8
-CREATE TABLE integers(i integer);
+-- from settings/allowed_configs.test:31
+SET allowed_configs=['TimeZone'];
 
--- from settings/default_null_order_extended.test:11
-INSERT INTO integers VALUES (1), (2), (3), (NULL);
+-- from settings/allowed_configs.test:34
+SET allowed_configs=['pivot_limit', 'EXPLAIN_output', 'memory_limit'];
 
--- from settings/default_null_order_extended.test:15
-SET default_null_order='nulls_first';
+-- from settings/allowed_configs.test:37
+SET lock_configuration=true;

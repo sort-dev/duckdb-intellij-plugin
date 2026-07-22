@@ -8,6 +8,4 @@ CREATE TABLE test(x INT);
 SET merge_join_threshold=0;
 
 -- from join/iejoin/iejoin_issue_6861.test:14
-SELECT * 
-FROM test AS a, test AS b 
-WHERE (a.x BETWEEN b.x AND b.x);
+SET nested_loop_join_threshold=0;

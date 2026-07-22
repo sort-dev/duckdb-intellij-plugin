@@ -36,11 +36,25 @@
 {"sql": "SELECT LAST(1, 2);", "expectedError": null, "origin": "aggregate/aggregates/test_aggregate_types_scalar.test:97"}
 {"sql": "SELECT AVG(True);", "expectedError": null, "origin": "aggregate/aggregates/test_aggregate_types_scalar.test:106"}
 {"sql": "SELECT AVG('hello');", "expectedError": null, "origin": "aggregate/aggregates/test_aggregate_types_scalar.test:110"}
-{"sql": "SELECT AVG(DATE '1992-02-02');", "expectedError": null, "origin": "aggregate/aggregates/test_aggregate_types_scalar.test:114"}
-{"sql": "SELECT AVG();", "expectedError": null, "origin": "aggregate/aggregates/test_aggregate_types_scalar.test:118"}
-{"sql": "SELECT AVG(1, 2);", "expectedError": null, "origin": "aggregate/aggregates/test_aggregate_types_scalar.test:122"}
-{"sql": "SELECT STRING_AGG();", "expectedError": null, "origin": "aggregate/aggregates/test_aggregate_types_scalar.test:136"}
-{"sql": "SELECT STRING_AGG(1, 2, 3);", "expectedError": null, "origin": "aggregate/aggregates/test_aggregate_types_scalar.test:140"}
+{"sql": "SELECT AVG();", "expectedError": null, "origin": "aggregate/aggregates/test_aggregate_types_scalar.test:119"}
+{"sql": "SELECT AVG(1, 2);", "expectedError": null, "origin": "aggregate/aggregates/test_aggregate_types_scalar.test:123"}
+{"sql": "SELECT STRING_AGG();", "expectedError": null, "origin": "aggregate/aggregates/test_aggregate_types_scalar.test:137"}
+{"sql": "SELECT STRING_AGG(1, 2, 3);", "expectedError": null, "origin": "aggregate/aggregates/test_aggregate_types_scalar.test:141"}
+{"sql": "SELECT approx_quantile(r, -0.1) FROM quantile;", "expectedError": null, "origin": "aggregate/aggregates/test_approx_quantile.test:174"}
+{"sql": "SELECT approx_quantile(r, 1.1) FROM quantile;", "expectedError": null, "origin": "aggregate/aggregates/test_approx_quantile.test:178"}
+{"sql": "SELECT approx_quantile(r, NULL) FROM quantile;", "expectedError": null, "origin": "aggregate/aggregates/test_approx_quantile.test:182"}
+{"sql": "SELECT approx_quantile(r, r) FROM quantile;", "expectedError": null, "origin": "aggregate/aggregates/test_approx_quantile.test:186"}
+{"sql": "SELECT approx_quantile(r::string, 0.5) FROM quantile;", "expectedError": null, "origin": "aggregate/aggregates/test_approx_quantile.test:190"}
+{"sql": "SELECT approx_quantile(r) FROM quantile;", "expectedError": null, "origin": "aggregate/aggregates/test_approx_quantile.test:194"}
+{"sql": "SELECT approx_quantile(r, 0.1, 0.2) FROM quantile;", "expectedError": null, "origin": "aggregate/aggregates/test_approx_quantile.test:198"}
+{"sql": "SELECT approx_quantile(42, CAST(NULL AS INT[]));", "expectedError": "APPROXIMATE QUANTILE parameter list cannot be NULL", "origin": "aggregate/aggregates/test_approx_quantile.test:202"}
+{"sql": "SELECT reservoir_quantile(r, r)  from quantile;", "expectedError": null, "origin": "aggregate/aggregates/test_approx_quantile.test:289"}
+{"sql": "SELECT reservoir_quantile(r, NULL)  from quantile;", "expectedError": null, "origin": "aggregate/aggregates/test_approx_quantile.test:293"}
+{"sql": "SELECT reservoir_quantile(r, r, r)  from quantile;", "expectedError": null, "origin": "aggregate/aggregates/test_approx_quantile.test:297"}
+{"sql": "SELECT reservoir_quantile(r, 0.9, NULL)  from quantile;", "expectedError": null, "origin": "aggregate/aggregates/test_approx_quantile.test:301"}
+{"sql": "SELECT reservoir_quantile(r, 0.9, r)  from quantile;", "expectedError": null, "origin": "aggregate/aggregates/test_approx_quantile.test:305"}
+{"sql": "SELECT reservoir_quantile(r, random()::float)  from quantile;", "expectedError": null, "origin": "aggregate/aggregates/test_approx_quantile.test:309"}
+{"sql": "SELECT reservoir_quantile(r, 0.9, random()::float)  from quantile;", "expectedError": null, "origin": "aggregate/aggregates/test_approx_quantile.test:313"}
 {"sql": "select approx_count_distinct(*);", "expectedError": null, "origin": "aggregate/aggregates/test_approximate_distinct_count.test:11"}
 {"sql": "select argmin();", "expectedError": null, "origin": "aggregate/aggregates/test_arg_min_max.test:12"}
 {"sql": "select argmin(*);", "expectedError": null, "origin": "aggregate/aggregates/test_arg_min_max.test:26"}
@@ -50,8 +64,26 @@
 {"sql": "select arg_min_null(*);", "expectedError": null, "origin": "aggregate/aggregates/test_arg_min_max_null.test:26"}
 {"sql": "select arg_max_null();", "expectedError": null, "origin": "aggregate/aggregates/test_arg_min_max_null.test:40"}
 {"sql": "select arg_max_null(*);", "expectedError": null, "origin": "aggregate/aggregates/test_arg_min_max_null.test:54"}
+{"sql": "SELECT AVG();", "expectedError": null, "origin": "aggregate/aggregates/test_avg.test:97"}
+{"sql": "SELECT AVG(1, 2, 3);", "expectedError": null, "origin": "aggregate/aggregates/test_avg.test:101"}
+{"sql": "SELECT AVG(AVG(1));", "expectedError": null, "origin": "aggregate/aggregates/test_avg.test:105"}
 {"sql": "SELECT histogram(n, [10, 20, NULL]) FROM obs;", "expectedError": "Histogram bin entry cannot be NULL", "origin": "aggregate/aggregates/test_binned_histogram.test:124"}
 {"sql": "SELECT histogram(n, NULL::BIGINT[]) FROM obs;", "expectedError": "Histogram bin list cannot be NULL", "origin": "aggregate/aggregates/test_binned_histogram.test:130"}
+{"sql": "SELECT BIT_AND();", "expectedError": null, "origin": "aggregate/aggregates/test_bit_and.test:48"}
+{"sql": "SELECT BIT_AND(1, 2, 3);", "expectedError": null, "origin": "aggregate/aggregates/test_bit_and.test:52"}
+{"sql": "SELECT BIT_AND(BIT_AND(1));", "expectedError": null, "origin": "aggregate/aggregates/test_bit_and.test:56"}
+{"sql": "SELECT BIT_OR();", "expectedError": null, "origin": "aggregate/aggregates/test_bit_or.test:48"}
+{"sql": "SELECT BIT_OR(1, 2, 3);", "expectedError": null, "origin": "aggregate/aggregates/test_bit_or.test:52"}
+{"sql": "SELECT BIT_OR(BIT_AND(1));", "expectedError": null, "origin": "aggregate/aggregates/test_bit_or.test:56"}
+{"sql": "SELECT BIT_XOR();", "expectedError": null, "origin": "aggregate/aggregates/test_bit_xor.test:48"}
+{"sql": "SELECT BIT_XOR(1, 2, 3);", "expectedError": null, "origin": "aggregate/aggregates/test_bit_xor.test:52"}
+{"sql": "SELECT BIT_XOR(BIT_XOR(1));", "expectedError": null, "origin": "aggregate/aggregates/test_bit_xor.test:56"}
+{"sql": "SELECT BITSTRING_AGG(i, -10, 20) FROM ints;", "expectedError": "Out of Range Error: Value 30 is outside of provided min and max range (-10 <-> 20)", "origin": "aggregate/aggregates/test_bitstring_agg.test:145"}
+{"sql": "SELECT BITSTRING_AGG(i, 2, 15) FROM tinyints;", "expectedError": "Out of Range Error: Value 1 is outside of provided min and max range (2 <-> 15)", "origin": "aggregate/aggregates/test_bitstring_agg.test:155"}
+{"sql": "SELECT BITSTRING_AGG(column0) FROM '/tmp/duckdb_test/bitstring_agg.csv';", "expectedError": "Binder Error: Could not retrieve required statistics. Alternatively, try by providing the statistics explicitly: BITSTRING_AGG(col, min, max)", "origin": "aggregate/aggregates/test_bitstring_agg.test:201"}
+{"sql": "SELECT BITSTRING_AGG();", "expectedError": null, "origin": "aggregate/aggregates/test_bitstring_agg.test:212"}
+{"sql": "SELECT BITSTRING_AGG(1, 3, 4, 8, 0);", "expectedError": null, "origin": "aggregate/aggregates/test_bitstring_agg.test:216"}
+{"sql": "SELECT BITSTRING_AGG(i) FROM ints;", "expectedError": "Binder Error: Could not retrieve required statistics. Alternatively, try by providing the statistics explicitly: BITSTRING_AGG(col, min, max)", "origin": "aggregate/aggregates/test_bitstring_agg.test:239"}
 {"sql": "select bool_or(0);", "expectedError": null, "origin": "aggregate/aggregates/test_bool.test:9"}
 {"sql": "select bool_and(0);", "expectedError": null, "origin": "aggregate/aggregates/test_bool.test:13"}
 {"sql": "select bool_or();", "expectedError": null, "origin": "aggregate/aggregates/test_bool.test:27"}
@@ -62,7 +94,7 @@
 {"sql": "select corr(*);", "expectedError": null, "origin": "aggregate/aggregates/test_corr.test:23"}
 {"sql": "SELECT corr(a,b) FROM (values (1e301, 0), (-1e301, 0)) tbl(a,b);", "expectedError": null, "origin": "aggregate/aggregates/test_corr.test:55"}
 {"sql": "SELECT corr(b,a) FROM (values (1e301, 0), (-1e301, 0)) tbl(a,b);", "expectedError": null, "origin": "aggregate/aggregates/test_corr.test:59"}
-{"sql": "SELECT COUNT(DISTINCT *) FROM integers;", "expectedError": null, "origin": "aggregate/aggregates/test_count.test:42"}
+{"sql": "SELECT COUNT(DISTINCT *) FROM integers;", "expectedError": "Binder Error: STAR expression is only allowed as the root element", "origin": "aggregate/aggregates/test_count.test:42"}
 {"sql": "SELECT COVAR_POP();", "expectedError": null, "origin": "aggregate/aggregates/test_covar.test:6"}
 {"sql": "SELECT COVAR_POP(1, 2, 3);", "expectedError": null, "origin": "aggregate/aggregates/test_covar.test:10"}
 {"sql": "SELECT COVAR_POP(COVAR_POP(1));", "expectedError": null, "origin": "aggregate/aggregates/test_covar.test:14"}
@@ -73,23 +105,23 @@
 {"sql": "select entropy(*);", "expectedError": null, "origin": "aggregate/aggregates/test_entropy.test:26"}
 {"sql": "select histogram();", "expectedError": null, "origin": "aggregate/aggregates/test_histogram.test:125"}
 {"sql": "select histogram(*);", "expectedError": null, "origin": "aggregate/aggregates/test_histogram.test:129"}
-{"sql": "SELECT COUNT(1, 2, 3);", "expectedError": null, "origin": "aggregate/aggregates/test_incorrect_aggregate.test:5"}
-{"sql": "SELECT COUNT(COUNT(1));", "expectedError": null, "origin": "aggregate/aggregates/test_incorrect_aggregate.test:9"}
-{"sql": "SELECT STDDEV_SAMP();", "expectedError": null, "origin": "aggregate/aggregates/test_incorrect_aggregate.test:13"}
-{"sql": "SELECT STDDEV_SAMP(1, 2, 3);", "expectedError": null, "origin": "aggregate/aggregates/test_incorrect_aggregate.test:17"}
-{"sql": "SELECT STDDEV_SAMP(STDDEV_SAMP(1));", "expectedError": null, "origin": "aggregate/aggregates/test_incorrect_aggregate.test:21"}
-{"sql": "SELECT SUM();", "expectedError": null, "origin": "aggregate/aggregates/test_incorrect_aggregate.test:25"}
-{"sql": "SELECT SUM(1, 2, 3);", "expectedError": null, "origin": "aggregate/aggregates/test_incorrect_aggregate.test:29"}
-{"sql": "SELECT SUM(SUM(1));", "expectedError": null, "origin": "aggregate/aggregates/test_incorrect_aggregate.test:33"}
-{"sql": "SELECT FIRST();", "expectedError": null, "origin": "aggregate/aggregates/test_incorrect_aggregate.test:37"}
-{"sql": "SELECT FIRST(1, 2, 3);", "expectedError": null, "origin": "aggregate/aggregates/test_incorrect_aggregate.test:41"}
-{"sql": "SELECT FIRST(FIRST(1));", "expectedError": null, "origin": "aggregate/aggregates/test_incorrect_aggregate.test:45"}
-{"sql": "SELECT MAX();", "expectedError": null, "origin": "aggregate/aggregates/test_incorrect_aggregate.test:49"}
-{"sql": "SELECT MAX(1, 2, 3);", "expectedError": null, "origin": "aggregate/aggregates/test_incorrect_aggregate.test:53"}
-{"sql": "SELECT MAX(MAX(1));", "expectedError": null, "origin": "aggregate/aggregates/test_incorrect_aggregate.test:57"}
-{"sql": "SELECT MIN();", "expectedError": null, "origin": "aggregate/aggregates/test_incorrect_aggregate.test:61"}
-{"sql": "SELECT MIN(1, 2, 3);", "expectedError": null, "origin": "aggregate/aggregates/test_incorrect_aggregate.test:65"}
-{"sql": "SELECT MIN(MIN(1));", "expectedError": null, "origin": "aggregate/aggregates/test_incorrect_aggregate.test:69"}
+{"sql": "SELECT COUNT(1, 2, 3);", "expectedError": "Binder Error: No function matches the given name and argument types 'count", "origin": "aggregate/aggregates/test_incorrect_aggregate.test:5"}
+{"sql": "SELECT COUNT(COUNT(1));", "expectedError": "Binder Error: aggregate function calls cannot be nested", "origin": "aggregate/aggregates/test_incorrect_aggregate.test:10"}
+{"sql": "SELECT STDDEV_SAMP();", "expectedError": "Binder Error: No function matches the given name and argument types 'stddev_samp", "origin": "aggregate/aggregates/test_incorrect_aggregate.test:15"}
+{"sql": "SELECT STDDEV_SAMP(1, 2, 3);", "expectedError": "Binder Error: No function matches the given name and argument types 'stddev_samp", "origin": "aggregate/aggregates/test_incorrect_aggregate.test:20"}
+{"sql": "SELECT STDDEV_SAMP(STDDEV_SAMP(1));", "expectedError": "Binder Error: aggregate function calls cannot be nested", "origin": "aggregate/aggregates/test_incorrect_aggregate.test:25"}
+{"sql": "SELECT SUM();", "expectedError": "Binder Error: No function matches the given name and argument types 'sum", "origin": "aggregate/aggregates/test_incorrect_aggregate.test:30"}
+{"sql": "SELECT SUM(1, 2, 3);", "expectedError": "Binder Error: No function matches the given name and argument types 'sum", "origin": "aggregate/aggregates/test_incorrect_aggregate.test:35"}
+{"sql": "SELECT SUM(SUM(1));", "expectedError": "Binder Error: aggregate function calls cannot be nested", "origin": "aggregate/aggregates/test_incorrect_aggregate.test:40"}
+{"sql": "SELECT FIRST();", "expectedError": "Binder Error: No function matches the given name and argument types 'first", "origin": "aggregate/aggregates/test_incorrect_aggregate.test:45"}
+{"sql": "SELECT FIRST(1, 2, 3);", "expectedError": "Binder Error: No function matches the given name and argument types 'first", "origin": "aggregate/aggregates/test_incorrect_aggregate.test:50"}
+{"sql": "SELECT FIRST(FIRST(1));", "expectedError": "Binder Error: aggregate function calls cannot be nested", "origin": "aggregate/aggregates/test_incorrect_aggregate.test:55"}
+{"sql": "SELECT MAX();", "expectedError": "Binder Error: No function matches the given name and argument types 'max", "origin": "aggregate/aggregates/test_incorrect_aggregate.test:60"}
+{"sql": "SELECT MAX(1, 2, 3);", "expectedError": "Binder Error: No function matches the given name and argument types 'max", "origin": "aggregate/aggregates/test_incorrect_aggregate.test:65"}
+{"sql": "SELECT MAX(MAX(1));", "expectedError": "Binder Error: aggregate function calls cannot be nested", "origin": "aggregate/aggregates/test_incorrect_aggregate.test:70"}
+{"sql": "SELECT MIN();", "expectedError": "Binder Error: No function matches the given name and argument types 'min", "origin": "aggregate/aggregates/test_incorrect_aggregate.test:75"}
+{"sql": "SELECT MIN(1, 2, 3);", "expectedError": "Binder Error: No function matches the given name and argument types 'min", "origin": "aggregate/aggregates/test_incorrect_aggregate.test:80"}
+{"sql": "SELECT MIN(MIN(1));", "expectedError": "Binder Error: aggregate function calls cannot be nested", "origin": "aggregate/aggregates/test_incorrect_aggregate.test:85"}
 {"sql": "select kurtosis();", "expectedError": null, "origin": "aggregate/aggregates/test_kurtosis.test:9"}
 {"sql": "select kurtosis(*);", "expectedError": null, "origin": "aggregate/aggregates/test_kurtosis.test:23"}
 {"sql": "select kurtosis(i) from (values (2e304), (2e305), (2e306), (2e307)) tbl(i);", "expectedError": null, "origin": "aggregate/aggregates/test_kurtosis.test:33"}
@@ -116,40 +148,27 @@
 {"sql": "SELECT percentile_disc([-.25, .5, .75]) WITHIN GROUP (order by col DESC) \nFROM VALUES (11000), (3100), (2900), (2800), (2600), (2500) AS tab(col);", "expectedError": null, "origin": "aggregate/aggregates/test_ordered_aggregates.test:191"}
 {"sql": "select product();", "expectedError": null, "origin": "aggregate/aggregates/test_product.test:6"}
 {"sql": "select product(*);", "expectedError": null, "origin": "aggregate/aggregates/test_product.test:20"}
-{"sql": "SELECT quantile_cont(r, NULL) FROM quantile;", "expectedError": null, "origin": "aggregate/aggregates/test_quantile_cont.test:18"}
-{"sql": "SELECT quantile_cont(interval (r/100) second, 0.5) FROM quantile;", "expectedError": null, "origin": "aggregate/aggregates/test_quantile_cont.test:112"}
-{"sql": "SELECT quantile_cont(r, -1.1) FROM quantile;", "expectedError": null, "origin": "aggregate/aggregates/test_quantile_cont.test:150"}
-{"sql": "SELECT quantile_cont(r, 1.1) FROM quantile;", "expectedError": null, "origin": "aggregate/aggregates/test_quantile_cont.test:154"}
-{"sql": "SELECT quantile_cont(r, \"string\") FROM quantile;", "expectedError": null, "origin": "aggregate/aggregates/test_quantile_cont.test:158"}
-{"sql": "SELECT quantile_cont(r, NULL) FROM quantile;", "expectedError": null, "origin": "aggregate/aggregates/test_quantile_cont.test:162"}
-{"sql": "SELECT quantile_cont(r::string, 0.5) FROM quantile;", "expectedError": null, "origin": "aggregate/aggregates/test_quantile_cont.test:166"}
-{"sql": "SELECT quantile_cont(r) FROM quantile;", "expectedError": null, "origin": "aggregate/aggregates/test_quantile_cont.test:170"}
-{"sql": "SELECT quantile_cont(r, 0.1, 50) FROM quantile;", "expectedError": null, "origin": "aggregate/aggregates/test_quantile_cont.test:174"}
-{"sql": "SELECT quantile_cont(r, random()) FROM quantile;", "expectedError": null, "origin": "aggregate/aggregates/test_quantile_cont.test:321"}
-{"sql": "SELECT quantile_cont(interval (r/100) second, [0.25, 0.5, 0.75]) FROM quantiles;", "expectedError": null, "origin": "aggregate/aggregates/test_quantile_cont_list.test:41"}
-{"sql": "SELECT quantile_cont(r, [-0.25, 0.5, 0.75]) FROM quantiles;", "expectedError": null, "origin": "aggregate/aggregates/test_quantile_cont_list.test:142"}
-{"sql": "SELECT quantile_cont(r, (0.25, 0.5, 1.1)) FROM quantiles;", "expectedError": null, "origin": "aggregate/aggregates/test_quantile_cont_list.test:146"}
-{"sql": "SELECT quantile_cont(r, [0.25, 0.5, NULL]) FROM quantiles;", "expectedError": null, "origin": "aggregate/aggregates/test_quantile_cont_list.test:150"}
-{"sql": "SELECT quantile_cont(r, [\"0.25\", \"0.5\", \"0.75\"]) FROM quantiles;", "expectedError": null, "origin": "aggregate/aggregates/test_quantile_cont_list.test:154"}
-{"sql": "SELECT quantile_cont(r::string, [0.25, 0.5, 0.75]) FROM quantiles;", "expectedError": null, "origin": "aggregate/aggregates/test_quantile_cont_list.test:158"}
-{"sql": "SELECT quantile_cont(r, [0.25, 0.5, 0.75], 50) FROM quantiles;", "expectedError": null, "origin": "aggregate/aggregates/test_quantile_cont_list.test:162"}
-{"sql": "SELECT quantile_disc(r, -1.1) FROM quantile;", "expectedError": null, "origin": "aggregate/aggregates/test_quantile_disc.test:202"}
-{"sql": "SELECT quantile_disc(r, 1.1) FROM quantile;", "expectedError": null, "origin": "aggregate/aggregates/test_quantile_disc.test:206"}
-{"sql": "SELECT quantile_disc(r, \"string\") FROM quantile;", "expectedError": null, "origin": "aggregate/aggregates/test_quantile_disc.test:210"}
-{"sql": "SELECT quantile_disc(r, NULL) FROM quantile;", "expectedError": null, "origin": "aggregate/aggregates/test_quantile_disc.test:214"}
-{"sql": "SELECT quantile_disc(r) FROM quantile;", "expectedError": null, "origin": "aggregate/aggregates/test_quantile_disc.test:218"}
-{"sql": "SELECT quantile_disc(r, 0.1, 50) FROM quantile;", "expectedError": null, "origin": "aggregate/aggregates/test_quantile_disc.test:222"}
-{"sql": "SELECT quantile_cont(r, q) FROM quantile;", "expectedError": null, "origin": "aggregate/aggregates/test_quantile_disc.test:226"}
-{"sql": "SELECT quantile_disc(r, [-0.1, 0.5, 0.9]) FROM quantiles;", "expectedError": null, "origin": "aggregate/aggregates/test_quantile_disc_list.test:186"}
-{"sql": "SELECT quantile_disc(r, (0.1, 0.5, 1.1)) FROM quantiles;", "expectedError": null, "origin": "aggregate/aggregates/test_quantile_disc_list.test:190"}
-{"sql": "SELECT quantile_disc(r, [0.1, 0.5, NULL]) FROM quantiles;", "expectedError": null, "origin": "aggregate/aggregates/test_quantile_disc_list.test:194"}
-{"sql": "SELECT quantile_disc(r, [\"0.1\", \"0.5\", \"0.9\"]) FROM quantiles;", "expectedError": null, "origin": "aggregate/aggregates/test_quantile_disc_list.test:198"}
-{"sql": "SELECT quantile_disc(r, [0.1, 0.5, 0.9], 50) FROM quantiles;", "expectedError": null, "origin": "aggregate/aggregates/test_quantile_disc_list.test:202"}
-{"sql": "select regr_avgx();", "expectedError": null, "origin": "aggregate/aggregates/test_regression.test:19"}
-{"sql": "select regr_avgx(*);", "expectedError": null, "origin": "aggregate/aggregates/test_regression.test:23"}
-{"sql": "select regr_avgy();", "expectedError": null, "origin": "aggregate/aggregates/test_regression.test:27"}
+{"sql": "SELECT (sum(n) WITHIN GROUP(ORDER BY ABS(n)))::BIGINT FROM doubles;", "expectedError": "Parser Error: Unknown ordered aggregate \"sum\"", "origin": "aggregate/aggregates/test_sum.test:95"}
+{"sql": "SELECT GROUPING();", "expectedError": "Parser Error: syntax error at or near \")\"", "origin": "aggregate/grouping_sets/grouping.test:186"}
+{"sql": "SELECT GROUPING() FROM students;", "expectedError": "Parser Error: syntax error at or near \")\"", "origin": "aggregate/grouping_sets/grouping.test:191"}
+{"sql": "select course, count(*) from students group by rollup () order by 1, 2;", "expectedError": "<REGEX>:(.*Parser Error.*syntax error at or near.*|.*Parser Error.*CUBE or ROLLUP column list cannot be empty.*)", "origin": "aggregate/grouping_sets/rollup.test:131"}
+{"sql": "SELECT * FROM exam QUALIFY row_number() OVER w = 1 WINDOW w AS (ORDER BY mark);", "expectedError": "Parser Error: syntax error at or near \"WINDOW\"", "origin": "aggregate/qualify/test_qualify.test:198"}
+{"sql": "ALTER VIEW x ADD COLUMN i INTEGER;", "expectedError": "Parser Error", "origin": "alter/add_col/test_add_col_incorrect.test:19"}
+{"sql": "ALTER TABLE i ADD COLUMN j INT, ADD COLUMN k INT;", "expectedError": "Parser Error: Only one ALTER command per statement is supported", "origin": "alter/add_col/test_add_col_incorrect.test:25"}
+{"sql": "ALTER TABLE tbl1 RESET ('foo'='baz', 'buzz'='wizz');", "expectedError": "<REGEX>:(.*Parser Error.*\"'baz'\".*|.*Parser Error.* Reset option.*cannot set any value.*)", "origin": "alter/alter_table_set_table_options.test:38"}
+{"sql": "ALTER TABLE tbl1 RESET (foo='baz', buzz='wizz');", "expectedError": "<REGEX>:(.*Parser Error.*\"'baz'\".*|.*Parser Error.* Reset option.*cannot set any value.*)", "origin": "alter/alter_table_set_table_options.test:43"}
+{"sql": "ALTER TABLE tbl1 RESET ();", "expectedError": "<REGEX>:.*Parser Error.*syntax error.*", "origin": "alter/alter_table_set_table_options.test:48"}
+{"sql": "ALTER TABLE tbl1 SET ();", "expectedError": "<REGEX>:.*Parser Error.*syntax error.*", "origin": "alter/alter_table_set_table_options.test:53"}
 {"sql": "ALTER TABLE tbl ALTER col TYPE;", "expectedError": "<REGEX>:Parser Error.*Omitting the type is only possible in combination with USING.*", "origin": "alter/alter_type/test_alter_type.test:75"}
+{"sql": "ALTER DATABSE renamed_db RENAME TO system;", "expectedError": "Parser Error: syntax error at or near \"DATABSE\"", "origin": "alter/test_alter_database_rename.test:38"}
+{"sql": "ALTER DATABSE renamed_db RENAME TO temp;", "expectedError": "Parser Error: syntax error at or near \"DATABSE\"", "origin": "alter/test_alter_database_rename.test:43"}
+{"sql": "ALTER TABLE IF EXISTS t1 ALTER COLUMN IF EXISTS c0 TYPE varchar;", "expectedError": "Parser Error: syntax error at or near \"EXISTS\"", "origin": "alter/test_alter_if_exists.test:89"}
+{"sql": "USE new_name.my_schema.my_table;", "expectedError": "Parser Error: Expected \"USE database\" or \"USE database.schema\"", "origin": "attach/reattach_schema.test:77"}
+{"sql": "SELECT 5 as x, alias.123;", "expectedError": "Parser Error: syntax error at or near \".123\"", "origin": "binder/alias_qualification_errors.test:24"}
+{"sql": "SELECT \"hello world\".i FROM integers 'hello world';", "expectedError": "Parser Error: syntax error", "origin": "binder/test_string_alias.test:33"}
 {"sql": "COMMENT ON TABLE test IS 1337;", "expectedError": "Parser Error: syntax error", "origin": "catalog/comment_on.test:10"}
+{"sql": "COMMENT ON COLUMN col1 IS 'no bueno';", "expectedError": "Parser Error: Invalid column reference: 'col1'", "origin": "catalog/comment_on_extended.test:108"}
+{"sql": "COMMENT ON COLUMN galaxy.db.schema.table.col1 IS 'no bueno';", "expectedError": "<REGEX>:(.*Parser Error.*Invalid column reference.*'galaxy.db.\"schema\".\"table\".col1', too many dots.*|Parser Error.*Too many qualifications found.*)", "origin": "catalog/comment_on_extended.test:113"}
 {"sql": "COMMENT ON TABLE test IS 1337;", "expectedError": "Parser Error: syntax error", "origin": "catalog/comment_on_wal.test:18"}
 {"sql": "SELECT * FROM query(NULL);", "expectedError": "<REGEX>:Parser Error.*NULL.*", "origin": "catalog/function/query_function.test:80"}
 {"sql": "SELECT * FROM query(' ');", "expectedError": "Parser Error: Expected a single SELECT statement", "origin": "catalog/function/query_function.test:85"}
@@ -158,16 +177,69 @@
 {"sql": "SELECT * FROM query('SELECT 1; SELECT 2');", "expectedError": "Parser Error: Expected a single SELECT statement", "origin": "catalog/function/query_function.test:101"}
 {"sql": "SELECT query(SELECT 1);", "expectedError": "Parser Error: syntax error at or near \"SELECT\"", "origin": "catalog/function/query_function.test:107"}
 {"sql": "SELECT * FROM query('CREATE TABLE tbl (a INT)');", "expectedError": "Parser Error: Expected a single SELECT statement", "origin": "catalog/function/query_function.test:112"}
-{"sql": "FROM query_table(['']);", "expectedError": "Parser Error: syntax error at end of input", "origin": "catalog/function/query_function.test:180"}
-{"sql": "FROM query_table(SELECT 17 + 25);", "expectedError": "Parser Error: syntax error at or near \"SELECT\"", "origin": "catalog/function/query_function.test:237"}
+{"sql": "SELECT * FROM query('SELECT * FROM (PIVOT (SELECT 1 AS col) ON col using first(col))');", "expectedError": "Parser Error: PIVOT statements without explicit IN clauses are not supported in query() function. Please specify the pivot values explicitly, e.g.: PIVOT ... ON col IN (val1, val2, ...)", "origin": "catalog/function/query_function.test:124"}
+{"sql": "FROM query_table(['']);", "expectedError": "Parser Error: syntax error", "origin": "catalog/function/query_function.test:191"}
+{"sql": "FROM query_table(SELECT 17 + 25);", "expectedError": "Parser Error: syntax error at or near \"SELECT\"", "origin": "catalog/function/query_function.test:248"}
+{"sql": "CREATE MACRO card_select_val(_val_min, _val_min) as TABLE SELECT * FROM cards_tbl WHERE val>=_val_min AND val<=_val_max;", "expectedError": "Parser Error: Duplicate parameter", "origin": "catalog/function/test_table_macro_args.test:154"}
 {"sql": "insert into x(i) default values;", "expectedError": "Parser Error", "origin": "catalog/table/test_default_values.test:30"}
+{"sql": "CREATE TABLE integers(i INTEGER, PRIMARY KEY(i), PRIMARY KEY(i));", "expectedError": "Parser Error: table \"integers\" has more than one primary key", "origin": "catalog/test_incorrect_table_creation.test:16"}
+{"sql": "CREATE TABLE integers(i INTEGER PRIMARY KEY, PRIMARY KEY(i));", "expectedError": "Parser Error: table \"integers\" has more than one primary key", "origin": "catalog/test_incorrect_table_creation.test:21"}
+{"sql": "CREATE TABLE temp.integersy(i INTEGER);", "expectedError": "<REGEX>:.*Parser Error.*Only TEMPORARY.*", "origin": "catalog/test_temporary.test:34"}
+{"sql": "SELECT 999 FROM ORDER BY 1 COLLATE NOCASE;", "expectedError": "Parser Error: syntax error at or near \"ORDER\"", "origin": "collate/test_collate_orderby_column_number.test:25"}
+{"sql": "SELECT 'a' FROM ORDER BY -1 COLLATE NOCASE;", "expectedError": "Parser Error: syntax error at or near \"ORDER\"", "origin": "collate/test_collate_orderby_column_number.test:30"}
+{"sql": "SELECT 'a' FROM ORDER BY 0 COLLATE NOCASE;", "expectedError": "Parser Error: syntax error at or near \"ORDER\"", "origin": "collate/test_collate_orderby_column_number.test:35"}
+{"sql": "SELECT 'a' FROM ORDER BY -0 COLLATE NOCASE;", "expectedError": "Parser Error: syntax error at or near \"ORDER\"", "origin": "collate/test_collate_orderby_column_number.test:40"}
 {"sql": "CREATE TABLE collate_test(s INTEGER COLLATE blabla);", "expectedError": "Parser Error: Only VARCHAR columns can have collations!", "origin": "collate/test_unsupported_collations.test:12"}
-{"sql": "CREATE TABLE collate_test(s VARCHAR COLLATE 1);", "expectedError": "Parser Error: syntax error at or near \"1\"", "origin": "collate/test_unsupported_collations.test:21"}
 {"sql": "CREATE TABLE collate_test(s VARCHAR COLLATE 'hello');", "expectedError": "Parser Error: syntax error at or near \"'hello'\"", "origin": "collate/test_unsupported_collations.test:26"}
-{"sql": "with cte as (select 42 AS a) (DESCRIBE TABLE cte);", "expectedError": "Parser Error: exprLocation NOT IMPLEMENTED", "origin": "cte/cte_describe.test:26"}
-{"sql": "(DESCRIBE TABLE cte) ORDER BY 1;", "expectedError": "Parser Error: exprLocation NOT IMPLEMENTED", "origin": "cte/cte_describe.test:31"}
-{"sql": "select [a for a[1], b[2] in [1,2,3,4]];", "expectedError": "Parser Error: syntax error at or near \"[\"", "origin": "function/list/lambdas/list_comprehension.test:93"}
-{"sql": "SELECt list_reduce([1, 2], (len('abc') AS x, y) - > x + y);", "expectedError": "Parser Error: syntax error at or near \"AS\"", "origin": "function/list/lambdas/reduce.test:75"}
+{"sql": "CREATE TABLE tbl4 IF NOT EXISTS AS SELECT 4;", "expectedError": "Parser Error: syntax error at or near \"IF\"", "origin": "create/create_as.test:60"}
+{"sql": "CREATE OR REPLACE TABLE tbl4 IF NOT EXISTS AS SELECT 4;", "expectedError": "Parser Error: syntax error at or near \"IF\"", "origin": "create/create_as.test:65"}
+{"sql": "CREATE TABLE iceberg_table\nWITH (\n  location='s3://amzn-s3-demo-bucket/iceberg-folder',\n  table_type='ICEBERG',\n  format='parquet'\n)\nSORTED BY (date)\nPARTITIONED BY (id)\nas select range id, range::DATE date from range(10);", "expectedError": "<REGEX>:.*Parser Error.*", "origin": "create/create_as_partition_sorted_options.test:85"}
+{"sql": "CREATE OR REPLACE TABLE IF NOT EXISTS integers(i INTEGER);", "expectedError": "<REGEX>:(.*Parser Error: syntax error.*|.*Parser Error: Cannot specify both OR REPLACE and IF NOT EXISTS within single create statement.*)", "origin": "create/create_or_replace.test:28"}
+{"sql": "CREATE TABLE tbl AS EXECUTE tbl;", "expectedError": "<REGEX>:.*Parser Error.*requires a SELECT clause.*", "origin": "create/create_table_as_error.test:8"}
+{"sql": "CREATE TABLE s1.\"\"(i INTEGER);", "expectedError": "<REGEX>:(Parser Error.*zero-length delimited identifier at or near \"\"\"\".*|Parser Error: Empty table name not supported.*)", "origin": "create/create_table_empty_name.test:12"}
+{"sql": "CREATE TABLE iceberg_table (\n  id int,\n  data string,\n  category string)\nWITH (\n  location='s3://amzn-s3-demo-bucket/iceberg-folder',\n  table_type='ICEBERG',\n  format='parquet'\n)\nSORTED BY (date)\nPARTITIONED BY (id);", "expectedError": "<REGEX>:.*Parser Error.*", "origin": "create/create_table_extra_options.test:110"}
+{"sql": "with cte as (select 42 AS a) (DESCRIBE TABLE cte);", "expectedError": "<REGEX>:(.*Parser Error: exprLocation NOT IMPLEMENTED.*|.*Parser Error.*DESCRIBE with CTE not allowed - wrap the statement in a subquery instead.*)", "origin": "cte/cte_describe.test:26"}
+{"sql": "(DESCRIBE TABLE cte) ORDER BY 1;", "expectedError": "<REGEX>:(.*Parser Error: exprLocation NOT IMPLEMENTED.*|.*Parser Error.*DESCRIBE with ORDER BY not allowed - wrap the statement in a subquery instead.*)", "origin": "cte/cte_describe.test:31"}
+{"sql": "INSERT INTO table2 WITH cte AS (INSERT INTO table1 SELECT 1, 2 RETURNING id) SELECT id FROM cte;", "expectedError": "<REGEX>:.*Parser Error.*A CTE needs a SELECT.*", "origin": "cte/insert_cte_bug_3417.test:14"}
+{"sql": "with recursive t as MATERIALIZED (select 1 as x union all select x+1 from t where x < 3 order by x) select * from t;", "expectedError": "<REGEX>:.*Parser Error.*recursive query is not allowed.*", "origin": "cte/materialized/test_recursive_cte_union_all_materialized.test:97"}
+{"sql": "with recursive t as MATERIALIZED (select 1 as x union all select x+1 from t where x < 3 LIMIT 1) select * from t;", "expectedError": "<REGEX>:.*Parser Error.*recursive query is not allowed.*", "origin": "cte/materialized/test_recursive_cte_union_all_materialized.test:103"}
+{"sql": "with recursive t as MATERIALIZED (select 1 as x union all select x+1 from t where x < 3 OFFSET 1) select * from t;", "expectedError": "<REGEX>:.*Parser Error.*recursive query is not allowed.*", "origin": "cte/materialized/test_recursive_cte_union_all_materialized.test:109"}
+{"sql": "with recursive t as MATERIALIZED (select 1 as x union all select x+1 from t where x < 3 LIMIT 1 OFFSET 1) select * from t;", "expectedError": "<REGEX>:.*Parser Error.*recursive query is not allowed.*", "origin": "cte/materialized/test_recursive_cte_union_all_materialized.test:115"}
+{"sql": "SELEC 42;", "expectedError": "Parser Error: syntax error at or near \"SELEC\"", "origin": "error/incorrect_sql.test:6"}
+{"sql": "SELEC 42, 'thisisareallylongstringloremipsumblablathisisareallylongstringloremipsumblablalthisisareallylongstringloremipsumblablalthisisareallylongstringloremipsumblablal';", "expectedError": "Parser Error: syntax error at or near \"SELEC\"", "origin": "error/incorrect_sql.test:11"}
+{"sql": "SELEC 42, '🦆🦆🦆🦆🦆🦆🦆🦆🦆🦆🦆🦆🦆🦆🦆🦆🦆🦆🦆🦆🦆🦆🦆🦆🦆🦆🦆🦆🦆🦆🦆🦆🦆🦆🦆🦆🦆🦆🦆🦆🦆🦆🦆🦆🦆🦆🦆🦆🦆🦆🦆🦆🦆🦆🦆🦆🦆🦆🦆🦆🦆🦆🦆🦆';", "expectedError": "Parser Error: syntax error at or near \"SELEC\"", "origin": "error/incorrect_sql.test:16"}
+{"sql": "SELECT 42 WHERE 1=1 WHERE 1=0;", "expectedError": "Parser Error: syntax error at or near \"WHERE\"", "origin": "error/incorrect_sql.test:61"}
+{"sql": "SELECT 42\nSELECT 42;", "expectedError": "Parser Error: syntax error at or near \"SELECT\"", "origin": "error/incorrect_sql.test:67"}
+{"sql": "SELECT 42; SELEC 42;", "expectedError": "Parser Error: syntax error at or near \"SELEC\"", "origin": "error/incorrect_sql.test:74"}
+{"sql": "select [a for a[1], b[2] in [1,2,3,4]];", "expectedError": "Parser Error: syntax error at or near \"[\"", "origin": "function/list/lambdas/arrow/list_comprehension_deprecated.test:96"}
+{"sql": "SELECt list_reduce([1, 2], (len('abc') AS x, y) - > x + y);", "expectedError": "Parser Error: syntax error at or near \"AS\"", "origin": "function/list/lambdas/arrow/reduce_deprecated.test:83"}
+{"sql": "SELECt list_reduce([1, 2], (len('abc') AS x, y) - > x + y, 100);", "expectedError": "Parser Error: syntax error at or near \"AS\"", "origin": "function/list/lambdas/arrow/reduce_initial_deprecated.test:87"}
+{"sql": "SELECT list_apply(i, lambda a.x: a.x + 1) FROM (VALUES (list_value(1, 2, 3))) tbl(i);", "expectedError": "<REGEX>:Parser Error.*syntax error at or near.*", "origin": "function/list/lambdas/lambda_scope.test:50"}
+{"sql": "SELECT list_transform(qualified_tbl.x, lambda qualified_tbl.x: qualified_tbl.x + 1) FROM qualified_tbl;", "expectedError": "<REGEX>:Parser Error.*syntax error at or near.*", "origin": "function/list/lambdas/lambda_scope.test:66"}
+{"sql": "SELECT list_transform([1,2,3], lambda sqrt(xxx.z): xxx.z + 1) AS l ;", "expectedError": "<REGEX>:Parser Error.*syntax error at or near.*", "origin": "function/list/lambdas/lambda_scope.test:154"}
+{"sql": "SELECT list_reduce([1, 2, 3, 4], lambda x *++++++++* y: x - y) AS l;", "expectedError": "<REGEX>:Parser Error.*syntax error at or near.*", "origin": "function/list/lambdas/lambda_scope.test:165"}
+{"sql": "SELECT [a for a[1], b[2] in [1, 2, 3, 4]];", "expectedError": "Parser Error: syntax error at or near \"[\"", "origin": "function/list/lambdas/list_comprehension.test:86"}
+{"sql": "SELECt list_reduce([1, 2], (len('abc') AS x, y) - > x + y);", "expectedError": "Parser Error: syntax error at or near \"AS\"", "origin": "function/list/lambdas/reduce.test:80"}
+{"sql": "SELECt list_reduce([1, 2], (len('abc') AS x, y) - > x + y, 100);", "expectedError": "Parser Error: syntax error at or near \"AS\"", "origin": "function/list/lambdas/reduce_initial.test:84"}
+{"sql": "SELECT list_contains([[1,2,3],[1],[1,2,3]);", "expectedError": "Parser Error: syntax error at or near \")\"", "origin": "function/list/list_contains.test:224"}
+{"sql": "SELECT list_position([[1,2,3],[1],[1,2,3]);", "expectedError": "Parser Error: syntax error at or near \")\"", "origin": "function/list/list_position.test:276"}
+{"sql": "SELECT list_reverse ([1, 3, 2, 42, 117,, NULL]);", "expectedError": "Parser Error: syntax error at or near \",\"", "origin": "function/list/list_reverse.test:134"}
+{"sql": "SELECT s FROM strings WHERE s SIMILAR TO 'ab.*%' {escape ''};", "expectedError": "<REGEX>:.*Parser Error: syntax error.*", "origin": "function/string/test_similar_to.test:134"}
+{"sql": "SELECT NULL::VARCHAR[off:length+off] FROM strings;", "expectedError": "Parser Error", "origin": "function/string/test_string_slice.test:21"}
+{"sql": "SELECT NULL::VARCHAR[NULL:length+NULL] FROM strings;", "expectedError": "Parser Error", "origin": "function/string/test_string_slice.test:26"}
+{"sql": "SELECT NULL::VARCHAR[off:NULL+off] FROM strings;", "expectedError": "Parser Error", "origin": "function/string/test_string_slice.test:31"}
+{"sql": "SELECT NULL::VARCHAR[off:NULL+off] FROM strings;", "expectedError": "Parser Error", "origin": "function/string/test_string_slice.test:36"}
+{"sql": "SELECT NULL::VARCHAR[NULL:NULL+NULL] FROM strings;", "expectedError": "Parser Error", "origin": "function/string/test_string_slice.test:41"}
+{"sql": "select TRIM();", "expectedError": "Parser Error: syntax error at or near \")\"", "origin": "function/string/test_trim.test:133"}
+{"sql": "CREATE TABLE unit (\n    total_profit BOOLEAN GENERATED ALWAYS AS((SELECT 1)) VIRTUAL,\n    word VARCHAR,\n    price INTEGER,\n    amount_sold INTEGER,\n);", "expectedError": "<REGEX>:.*Parser Error.*isn't allowed.*", "origin": "generated_columns/virtual/create_table.test:51"}
+{"sql": "ALTER TABLE unit ADD COLUMN total_profit INTEGER DEFAULT 1 GENERATED ALWAYS AS (price * amount_sold) VIRTUAL;", "expectedError": "Parser Error: syntax error at or near \"GENERATED\"", "origin": "generated_columns/virtual/default.test:18"}
+{"sql": "ALTER TABLE unit ADD COLUMN total_profit INTEGER GENERATED ALWAYS AS (price * amount_sold) VIRTUAL;", "expectedError": "<REGEX>:.*Parser Error.*not supported.*", "origin": "generated_columns/virtual/drop_dependency.test:14"}
+{"sql": "INSERT INTO a VALUES (1,2),(3);", "expectedError": "<REGEX>:.*Parser Error.*must all be the same length.*", "origin": "insert/test_insert_invalid.test:32"}
+{"sql": "INSERT INTO a VALUES (1,2),(3,4,5);", "expectedError": "<REGEX>:.*Parser Error.*must all be the same length.*", "origin": "insert/test_insert_invalid.test:37"}
+{"sql": "SELECT t2.a, t2.b, t2.c FROM t1 JOIN t2 USING(a+b);", "expectedError": "Parser Error: syntax error at or near \"+\"", "origin": "join/inner/test_using_join.test:59"}
+{"sql": "SELECT t2.a, t2.b, t2.c FROM t1 JOIN t2 USING(\"\");", "expectedError": "<REGEX>:(.*Parser Error.*zero-length delimited identifier at or near \"\"\"\".*|Parser Error: Column identifier cannot be empty.*)", "origin": "join/inner/test_using_join.test:64"}
+{"sql": "SELECT t2.a, t2.b, t2.c FROM t1 JOIN t2 USING(t1.a);", "expectedError": "Parser Error: syntax error at or near \".\"", "origin": "join/inner/test_using_join.test:73"}
+{"sql": "WITH initial_stocks(item_id, balance) AS (VALUES (10, 2200), (20, 1900))\nMERGE INTO Stock USING initial_stocks ON (Stock.item_id = initial_stocks.item_id);", "expectedError": "Parser Error", "origin": "merge/merge_into.test:115"}
 {"sql": "PRAGMA default_null_order());", "expectedError": "<REGEX>:Parser Error.*syntax error.*", "origin": "order/test_nulls_first.test:119"}
 {"sql": "PRAGMA default_null_order='UNKNOWN';", "expectedError": "<REGEX>:Parser Error.*Unrecognized parameter for option.*", "origin": "order/test_nulls_first.test:124"}
 {"sql": "PRAGMA default_null_order=UNKNOWN);", "expectedError": "<REGEX>:Parser Error.*syntax error.*", "origin": "order/test_nulls_first.test:129"}
@@ -176,34 +248,3 @@
 {"sql": "PRAGMA default_order=UNKNOWN);", "expectedError": "<REGEX>:Parser Error.*syntax error.*", "origin": "order/test_order_pragma.test:46"}
 {"sql": "PRAGMA default_order=3);", "expectedError": "<REGEX>:Parser Error.*syntax error.*", "origin": "order/test_order_pragma.test:51"}
 {"sql": "FROM tbl PIVOT (c FOR IN enum_val);", "expectedError": "Parser Error", "origin": "pivot/pivot_errors.test:43"}
-{"sql": "PREPARE q2 AS\n\tCOPY (\n\t\tselect 42 as 'col'\n\t) to $1 (\n\t\tFORMAT csv\n\t);", "expectedError": "Parser Error: syntax error at or near \"$1\"", "origin": "prepared/prepare_copy.test:25"}
-{"sql": "INSERT INTO table1(a) VALUES (SELECT 42) RETURNING a, b, (select 10);", "expectedError": "<REGEX>:Parser Error.*syntax error.*", "origin": "returning/returning_insert.test:142"}
-{"sql": "INSERT INTO table1 SELECT * from table1 RETURNING row_number() OVER (ORDER BY a) as row_number, a, b FROM table1;", "expectedError": "<REGEX>:Parser Error.*syntax error.*", "origin": "returning/returning_insert.test:154"}
-{"sql": "SELECT 'j': 42;", "expectedError": "Parser Error", "origin": "select/test_select_alias_prefix_colon.test:23"}
-{"sql": "SELECT q1 FROM int8_tbl EXCEPT ALL SELECT q1 FROM int8_tbl FOR NO KEY UPDATE;", "expectedError": "<REGEX>:Parser Error.*SELECT locking clause is not supported.*", "origin": "setops/test_pg_union.test:341"}
-{"sql": "SELECT q1 FROM int8_tbl EXCEPT SELECT q2 FROM int8_tbl ORDER BY q2 LIMIT 1;", "expectedError": "<REGEX>:Parser Error.*SELECT locking clause is not supported.*", "origin": "setops/test_pg_union.test:456"}
-{"sql": "SET disabled_optimizers TO 'expression_rewriteX';", "expectedError": "<REGEX>:Parser Error.*Optimizer.*not recognized.*", "origin": "settings/setting_disabled_optimizer.test:17"}
-{"sql": "SET disabled_optimizers TO 'unknown_optimizer';", "expectedError": "<REGEX>:Parser Error.*Optimizer.*not recognized.*", "origin": "settings/setting_disabled_optimizer.test:22"}
-{"sql": "SET enable_profiling='unknown';", "expectedError": "<REGEX>:Parser Error.*Unrecognized print format.*", "origin": "settings/setting_exhaustive.test:47"}
-{"sql": "PRAGMA null_order='unknown_null_order';", "expectedError": "<REGEX>:Parser Error.*Unrecognized parameter for option.*", "origin": "settings/setting_null_order.test:31"}
-{"sql": "PRAGMA default_null_order='unknown_null_order';", "expectedError": "<REGEX>:Parser Error.*Unrecognized parameter for option.*", "origin": "settings/setting_null_order.test:31"}
-{"sql": "SET null_order='unknown_null_order';", "expectedError": "<REGEX>:Parser Error.*Unrecognized parameter for option.*", "origin": "settings/setting_null_order.test:31"}
-{"sql": "SET default_null_order='unknown_null_order';", "expectedError": "<REGEX>:Parser Error.*Unrecognized parameter for option.*", "origin": "settings/setting_null_order.test:31"}
-{"sql": "SELECT ('0101011'::BIT(10));", "expectedError": "<REGEX>:Parser Error.*Type BIT does not support any modifiers!.*", "origin": "types/bit/test_bit.test:114"}
-{"sql": "SELECT '0.1'::DECIMAL(3, 4);", "expectedError": "<REGEX>:Parser Error.*Scale cannot be bigger than width.*", "origin": "types/decimal/test_decimal.test:138"}
-{"sql": "SELECT '0.1'::DECIMAL('hello');", "expectedError": "<REGEX>:Parser Error.*Expected an integer constant.*", "origin": "types/decimal/test_decimal.test:144"}
-{"sql": "SELECT '0.1'::DECIMAL(-17);", "expectedError": "<REGEX>:Parser Error.*Negative modifier not supported.*", "origin": "types/decimal/test_decimal.test:150"}
-{"sql": "SELECT '0.1'::DECIMAL(1000);", "expectedError": "<REGEX>:Parser Error.*Width must be between.*", "origin": "types/decimal/test_decimal.test:156"}
-{"sql": "SELECT '0.1'::DECIMAL(1, 2, 3);", "expectedError": "<REGEX>:Parser Error.*A maximum of two modifiers.*", "origin": "types/decimal/test_decimal.test:161"}
-{"sql": "SELECT '1'::INTEGER(1000);", "expectedError": "<REGEX>:Parser Error.*syntax error.*", "origin": "types/decimal/test_decimal.test:166"}
-{"sql": "CREATE TABLE t1(a INT, b INT[4294967299]);", "expectedError": "Parser Error: syntax error at or near \"4294967299\"", "origin": "types/nested/array/array_invalid.test:17"}
-{"sql": "CREATE TABLE t1(a INT, b INT[2147483647]);", "expectedError": "Parser Error: Arrays must have a size of at most 100000", "origin": "types/nested/array/array_invalid.test:24"}
-{"sql": "UPDATE tbl SET () = (key, fruit);", "expectedError": "Parser Error: syntax error at or near \")\"", "origin": "update/test_multiple_assignment.test:73"}
-{"sql": "UPDATE tbl SET (key, fruit) = ();", "expectedError": "Parser Error: syntax error at or near \")\"", "origin": "update/test_multiple_assignment.test:78"}
-{"sql": "insert or replace into tbl values (4,3) on conflict do nothing;", "expectedError": "Parser Error: You can not provide both OR REPLACE|IGNORE and an ON CONFLICT clause, please remove the first if you want to have more granual control", "origin": "upsert/upsert_shorthand.test:17"}
-{"sql": "SELECT ABS(x IGNORE NULLS) FROM range(10) tbl(x);", "expectedError": "Parser Error: RESPECT/IGNORE NULLS is not supported for non-window functions", "origin": "window/test_ignore_nulls.test:335"}
-{"sql": "SELECT SUM(x IGNORE NULLS)\nFROM range(10) tbl(x);", "expectedError": "Parser Error: RESPECT/IGNORE NULLS is not supported for non-window functions", "origin": "window/test_ignore_nulls.test:341"}
-{"sql": "SELECT SUM(x IGNORE NULLS) OVER (PARTITION BY (x / 3) ORDER BY x % 3)\nFROM range(10) tbl(x);", "expectedError": "Parser Error: RESPECT/IGNORE NULLS is not supported for windowed aggregates", "origin": "window/test_ignore_nulls.test:348"}
-{"sql": "SELECT ABS(x RESPECT NULLS) FROM range(10) tbl(x);", "expectedError": "Parser Error: RESPECT/IGNORE NULLS is not supported for non-window functions", "origin": "window/test_ignore_nulls.test:335"}
-{"sql": "SELECT SUM(x RESPECT NULLS)\nFROM range(10) tbl(x);", "expectedError": "Parser Error: RESPECT/IGNORE NULLS is not supported for non-window functions", "origin": "window/test_ignore_nulls.test:341"}
-{"sql": "SELECT SUM(x RESPECT NULLS) OVER (PARTITION BY (x / 3) ORDER BY x % 3)\nFROM range(10) tbl(x);", "expectedError": "Parser Error: RESPECT/IGNORE NULLS is not supported for windowed aggregates", "origin": "window/test_ignore_nulls.test:348"}

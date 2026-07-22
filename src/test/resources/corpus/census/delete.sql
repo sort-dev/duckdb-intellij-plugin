@@ -1,11 +1,11 @@
--- from delete/large_deletes_transactions.test:5
-PRAGMA enable_verification;
+-- from delete/cleanup_delete_on_conflict.test:5
+CREATE TABLE tbl(i INTEGER);
 
--- from delete/large_deletes_transactions.test:8
-CREATE TABLE a AS SELECT * FROM range(1000000) t1(i);
+-- from delete/cleanup_delete_on_conflict.test:8
+INSERT INTO tbl FROM range(1000) t(i);
 
--- from delete/large_deletes_transactions.test:11
-BEGIN TRANSACTION;
+-- from delete/cleanup_delete_on_conflict.test:11
+SET immediate_transaction_mode=true;
 
--- from delete/large_deletes_transactions.test:14
-SELECT COUNT(*) FROM a;
+-- from delete/cleanup_delete_on_conflict.test:20
+DELETE FROM tbl WHERE i BETWEEN 200 AND 300;

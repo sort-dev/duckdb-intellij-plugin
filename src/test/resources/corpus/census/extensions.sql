@@ -1,5 +1,11 @@
--- from extensions/checked_load.test:10
-SET allow_extensions_metadata_mismatch=true;
+-- from extensions/allowed_directories_install.test:5
+set extension_directory='/tmp/duckdb_test/extension_dir';
 
--- from extensions/checked_load.test:24
-SET allow_unsigned_extensions=false;
+-- from extensions/allowed_directories_install.test:8
+SET allowed_directories=['/tmp/duckdb_test', 'http://', 'https://'];
+
+-- from extensions/allowed_directories_install.test:11
+SET enable_external_access=false;
+
+-- from extensions/allowed_directories_install.test:21
+set extension_directory='/tmp';

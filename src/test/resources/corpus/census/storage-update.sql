@@ -1,11 +1,12 @@
--- from storage/update/test_store_null_updates.test:8
-CREATE TABLE test (a INTEGER, b INTEGER);
+-- from storage/update/dictionary_update_null.test:8
+SET force_compression='dictionary';
 
--- from storage/update/test_store_null_updates.test:11
-INSERT INTO test VALUES (11, 22), (NULL, 22), (12, 21);
+-- from storage/update/dictionary_update_null.test:11
+CREATE OR REPLACE TABLE 'everflow_daily' AS SELECT case when i%10=0 THEN uuid()::VARCHAR ELSE 'N/A' END sub4 FROM range(10000) t(i);
 
--- from storage/update/test_store_null_updates.test:14
-UPDATE test SET b=b+1 WHERE a=11;
+-- from storage/update/dictionary_update_null.test:14
+UPDATE everflow_daily SET sub4 = NULL WHERE sub4 = 'N/A';
 
--- from storage/update/test_store_null_updates.test:19
-SELECT a, b FROM test ORDER BY a;
+-- from storage/update/dictionary_update_null.test:17
+select count(*) from everflow_daily
+where sub4 = 'N/A';

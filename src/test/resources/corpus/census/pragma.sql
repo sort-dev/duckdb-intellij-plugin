@@ -1,7 +1,7 @@
--- from pragma/pragma_database_size_readonly.test:8
+-- from pragma/pragma_database_size_readonly.test:7
 CREATE TABLE integers(i INTEGER);
 
--- from pragma/pragma_database_size_readonly.test:14
+-- from pragma/pragma_database_size_readonly.test:12
 PRAGMA database_size;
 
 -- from pragma/test_disabled_compression.test:7

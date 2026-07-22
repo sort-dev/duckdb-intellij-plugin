@@ -121,6 +121,7 @@ encoding
 encrypted
 end
 enum
+error
 escape
 event
 except
@@ -205,6 +206,7 @@ join
 json
 key
 label
+lambda
 language
 large
 last
@@ -226,8 +228,10 @@ macro
 map
 mapping
 match
+matched
 materialized
 maxvalue
+merge
 method
 microsecond
 microseconds
@@ -287,6 +291,7 @@ parallel
 parser
 partial
 partition
+partitioned
 passing
 password
 percent
@@ -376,6 +381,8 @@ skip
 smallint
 snapshot
 some
+sorted
+source
 sql
 stable
 standalone
@@ -399,6 +406,7 @@ table
 tables
 tablesample
 tablespace
+target
 temp
 template
 temporary
@@ -428,6 +436,7 @@ unique
 unknown
 unlisten
 unlogged
+unpack
 unpivot
 until
 update

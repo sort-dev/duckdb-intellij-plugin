@@ -2,7 +2,7 @@
 PRAGMA enable_verification;
 
 -- from copy/csv/unquoted_escape/basic.test:8
-SELECT * FROM read_csv('data/csv/unquoted_escape/plain.csv', escape = '\', sep = ',', strict_mode = false, nullstr = '\N');
+SELECT * FROM read_csv('{DATA_DIR}/csv/unquoted_escape/plain.csv', escape = '\', sep = ',', strict_mode = false, nullstr = '\N');
 
 -- from copy/csv/unquoted_escape/basic.test:22
 CREATE TABLE special_char(a INT, b STRING);

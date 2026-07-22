@@ -1,11 +1,11 @@
+-- from storage/compression/string/big_strings.test:5
+ATTACH '/tmp/duckdb_test/test_big_strings_new.db' AS db_v13 (STORAGE_VERSION 'v1.3.0');
+
 -- from storage/compression/string/big_strings.test:8
-pragma verify_fetch_row;
+ATTACH '/tmp/duckdb_test/test_big_strings_old.db' AS db_v1 (STORAGE_VERSION 'v1.0.0');
 
 -- from storage/compression/string/big_strings.test:13
-SET enable_fsst_vectors='true';
+USE db_v1;
 
--- from storage/compression/string/big_strings.test:18
+-- from storage/compression/string/big_strings.test:20
 PRAGMA force_compression='fsst';
-
--- from storage/compression/string/big_strings.test:22
-CREATE TABLE normal_string (a VARCHAR);

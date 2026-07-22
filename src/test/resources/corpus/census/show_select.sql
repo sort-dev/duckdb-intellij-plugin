@@ -1,11 +1,17 @@
--- from show_select/describe_subquery.test:5
-PRAGMA enable_verification;
+-- from show_select/describe_rowid.test:4
+create table sometable (
+	column1 varchar
+);
 
--- from show_select/describe_subquery.test:8
-SELECT column_name FROM (DESCRIBE SELECT 42 AS a);
+-- from show_select/describe_rowid.test:9
+insert into sometable values
+	('abc');
 
--- from show_select/describe_subquery.test:13
-SELECT t.column_name FROM (DESCRIBE SELECT 42 AS a) t;
+-- from show_select/describe_rowid.test:13
+create view someview as select
+	rowid as table_rowid,
+	*
+from sometable;
 
--- from show_select/describe_subquery.test:18
-(DESCRIBE SELECT 42 AS a);
+-- from show_select/describe_rowid.test:19
+select * from someview;

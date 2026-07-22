@@ -1,11 +1,11 @@
+-- from optimizer/plan/test_anti_join_empty_child.test:5
+pragma explain_output='OPTIMIZED_ONLY';
+
+-- from optimizer/plan/test_anti_join_empty_child.test:8
+SELECT lhs.id FROM (SELECT 1 id) lhs ANTI JOIN (SELECT 1 id WHERE FALSE) rhs ON lhs.id = rhs.id;
+
+-- from optimizer/plan/test_anti_join_empty_child.test:13
+EXPLAIN SELECT lhs.id FROM (SELECT 1 id) lhs ANTI JOIN (SELECT 1 id WHERE FALSE) rhs ON lhs.id = rhs.id;
+
 -- from optimizer/plan/test_disable_build_side_probe_side.test:5
 pragma explain_output='optimized_only';
-
--- from optimizer/plan/test_disable_build_side_probe_side.test:8
-set disabled_optimizers to 'build_side_probe_side';
-
--- from optimizer/plan/test_disable_build_side_probe_side.test:11
-explain from range(10) r1 right join range(10) r2 using (range);
-
--- from optimizer/plan/test_filter_pushdown.test:5
-SET default_null_order='nulls_first';

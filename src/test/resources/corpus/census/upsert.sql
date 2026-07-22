@@ -1,3 +1,6 @@
+-- from upsert/concurrent_insert_or_replace.test:4
+CREATE SCHEMA IF NOT EXISTS schema__test;
+
 -- from upsert/minimal_reproducable_example.test:4
 pragma enable_verification;
 
@@ -10,6 +13,3 @@ create or replace table tbl(
 
 -- from upsert/minimal_reproducable_example.test:16
 insert into tbl VALUES (1, 10, 1), (2, 20, 1), (3, 30, 2);
-
--- from upsert/minimal_reproducable_example.test:19
-select * from tbl;

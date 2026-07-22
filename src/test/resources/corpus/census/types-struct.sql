@@ -1,11 +1,11 @@
--- from types/struct/struct_case.test:5
-PRAGMA enable_verification;
+-- from types/struct/create_qualified_type_array.test:7
+create type u as struct (i int, j int);
 
--- from types/struct/struct_case.test:9
-SELECT CASE WHEN 1=1 THEN {'i': 1} ELSE {'i': 2} END;
+-- from types/struct/create_qualified_type_array.test:20
+select cast (null as u array);
 
--- from types/struct/struct_case.test:14
-SELECT CASE WHEN 1=0 THEN {'i': 1} ELSE {'i': 2} END;
+-- from types/struct/create_qualified_type_array.test:25
+select cast (null as main.u);
 
--- from types/struct/struct_case.test:20
-SELECT CASE WHEN 1=1 THEN NULL ELSE {'i': 2} END;
+-- from types/struct/create_qualified_type_array.test:30
+select cast (null as main.u[]);

@@ -4,8 +4,8 @@ CREATE TABLE integers(i INTEGER);
 -- from parallelism/interquery/concurrent_appends.test:10
 INSERT INTO integers SELECT * FROM range(100);
 
--- from parallelism/interquery/concurrent_force_checkpoint.test:8
-INSERT INTO integers SELECT * FROM range(10000);
+-- from parallelism/interquery/concurrent_checkpoint_insert.test:6
+ATTACH '/tmp/duckdb_test/bla_0.db' AS db0;
 
--- from parallelism/interquery/concurrent_index_scans_while_appending.test:5
-CREATE TABLE integers(i INTEGER PRIMARY KEY);
+-- from parallelism/interquery/concurrent_checkpoint_insert.test:9
+CREATE TABLE db0.tbl (key INTEGER PRIMARY KEY);

@@ -22,7 +22,7 @@ dependencies {
     // duckdb_keywords(), PREPARE-as-validator) headlessly. The PLUGIN does not bundle the engine —
     // at runtime those queries go through the user's configured data source. (duckdb_jdbc with
     // natives is ~50 MB; bundling it would dwarf the plugin for something the driver provides.)
-    testImplementation("org.duckdb:duckdb_jdbc:1.2.1")
+    testImplementation("org.duckdb:duckdb_jdbc:1.5.5.0")
 
     // TESTS ONLY: the GizmoSQL quack driver (brikk build) — QuackDriverFactsTest extracts the
     // driver class and URL scheme from the jar itself (acceptsURL needs no server), keeping
@@ -98,7 +98,7 @@ sourceSets {
 
 dependencies {
     "toolsImplementation"("dev.brikk.ducklake:slt-format:0.3.0")
-    "toolsImplementation"("org.duckdb:duckdb_jdbc:1.2.1")
+    "toolsImplementation"("org.duckdb:duckdb_jdbc:1.5.5.0")
 }
 
 // Usage: ./gradlew harvestCensus [-PduckdbSrc=/path/to/duckdb-checkout]

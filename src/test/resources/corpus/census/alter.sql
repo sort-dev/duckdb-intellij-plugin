@@ -1,11 +1,11 @@
--- from alter/test_alter_if_exists.test:6
-ALTER SEQUENCE IF EXISTS seq OWNED BY x;
+-- from alter/alter_table_set_partitioned_by.test:5
+PRAGMA enable_verification;
 
--- from alter/test_alter_if_exists.test:10
-ALTER TABLE IF EXISTS t0 ADD COLUMN c0 INT;
+-- from alter/alter_table_set_partitioned_by.test:8
+CREATE TABLE tbl(i INTEGER);
 
--- from alter/test_alter_if_exists.test:19
-ALTER TABLE IF EXISTS t0 ADD COLUMN IF NOT EXISTS c0 int;
+-- from alter/alter_table_set_table_options.test:5
+CREATE TABLE tbl1(i INTEGER);
 
--- from alter/test_alter_if_exists.test:26
-CREATE TABLE t0 (c0 INT);
+-- from alter/alter_table_set_table_options.test:8
+set variable location='my/location/path';

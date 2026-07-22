@@ -1,16 +1,11 @@
--- from join/positional/test_positional_join.test:5
-PRAGMA enable_verification;
+-- from join/positional/issue20086.test:5
+PRAGMA wal_autocheckpoint='1TB';
 
--- from join/positional/test_positional_join.test:8
-CREATE TABLE two (a INTEGER, b INTEGER);
+-- from join/positional/issue20086.test:8
+PRAGMA disable_checkpoint_on_shutdown;
 
--- from join/positional/test_positional_join.test:11
-INSERT INTO two VALUES (11, 1), (12, 2);
+-- from join/positional/issue20086.test:11
+CREATE TABLE t0(c0 INT, c1 INT);
 
--- from join/positional/test_positional_join.test:14
-CREATE TABLE three AS 
-	SELECT * FROM (VALUES
-		(11, 1),
-		(12, 2),
-		(13, 3)
-	) tbl(a, b);
+-- from join/positional/issue20086.test:14
+CREATE TABLE t1(c0 INT);

@@ -1,11 +1,11 @@
--- from copy/tmp_file.test:4
-copy (select 42 as x) to '/tmp/duckdb_test/foo';
+-- from copy/copy_blob.test:15
+COPY (select 'foo'::BLOB) TO '/tmp/duckdb_test/test.blob' (FORMAT BLOB);
 
--- from copy/tmp_file.test:10
-COPY (SELECT 36) TO '/tmp/duckdb_test/.a.b';
+-- from copy/copy_blob.test:18
+select filename LIKE '%test.blob', content, size from read_blob('/tmp/duckdb_test/test.blob');
 
--- from copy/tmp_file.test:13
-COPY (SELECT 37 as x) TO '/tmp/duckdb_test/.a.b';
+-- from copy/copy_blob.test:30
+COPY (select 'foo'::BLOB) TO '/tmp/duckdb_test/test.blob.gz' (FORMAT BLOB);
 
--- from copy/tmp_file.test:16
-FROM read_csv('/tmp/duckdb_test/.a.b');
+-- from copy/copy_blob.test:33
+select filename LIKE '%test.blob.gz', size from read_blob('/tmp/duckdb_test/test.blob.gz');

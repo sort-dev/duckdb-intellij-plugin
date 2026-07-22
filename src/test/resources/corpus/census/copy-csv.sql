@@ -2,10 +2,10 @@
 PRAGMA enable_verification;
 
 -- from copy/csv/14512.test:8
-FROM read_csv('data/csv/14512.csv', strict_mode=TRUE);
+FROM read_csv('{DATA_DIR}/csv/14512.csv', strict_mode=TRUE);
 
 -- from copy/csv/14512.test:13
-select columns FROM sniff_csv('data/csv/14512.csv');
+select columns FROM sniff_csv('{DATA_DIR}/csv/14512.csv');
 
 -- from copy/csv/14512.test:18
-FROM 'data/csv/14512_og.csv';
+FROM read_csv('{DATA_DIR}/csv/14512_og.csv', strict_mode = false, delim = ',', quote = '"', escape = '"');

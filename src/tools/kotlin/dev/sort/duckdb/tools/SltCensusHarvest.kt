@@ -46,8 +46,10 @@ fun main(args: Array<String>) {
         for (r in records) {
             val sql = r.sql.trim().removeSuffix(";").plus(";")
             if (sql.length < 8 || sql.length > 2000) continue
-            // upstream template/truncation artifacts: unexpanded <type> placeholders, dangling commas
+            // upstream template/truncation artifacts: unexpanded <type> placeholders, unexpanded
+            // ${var} refs (concurrentloop vars the expander can't know), dangling commas
             if (Regex("""<\w+>""").containsMatchIn(sql)) continue
+            if (sql.contains("\${")) continue
             if (sql.trimEnd(';').trimEnd().endsWith(",")) continue
             when (r.kind) {
                 RecordKind.OK, RecordKind.QUERY -> {

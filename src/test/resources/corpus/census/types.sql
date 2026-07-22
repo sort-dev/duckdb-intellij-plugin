@@ -12,5 +12,5 @@ select
 	IF(CAST(x as DATE) = '2021-01-01', 1, 0) d
 from df;
 
--- from types/test_typeof.test:4
-PRAGMA enable_verification;
+-- from types/test_null_type.test:5
+pragma enable_verification;
