@@ -1,0 +1,12 @@
+<artifacts>
+  <!-- The GizmoSQL quack JDBC driver (brikk build) — plain JDBC, no Arrow, ZERO runtime
+       dependencies (verified from the 0.3.0 pom: junit + duckdb_jdbc are test-scope only), so
+       the artifact is a single Maven item resolved from Central. Add a <version> block per new
+       release; the driver entry references this artifact by NAME. -->
+  <artifact id="quack-jdbc-brikk" name="Quack JDBC (Brikk)">
+    <version version="0.3.0">
+      <item type="maven" url="dev.brikk.duckdb:quack-jdbc:0.3.0"/>
+      <item type="license" url="https://www.apache.org/licenses/LICENSE-2.0.txt"/>
+    </version>
+  </artifact>
+</artifacts>

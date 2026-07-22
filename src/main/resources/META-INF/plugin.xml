@@ -59,5 +59,6 @@
         <modelFacade dbms="DUCKDB_BRIKK" implementationClass="dev.sort.duckdb.DuckdbModelFacade"/>
         <errorHandler dbms="DUCKDB_BRIKK" implementationClass="com.intellij.database.dialects.generic.GenericDatabaseErrorHandler"/>
         <driversConfig config="config/duckdb-brikk-drivers.xml"/>
+        <artifactsConfig config="config/duckdb-brikk-artifacts.xml"/>
     </extensions>
 </idea-plugin>

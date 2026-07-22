@@ -16,13 +16,13 @@
        Driver class + jdbc:quack:// scheme are FACTS extracted from
        dev.brikk.duckdb:quack-jdbc:0.3.0-brikk-SNAPSHOT by QuackDriverFactsTest (the brikk build
        keeps upstream's com.gizmodata package — relabel if/when the fork becomes permanent).
-       No <artifact> yet: snapshots aren't a driver-download source, so the jar is attached
-       manually in the driver settings until a release lands (then: downloadable artifact or
-       bundle — see IDEAS.md). -->
+       Downloadable via the "Quack JDBC (Brikk)" artifact (config/duckdb-brikk-artifacts.xml,
+       resolved from Maven Central) — no manual jar attach needed. -->
   <driver id="duckdb-brikk-quack" name="DuckDB (Brikk) — GizmoSQL (quack)" dialect="DuckDBBrikk"
           forced-dbms="DUCKDB_BRIKK" driver-class="com.gizmodata.quack.jdbc.sql.QuackDriver">
     <url-template name="default"
       template="jdbc:quack://{host::localhost}[:{port::31337}][/{database:path}?][\?&lt;&amp;,user={user:param},password={password:param},useEncryption={useEncryption:param:true},{:identifier}={:param}&gt;]"/>
+    <artifact name="Quack JDBC (Brikk)" use="true" rolling="true"/>
     <option name="auto-sync" value="true"/>
   </driver>
 </drivers>
