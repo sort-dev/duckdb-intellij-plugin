@@ -31,7 +31,7 @@ dependencies {
 
     // TESTS ONLY (for now): the sqllogictest format layer + expander — powers the upstream
     // duckdb test/sql census harvest (SltHarvestSmokeTest exercises the API contract).
-    testImplementation("dev.brikk.ducklake:slt-format:0.2.0")
+    testImplementation("dev.brikk.ducklake:slt-format:0.3.0")
 
     intellijPlatform {
         // Same platform window as doris-intellij: compiled against DataGrip 2026.1 (build 261),
@@ -97,7 +97,7 @@ sourceSets {
 }
 
 dependencies {
-    "toolsImplementation"("dev.brikk.ducklake:slt-format:0.2.0")
+    "toolsImplementation"("dev.brikk.ducklake:slt-format:0.3.0")
     "toolsImplementation"("org.duckdb:duckdb_jdbc:1.2.1")
 }
 
