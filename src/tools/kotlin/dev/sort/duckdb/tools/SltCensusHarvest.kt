@@ -56,8 +56,13 @@ fun main(args: Array<String>) {
                         bucket.add(sql to "${r.file}:${r.line}")
                     }
                 }
-                RecordKind.ERROR ->
-                    if (negatives.size < MAX_NEGATIVES) negatives.add(Triple(sql, r.expectedError, "${r.file}:${r.line}"))
+                RecordKind.ERROR -> {
+                    val isParser = r.expectedError?.contains("Parser Error") == true
+                    val quotaLeft =
+                        if (isParser) negatives.count { it.second?.contains("Parser Error") == true } < PARSER_NEGATIVES
+                        else negatives.count { it.second?.contains("Parser Error") != true } < OTHER_NEGATIVES
+                    if (quotaLeft) negatives.add(Triple(sql, r.expectedError, "${r.file}:${r.line}"))
+                }
             }
         }
     }
@@ -91,4 +96,5 @@ private fun String.json(): String =
 
 private const val PER_FAMILY = 4
 private const val OVERSAMPLE = 3 // collect a few extra pre-dedupe, sample deterministically from the front
-private const val MAX_NEGATIVES = 250
+private const val PARSER_NEGATIVES = 100 // stratified: upstream parser-error expectations
+private const val OTHER_NEGATIVES = 150 // binder/catalog/etc — the validator must stay SILENT on these

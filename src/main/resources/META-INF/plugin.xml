@@ -31,6 +31,10 @@
 
     <extensions defaultExtensionNs="com.intellij">
         <lang.parserDefinition language="DuckDBBrikk" implementationClass="dev.sort.duckdb.sql.DuckdbParserDefinition"/>
+        <lang.commenter language="DuckDBBrikk" implementationClass="dev.sort.duckdb.sql.DuckdbCommenter"/>
+        <!-- LOAD-BEARING beyond colors: the SQL todo/id indexers derive their filter lexer from
+             the language's syntax highlighter; absence crashes the TODO index on our files. -->
+        <lang.syntaxHighlighterFactory language="DuckDBBrikk" implementationClass="dev.sort.duckdb.sql.DuckdbSyntaxHighlighterFactory"/>
         <sql.dialect dbms="DUCKDB_BRIKK" implementationClass="dev.sort.duckdb.sql.DuckdbSqlDialect" order="first"/>
         <!-- Stage-1 livability: suppress the PG substrate's false red on DuckDB-only syntax
              (display-only; the scoreboard test keeps counting truth; Stage 3's PREPARE validator
@@ -39,6 +43,9 @@
         <!-- Repaints DuckdbLexer's masked spans (comment-masked modifiers, string-collapsed
              struct literals) with real word colors — TextAttributes only. -->
         <annotator language="DuckDBBrikk" implementationClass="dev.sort.duckdb.sql.DuckdbMaskedSpanRecolorAnnotator"/>
+        <!-- Stage 3: engine-confirmed PARSER errors from a real in-memory DuckDB (EXPLAIN-based,
+             never executes). Silent when no engine is reachable. -->
+        <externalAnnotator language="DuckDBBrikk" implementationClass="dev.sort.duckdb.validate.DuckdbErrorAnnotator"/>
     </extensions>
 
     <extensions defaultExtensionNs="com.intellij.database">
