@@ -21,7 +21,10 @@ class DuckdbErrorAnnotatorTest : BasePlatformTestCase() {
         // Unit-drives the annotator pipeline (collect -> doAnnotate): whether the light fixture
         // schedules ExternalToolPass is a test-infra question; the in-editor squiggle is on the
         // IDE dogfood checklist (the doris annotator was verified the same way).
-        val sql = "SELECT 1;\nSELECT * FROM t WHERE x ==== 2;"
+        // NB: must be a PARSER error to the engine — PG-lineage parsers accept arbitrary
+        // operator sequences (x ==== 2 is a BINDER error: unknown operator), which the validator
+        // correctly leaves alone.
+        val sql = "SELECT 1;\nSELECT FROM WHERE;"
         val psi = myFixture.configureByText("u.sql", sql)
         SqlDialectMappings.getInstance(project).setMapping(psi.virtualFile, DuckdbSqlDialect.INSTANCE)
         val file = com.intellij.psi.PsiManager.getInstance(project).findFile(psi.virtualFile)!!

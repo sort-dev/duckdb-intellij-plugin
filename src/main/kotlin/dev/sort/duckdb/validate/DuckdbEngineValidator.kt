@@ -141,10 +141,15 @@ object DuckdbEngineValidator {
                 val contentStart = shownLine.indexOf(':') + 2 // after "LINE n: "
                 if (line == 1 && (caret - contentStart) in 0..prefixLen) return Verdict.HeadRejected
             } else if (near != null &&
+                payloadLeadWords.firstOrNull() !in EXPLAINABLE_HEADS &&
                 payloadLeadWords.any { w ->
                     near.equals(w.takeWhile { it.isLetterOrDigit() || it == '_' }, ignoreCase = true)
                 }
             ) {
+                // caret-less message + near-token in the statement-form region of a head EXPLAIN
+                // only partially supports (CREATE [PERSISTENT] SECRET, ANALYZE t(c), EXPORT ...).
+                // Query-family heads are ALWAYS explainable — for them a caret-less parser error
+                // is a real error, never a rejection (SELECT FROM WHERE must flag).
                 return Verdict.HeadRejected
             }
         }
@@ -155,5 +160,6 @@ object DuckdbEngineValidator {
     private val LINE_MARKER = Regex("""LINE (\d+):""")
     private const val PARSER_MARKER = "Parser Error"
     private const val EXPLAIN_PREFIX_LEN = "EXPLAIN ".length
+    private val EXPLAINABLE_HEADS = setOf("SELECT", "WITH", "VALUES", "FROM", "INSERT", "UPDATE", "DELETE")
     private const val MAX_STATEMENT = 100_000
 }
