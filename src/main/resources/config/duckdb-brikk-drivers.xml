@@ -21,12 +21,13 @@
        resolved from Maven Central) — no manual jar attach needed. -->
   <driver id="duckdb-brikk-quack" name="DuckDB (Brikk) — GizmoSQL (quack)" dialect="DuckDBBrikk"
           forced-dbms="DUCKDB_BRIKK" driver-class="com.gizmodata.quack.jdbc.sql.QuackDriver">
-    <!-- Auth is a TOKEN — the driver declares `password` as its official token alias "for tools
-         that provide a password field" (getPropertyInfo), so the token goes in DataGrip's
-         password field and stays in secure storage. No user concept. `tls` enables HTTPS
-         (driver default false); tokenEnv/tokenFile/timeouts can be appended as extra params. -->
+    <!-- Auth is a TOKEN and the driver needs it as a `token` URL parameter at test/connect time
+         (connections are not stateless). The param VALUE is sourced from DataGrip's password
+         field ({password:param}) so the secret lives in secure storage, not plain text in the
+         URL box. No user concept. `tls` enables HTTPS (driver default false);
+         tokenEnv/tokenFile/timeouts can be appended as extra params. -->
     <url-template name="default"
-      template="jdbc:quack://{host::localhost}[:{port::9494}][/{database:path}?][\?&lt;&amp;,password={password:param},tls={tls:param:false},{:identifier}={:param}&gt;]"/>
+      template="jdbc:quack://{host::localhost}[:{port::9494}][/{database:path}?][\?&lt;&amp;,token={password:param},tls={tls:param:false},{:identifier}={:param}&gt;]"/>
     <artifact name="Quack JDBC (Brikk)" use="true" rolling="true"/>
     <option name="auto-sync" value="true"/>
   </driver>
