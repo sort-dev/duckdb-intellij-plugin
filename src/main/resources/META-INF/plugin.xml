@@ -46,6 +46,8 @@
         <!-- Stage 3: engine-confirmed PARSER errors from a real in-memory DuckDB (EXPLAIN-based,
              never executes). Silent when no engine is reachable. -->
         <externalAnnotator language="DuckDBBrikk" implementationClass="dev.sort.duckdb.validate.DuckdbErrorAnnotator"/>
+        <!-- Stage 4: function completion from the bundled duckdb_functions() catalog. -->
+        <completion.contributor language="DuckDBBrikk" implementationClass="dev.sort.duckdb.sql.DuckdbCompletionContributor"/>
     </extensions>
 
     <extensions defaultExtensionNs="com.intellij.database">

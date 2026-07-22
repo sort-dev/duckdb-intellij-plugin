@@ -98,11 +98,20 @@ sourceSets {
 
 dependencies {
     "toolsImplementation"("dev.brikk.ducklake:slt-format:0.2.0")
+    "toolsImplementation"("org.duckdb:duckdb_jdbc:1.2.1")
 }
 
 // Usage: ./gradlew harvestCensus [-PduckdbSrc=/path/to/duckdb-checkout]
 // Reads <duckdbSrc>/test/sql/**.test, samples per family via slt-format, writes
 // src/test/resources/corpus/census/ + census-negatives.jsonl. Commit the output.
+// Usage: ./gradlew harvestFunctionCatalog — regenerates the bundled function/keyword catalog
+// resources from the pinned duckdb_jdbc (self-updating with the dependency bump). Commit output.
+val harvestFunctionCatalog by tasks.registering(JavaExec::class) {
+    classpath = sourceSets["tools"].runtimeClasspath
+    mainClass = "dev.sort.duckdb.tools.FunctionCatalogHarvestKt"
+    args(layout.projectDirectory.dir("src/main/resources/duckdb").asFile.absolutePath)
+}
+
 val harvestCensus by tasks.registering(JavaExec::class) {
     classpath = sourceSets["tools"].runtimeClasspath
     mainClass = "dev.sort.duckdb.tools.SltCensusHarvestKt"
