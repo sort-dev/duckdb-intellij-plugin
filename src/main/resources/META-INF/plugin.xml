@@ -36,6 +36,9 @@
              (display-only; the scoreboard test keeps counting truth; Stage 3's PREPARE validator
              becomes the real error authority). -->
         <highlightErrorFilter implementation="dev.sort.duckdb.sql.DuckdbHighlightErrorFilter"/>
+        <!-- Repaints DuckdbLexer's masked spans (comment-masked modifiers, string-collapsed
+             struct literals) with real word colors — TextAttributes only. -->
+        <annotator language="DuckDBBrikk" implementationClass="dev.sort.duckdb.sql.DuckdbMaskedSpanRecolorAnnotator"/>
     </extensions>
 
     <extensions defaultExtensionNs="com.intellij.database">

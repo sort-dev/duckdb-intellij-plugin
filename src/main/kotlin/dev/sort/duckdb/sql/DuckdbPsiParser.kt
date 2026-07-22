@@ -47,10 +47,21 @@ class DuckdbPsiParser : PgParser(false) {
             // FROM, so this is unambiguous.
             "FROM" -> return parseLenientStatement(builder, SQL_STATEMENT)
 
-            // CREATE [OR REPLACE] [TEMP|TEMPORARY|PERSISTENT] MACRO/SECRET — check the first few
+            // CTAS in FROM-first form (CREATE TABLE x AS FROM ...), CREATE TYPE aliases PG lacks.
+            // Then: CREATE [OR REPLACE] [TEMP|TEMPORARY|PERSISTENT] MACRO/SECRET — check the first few
             // words only, so CREATE TABLE t (macro INT) never loses its real parse. Longest
             // qualifier chain is 3 words (OR REPLACE TEMP), so MACRO/SECRET sits at word 1..4.
             "CREATE" -> {
+                if (statementContainsWordThen(builder, "AS", "FROM")) {
+                    return parseLenientStatement(builder, SQL_STATEMENT)
+                }
+                if (statementContainsWordThenToken(builder, "AS", "(")) {
+                    // parenthesized CTAS body — the PG grammar here rejects it
+                    return parseLenientStatement(builder, SQL_STATEMENT)
+                }
+                if (wordAt(builder, 1) == "TYPE" && !statementContainsAny(builder, "ENUM")) {
+                    return parseLenientStatement(builder, SQL_STATEMENT)
+                }
                 for (i in 1..4) {
                     when (wordAt(builder, i)) {
                         "MACRO", "SECRET" -> return parseLenientStatement(builder, SQL_STATEMENT)
@@ -67,19 +78,35 @@ class DuckdbPsiParser : PgParser(false) {
                 if (statementContainsAny(
                         builder,
                         "PARQUET", "PARTITION_BY", "COMPRESSION", "OVERWRITE_OR_IGNORE",
-                        "FILE_SIZE_BYTES", "PER_THREAD_OUTPUT", "APPEND",
+                        "FILE_SIZE_BYTES", "PER_THREAD_OUTPUT", "APPEND", "AUTO_DETECT",
+                        "SAMPLE_SIZE", "ALL_VARCHAR", "IGNORE_ERRORS", "NULL_PADDING",
+                        "NORMALIZE_NAMES", "FILENAME", "HIVE_PARTITIONING", "UNION_BY_NAME",
+                        "DATEFORMAT", "TIMESTAMPFORMAT",
                     )
                 ) {
                     return parseLenientStatement(builder, SQL_STATEMENT)
                 }
             }
 
-            // SET x = v parses as PG; DuckDB's scoped/variable forms don't.
+            // SET x = v parses as PG; DuckDB's scoped/variable/schema forms don't.
             "SET", "RESET" -> {
                 when (wordAt(builder, 1)) {
-                    "GLOBAL", "SESSION", "LOCAL", "VARIABLE" ->
+                    "GLOBAL", "SESSION", "LOCAL", "VARIABLE", "SCHEMA" ->
                         return parseLenientStatement(builder, SQL_STATEMENT)
                 }
+            }
+
+            // EXPLAIN of a DuckDB-only statement form.
+            "EXPLAIN" -> {
+                when (wordAt(builder, 1)) {
+                    "PRAGMA", "FROM", "SUMMARIZE", "DESCRIBE", "PIVOT", "UNPIVOT", "ANALYZE" ->
+                        return parseLenientStatement(builder, SQL_STATEMENT)
+                }
+            }
+
+            // INSERT OR REPLACE/IGNORE INTO — PG has no OR-conflict-shorthand form.
+            "INSERT" -> {
+                if (wordAt(builder, 1) == "OR") return parseLenientStatement(builder, SQL_STATEMENT)
             }
         }
         return super.parseSqlStatement(builder, level)
@@ -116,6 +143,46 @@ class DuckdbPsiParser : PgParser(false) {
         }
         marker.rollbackTo()
         return result
+    }
+
+    /** True if [word] appears with [next] as the following letter-word, within the window. Non-consuming. */
+    private fun statementContainsWordThen(builder: PsiBuilder, word: String, next: String): Boolean {
+        val marker = builder.mark()
+        var scanned = 0
+        var found = false
+        var prevWasWord = false
+        while (!builder.eof() && builder.tokenText != ";" && scanned < MAX_LOOKAHEAD) {
+            val text = builder.tokenText
+            if (text != null && text.firstOrNull()?.isLetter() == true) {
+                if (prevWasWord && text.equals(next, ignoreCase = true)) { found = true; break }
+                prevWasWord = text.equals(word, ignoreCase = true)
+            } else if (!text.isNullOrBlank()) {
+                prevWasWord = false
+            }
+            builder.advanceLexer()
+            scanned++
+        }
+        marker.rollbackTo()
+        return found
+    }
+
+    /** True if [word] appears with the exact token [next] following it. Non-consuming. */
+    private fun statementContainsWordThenToken(builder: PsiBuilder, word: String, next: String): Boolean {
+        val marker = builder.mark()
+        var scanned = 0
+        var found = false
+        var prevWasWord = false
+        while (!builder.eof() && builder.tokenText != ";" && scanned < MAX_LOOKAHEAD) {
+            val text = builder.tokenText
+            if (!text.isNullOrBlank()) {
+                if (prevWasWord && text == next) { found = true; break }
+                prevWasWord = text.equals(word, ignoreCase = true)
+            }
+            builder.advanceLexer()
+            scanned++
+        }
+        marker.rollbackTo()
+        return found
     }
 
     /** True if any token before the next ';' matches any of [words] within the window. Non-consuming. */

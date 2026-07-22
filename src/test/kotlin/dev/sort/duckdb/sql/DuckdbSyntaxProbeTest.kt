@@ -47,7 +47,9 @@ class DuckdbSyntaxProbeTest : BasePlatformTestCase() {
         val greenLocked = setOf(
             "00-", "01-", // PG-shared baselines
             "16-", "19-", "21-", "23-", "26-", // PG-shared: read_*, json ops, slicing, VALUES/RETURNING, recursive CTE
-            "13-", "14-", "15-", "17-", "24-", // Tier-1 lenient boundaries (FROM-first/PIVOT, ATTACH, COPY, SUMMARIZE, MACRO)
+            "13-", "14-", "15-", "17-", "24-", // Tier-1 lenient boundaries
+            "10-", "11-", "12-", "20-", "22-", "27-", "28-", "29-", // Stage-2 lexer bridge (EXCLUDE, QUALIFY, BY ALL, struct/MAP, lambdas, SAMPLE, TRY_CAST)
+            // still red by design: 18- (suffix-form UNPIVOT), 25- (QUALIFY after a WINDOW clause)
         )
         val mustBeGreen = files.map { it.name }.filter { f -> greenLocked.any { f.startsWith(it) } }
         val regressed = mustBeGreen.filter { it in red }

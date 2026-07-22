@@ -90,4 +90,11 @@ class DuckdbStatementBoundaryTest : BasePlatformTestCase() {
             PsiTreeUtil.findChildrenOfType(f, com.intellij.sql.psi.SqlCreateTableStatement::class.java).isNotEmpty(),
         )
     }
+
+    fun testParenthesizedCtasGoesLenient() {
+        assertCleanStatements(
+            "create table tbl as\n\t(select i%50 as g, sum(i) as s from range(100) t(i) group by g);",
+            1,
+        )
+    }
 }

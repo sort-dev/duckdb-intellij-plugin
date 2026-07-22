@@ -17,11 +17,20 @@ class DuckdbCensusScoreboardTest : BasePlatformTestCase() {
 
     private var counter = 0
 
-    private fun errorCount(sql: String): Int {
+    private data class Verdict(val errors: Int, val first: String?, val firstText: String?)
+
+    private fun verdict(sql: String): Verdict {
         val psi = myFixture.configureByText("c${counter++}.sql", sql)
         SqlDialectMappings.getInstance(project).setMapping(psi.virtualFile, DuckdbSqlDialect.INSTANCE)
         val file = com.intellij.psi.PsiManager.getInstance(project).findFile(psi.virtualFile)!!
-        return PsiTreeUtil.findChildrenOfType(file, PsiErrorElement::class.java).size
+        val errs = PsiTreeUtil.findChildrenOfType(file, PsiErrorElement::class.java)
+        val first = errs.firstOrNull()
+        val around = first?.let {
+            val t = file.text
+            val s = (it.textRange.startOffset - 20).coerceAtLeast(0)
+            t.substring(s, (it.textRange.startOffset + 20).coerceAtMost(t.length)).replace("\n", "⏎")
+        }
+        return Verdict(errs.size, first?.errorDescription?.take(60), around)
     }
 
     fun testCensus() {
@@ -29,17 +38,16 @@ class DuckdbCensusScoreboardTest : BasePlatformTestCase() {
         val files = dir.listFiles { f -> f.extension == "sql" }?.sortedBy { it.name }.orEmpty()
         assertTrue("census corpus missing — run ./gradlew harvestCensus and commit", files.isNotEmpty())
         var green = 0
-        val reds = ArrayList<Pair<String, Int>>()
+        val reds = ArrayList<Pair<String, Verdict>>()
         for (f in files) {
-            val errs = errorCount(f.readText())
-            if (errs == 0) green++ else reds.add(f.name to errs)
+            val v = verdict(f.readText())
+            if (v.errors == 0) green++ else reds.add(f.name to v)
         }
         val board = StringBuilder("\n=== DuckDB census (upstream test/sql sample) ===\n")
         board.append("families green: $green/${files.size}\n")
-        reds.sortedByDescending { it.second }.take(25).forEach { (name, errs) ->
-            board.append("  red  $name  ($errs errors)\n")
+        reds.sortedByDescending { it.second.errors }.forEach { (name, v) ->
+            board.append("  red  $name  (${v.errors})  [${v.first}]  «${v.firstText}»\n")
         }
-        if (reds.size > 25) board.append("  ... and ${reds.size - 25} more red families\n")
         board.append("===============================================")
         println(board)
     }
