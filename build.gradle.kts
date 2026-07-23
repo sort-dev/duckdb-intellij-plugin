@@ -81,6 +81,10 @@ tasks {
         systemProperty("idea.load.plugins.id", "com.intellij.database,dev.sort.duckdb-intellij-plugin")
         // DuckDB syntax corpus for the substrate scoreboard (DuckdbSyntaxProbeTest).
         systemProperty("corpus.dir", layout.projectDirectory.dir("src/test/resources/corpus").asFile.absolutePath)
+        // Opt-in live quack-wire harvest test (DuckdbLiveHarvestOverQuackTest):
+        // ./gradlew test -Dquack.live.url='jdbc:quack://host:9494?token=...' — property absent,
+        // the test Assumes itself out and the suite stays offline-green.
+        providers.systemProperty("quack.live.url").orNull?.let { systemProperty("quack.live.url", it) }
     }
 }
 
