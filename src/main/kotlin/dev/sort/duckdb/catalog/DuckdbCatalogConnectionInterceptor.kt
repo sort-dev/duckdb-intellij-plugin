@@ -24,7 +24,11 @@ import dev.sort.duckdb.DuckdbDbms
 // API status: DatabaseConnectionInterceptor is class-level @ApiStatus.Experimental (DB-261). It is
 // the only seam that observes every new connection (consoles and introspection alike) with the
 // connection handed to us before user statements run; the doris plugin ships on the same suspend
-// overrides. The deprecated+scheduled-for-removal intercept() stage is deliberately NOT overridden.
+// overrides. The deprecated+scheduled-for-removal intercept() stage is deliberately NOT overridden
+// in source; the Kotlin compiler still emits delegating stubs for ALL of the interface's default
+// methods (intercept, handleConnectionFailure, handleNullConnection), so the plugin verifier
+// reports 2 "deprecated intercept() overridden/invoked" usages against this class. Compiler
+// artifact, not a call we make — same carried warning as the sibling doris plugin since 0.5.0.
 class DuckdbCatalogConnectionInterceptor : DatabaseConnectionInterceptor {
 
     private companion object {
