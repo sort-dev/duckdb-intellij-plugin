@@ -10,7 +10,9 @@ import com.intellij.openapi.util.IconLoader
  * us. Same coexistence strategy the Doris plugin uses (and StarRocks before it).
  */
 object DuckdbDbms {
-    private val icon = IconLoader.getIcon("/icons/duckdb-brikk.svg", DuckdbDbms::class.java)
+    // Official DuckDB mark (duckdb.org/design/manual, used unmodified); IconLoader picks
+    // icons/duckdb_dark.svg automatically in dark themes by naming convention.
+    private val icon = IconLoader.getIcon("/icons/duckdb.svg", DuckdbDbms::class.java)
 
     @JvmField
     val DUCKDB_BRIKK: Dbms = Dbms.create(

@@ -1,44 +1,66 @@
 <idea-plugin>
     <id>dev.sort.duckdb-intellij-plugin</id>
-    <name>DuckDB (Brikk)</name>
+    <name>SQL Dialect for DuckDB (embedded &amp; Quack)</name>
     <vendor url="https://sort.dev" email="jayson@sort.dev">Sortdev SRL</vendor>
 
     <description><![CDATA[
-        <p>A dedicated DuckDB experience for DataGrip and IntelliJ-family IDEs: a real
-        <b>DuckDB (Brikk)</b> SQL dialect (Postgres-based, matching DuckDB's own parser lineage)
-        and ready-to-use data-source templates for <b>local DuckDB</b> and
+        <p>A real <b>DuckDB SQL dialect</b> for DataGrip and IntelliJ-family IDEs, with
+        ready-to-use data sources for <b>local/embedded DuckDB</b> and
         <b>GizmoSQL servers</b> (Arrow-free quack-jdbc driver).</p>
 
-        <p><i>Early stage.</i> The stock IDE treats DuckDB as a generic data source with the
-        Generic SQL dialect; this plugin exists to give DuckDB SQL first-class treatment —
-        <code>SELECT * EXCLUDE(...)</code>, <code>QUALIFY</code>, <code>GROUP BY ALL</code>,
-        lambdas, <code>PIVOT</code>, FROM-first queries — using the architecture proven by the
-        <a href="https://plugins.jetbrains.com/plugin/32777">SQL Dialect for Apache Doris</a>
-        plugin.</p>
+        <ul>
+            <li><b>DuckDB syntax, measured:</b> correct statement and run-block boundaries across
+                the DuckDB statement surface — <code>SELECT * EXCLUDE(...)</code>,
+                <code>QUALIFY</code>, <code>GROUP BY ALL</code>, struct/list literals, lambdas,
+                <code>PIVOT</code>/<code>UNPIVOT</code>, FROM-first queries, <code>ATTACH</code>,
+                <code>SUMMARIZE</code>, <code>CREATE MACRO/SECRET</code>. Coverage is scored
+                against DuckDB's own test suite: 226/226 sampled syntax families at DuckDB 1.5.5.</li>
+            <li><b>Engine-exact error checking:</b> statements are validated by a real DuckDB
+                (from your data source's driver; EXPLAIN-based, never executes) — squiggles carry
+                the engine's own messages, so there is zero grammar drift.</li>
+            <li><b>Completion that follows your engine:</b> on connect the catalog is harvested
+                live from <code>duckdb_functions()</code> — your engine version, your loaded
+                extensions. Run <code>INSTALL</code>/<code>LOAD</code> and completion updates
+                itself; autoloaded extensions arrive via <i>Refresh DuckDB Catalog</i> (editor
+                right-click). Offline you get the bundled 943-function snapshot, plus
+                <i>"requires &lt;extension&gt;"</i> hints for extension functions.</li>
+            <li><b>Two data sources, one dialect:</b> local file / in-memory DuckDB, and GizmoSQL
+                over <code>jdbc:quack://</code> (default port 9494). Driver versions are pinned
+                and auto-download from Maven Central, matched to the tested engine.</li>
+        </ul>
+
+        <p><b>GizmoSQL connection notes:</b> paste your <b>token into the Password field</b>
+        (stored in the IDE's secure storage) and <b>leave User blank</b>; TLS is off by default —
+        add <code>tls=true</code> in the URL parameters for HTTPS endpoints.</p>
+
+        <p><b>Known issue:</b> cancelling a running query over a GizmoSQL connection is currently
+        a no-op in the quack driver — the query keeps running server-side. Local/embedded cancel
+        works. A driver fix is tracked.</p>
 
         <p><i>This is an independent, community plugin developed by Sortdev SRL, not affiliated
         with DuckDB Labs, the DuckDB Foundation, or GizmoSQL. "DuckDB" is a trademark of the
-        DuckDB Foundation, used only to identify the database this plugin supports.</i></p>
+        DuckDB Foundation, used only to identify the database this plugin supports. DuckDB logo
+        used per the <a href="https://duckdb.org/design/manual/">DuckDB design manual</a>.</i></p>
     ]]></description>
 
     <change-notes><![CDATA[
-        <b>0.1.0</b> — first public preview.
+        <b>0.1.0</b> — first public release.
         <ul>
-            <li><b>DuckDB dialect</b> with correct statement/run-block boundaries across the
-                DuckDB statement surface — <code>SELECT * EXCLUDE(...)</code>,
-                <code>QUALIFY</code>, <code>GROUP BY ALL</code>, struct/list literals, lambdas,
-                <code>PIVOT</code>/<code>UNPIVOT</code>, FROM-first queries, <code>ATTACH</code>,
-                <code>SUMMARIZE</code>, <code>CREATE MACRO/SECRET</code> and more. Coverage is
-                measured against DuckDB's own test suite: 226/226 sampled syntax families parse
-                clean at DuckDB 1.5.5.</li>
-            <li><b>Engine-exact error checking:</b> statements are validated by a real DuckDB
-                (found on your data source's driver; EXPLAIN-based, never executes) — squiggles
-                carry the engine's own parser messages.</li>
-            <li><b>Function completion:</b> 943 built-ins with kind icons (scalar / aggregate /
-                table / macro), harvested from duckdb_functions() itself.</li>
-            <li><b>Ready-made data sources:</b> local DuckDB and GizmoSQL servers (token-auth
-                quack-jdbc, port 9494); driver versions pinned and auto-downloaded from Maven
-                Central, matched to the tested engine version.</li>
+            <li><b>DuckDB dialect</b> with correct statement/run-block boundaries — coverage
+                measured against DuckDB's own test suite (226/226 sampled syntax families at
+                DuckDB 1.5.5).</li>
+            <li><b>Engine-exact error checking</b> by a real DuckDB from your driver
+                (EXPLAIN-based, never executes).</li>
+            <li><b>Live per-connection completion:</b> functions/keywords harvested from the
+                connected engine (version- and extension-exact), refreshed automatically when
+                INSTALL/LOAD runs in a console, or on demand via <i>Refresh DuckDB Catalog</i>;
+                bundled 943-function snapshot offline, with "requires &lt;extension&gt;" hints.</li>
+            <li><b>Object tree</b> from DuckDB's JDBC metadata — ATTACHed databases appear as
+                catalogs, on both drivers.</li>
+            <li><b>Ready-made data sources:</b> local/embedded DuckDB and GizmoSQL (token-auth
+                quack-jdbc, port 9494); pinned drivers auto-download from Maven Central.</li>
+            <li><b>Known issue:</b> query cancel over GizmoSQL is a quack-driver no-op (local
+                cancel works); driver fix tracked.</li>
         </ul>
     ]]></change-notes>
 

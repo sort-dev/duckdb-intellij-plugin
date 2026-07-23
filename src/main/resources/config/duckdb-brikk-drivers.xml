@@ -4,8 +4,10 @@
        built-in "DuckDB" artifact: the built-in resolves from JetBrains' registry, which lags
        Maven Central badly (their 1.3.1 vs Central's 1.5.5.0) — with our artifact, driver
        auto-download always matches the engine version this plugin is built and graded against. -->
+  <!-- icon: official DuckDB mark (icons/duckdb.svg + _dark variant, duckdb.org/design/manual —
+       used unmodified per the manual's no-recolor/no-stretch rules). -->
   <driver id="duckdb-brikk-native" name="DuckDB (Brikk) — Local" dialect="DuckDBBrikk"
-          forced-dbms="DUCKDB_BRIKK" driver-class="org.duckdb.DuckDBDriver">
+          forced-dbms="DUCKDB_BRIKK" driver-class="org.duckdb.DuckDBDriver" icon="/icons/duckdb.svg">
     <url-template name="default" template="jdbc:duckdb:{file::identifier.db}"/>
     <url-template name="In-memory" template="jdbc:duckdb:"/>
     <artifact name="DuckDB JDBC (Brikk)" use="true" rolling="true"/>
@@ -20,12 +22,16 @@
        Downloadable via the "Quack JDBC (Brikk)" artifact (config/duckdb-brikk-artifacts.xml,
        resolved from Maven Central) — no manual jar attach needed. -->
   <driver id="duckdb-brikk-quack" name="DuckDB (Brikk) — GizmoSQL (quack)" dialect="DuckDBBrikk"
-          forced-dbms="DUCKDB_BRIKK" driver-class="com.gizmodata.quack.jdbc.sql.QuackDriver">
+          forced-dbms="DUCKDB_BRIKK" driver-class="com.gizmodata.quack.jdbc.sql.QuackDriver"
+          icon="/icons/duckdb.svg">
     <!-- Auth is a TOKEN and the driver needs it as a `token` URL parameter at test/connect time
          (connections are not stateless). The param VALUE is sourced from DataGrip's password
          field ({password:param}) so the secret lives in secure storage, not plain text in the
-         URL box. No user concept. `tls` enables HTTPS (driver default false);
-         tokenEnv/tokenFile/timeouts can be appended as extra params. -->
+         URL box. No user concept — the User field must be left BLANK (drivers.xml cannot hide
+         or relabel the stock user/password fields; a DatabaseAuthProvider-based "Token" auth
+         panel is the post-0.1.0 fix). `tls` defaults false here AND in the driver — the SSH/SSL
+         dialog tab is generic IDE UI and not what this driver reads; the tls URL param is the
+         real switch. tokenEnv/tokenFile/timeouts can be appended as extra params. -->
     <url-template name="default"
       template="jdbc:quack://{host::localhost}[:{port::9494}][/{database:path}?][\?&lt;&amp;,token={password:param},tls={tls:param:false},{:identifier}={:param}&gt;]"/>
     <artifact name="Quack JDBC (Brikk)" use="true" rolling="true"/>

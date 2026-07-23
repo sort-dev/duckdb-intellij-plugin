@@ -1,8 +1,8 @@
-# DuckDB (Brikk) for DataGrip & IntelliJ IDEA
+# SQL Dialect for DuckDB (embedded & Quack)
 
-A real **DuckDB SQL dialect** for JetBrains IDEs, with ready-made data sources for **local DuckDB
-files** and **[GizmoSQL](https://gizmosql.com) servers** (token-auth `quack-jdbc` driver — plain
-JDBC, no Arrow).
+A real **DuckDB SQL dialect** for DataGrip and IntelliJ-family IDEs, with ready-made data sources
+for **local/embedded DuckDB** and **[GizmoSQL](https://gizmosql.com) servers** (token-auth
+`quack-jdbc` driver — plain JDBC, no Arrow).
 
 ## Why
 
@@ -21,12 +21,42 @@ treatment, using the architecture proven by our
   in-memory instance found on your data source's driver — parses and binds, never executes).
   Squiggles carry the engine's own messages, so there is zero grammar drift, ever. Only true
   parser errors are shown; schema resolution stays with the IDE.
-- **Function completion with kinds**: scalar / aggregate / table / macro functions with distinct
-  icons and parens-with-caret insertion; table functions (`read_parquet`, …) complete in FROM.
-- **Two data-source templates, one dialect**: local/embedded DuckDB and GizmoSQL (`jdbc:quack://`,
-  token in the password field → secure storage, default port 9494). Driver versions are pinned by
-  the plugin and auto-download from Maven Central — always matching the engine version the plugin
-  is built and tested against (currently **DuckDB 1.5.5**).
+- **Completion that follows your engine**: on connect, functions/keywords are harvested live from
+  `duckdb_functions()` — your engine version, your loaded extensions — and cached per data source
+  (survives restarts and offline sessions). Run `INSTALL`/`LOAD` in a console and completion
+  updates itself within seconds; **autoloaded** extensions (used without INSTALL/LOAD) are picked
+  up by editor right-click → **Refresh DuckDB Catalog**. With no connection you get the bundled
+  snapshot (943 functions at DuckDB 1.5.5) plus *"requires \<extension\>"* hints for known
+  extension functions (spatial, inet, fts, sqlite_scanner, postgres_scanner).
+- **Object tree from DuckDB's JDBC metadata**: tables, views, columns (STRUCT/LIST spellings),
+  PK/FK — and `ATTACH`ed databases appear as catalogs, on both drivers.
+- **Two data-source templates, one dialect**: local/embedded DuckDB and GizmoSQL
+  (`jdbc:quack://`, default port 9494). Driver versions are pinned by the plugin and
+  auto-download from Maven Central — always matching the engine version the plugin is built and
+  tested against (currently **DuckDB 1.5.5**).
+
+## Connecting to GizmoSQL (quack) — read this first
+
+- **Token goes in the Password field** (it is stored in the IDE's secure storage and injected as
+  the `token=` URL parameter at connect time). GizmoSQL has no user concept —
+  **leave the User field blank**.
+- **TLS is off by default** (matching the driver). For HTTPS endpoints add `tls=true` in the URL
+  parameters. The IDE's generic SSH/SSL tab is not what this driver reads — the `tls` parameter
+  is the real switch.
+- Default port **9494**; `tokenEnv`/`tokenFile`/`connectTimeout`/`requestTimeout` may be appended
+  as extra URL parameters.
+
+## Known issues
+
+- **Query cancel over GizmoSQL is a no-op** in the current quack driver — Stop returns but the
+  query keeps running server-side. Local/embedded cancel works correctly (interrupt in ~300 ms).
+  A driver-side fix is tracked.
+- The stock User/Password fields cannot be hidden or relabeled from driver config — hence the
+  "leave User blank" rule above. A dedicated token auth panel is planned.
+- Two known degraded parse shapes (parsed leniently, no false errors, reduced inner structure):
+  suffix-form `UNPIVOT` inside a `SELECT`, and `QUALIFY` after a named `WINDOW` clause.
+- Constraint and index *names* are not shown in the tree (DuckDB's JDBC metadata returns them
+  as null).
 
 ## SQL coverage — measured, not claimed
 
@@ -35,16 +65,13 @@ Coverage is scored in CI against a census sampled from **DuckDB's own test suite
 parse clean (100%)**, plus a curated corpus of DuckDB idioms. The census re-harvests mechanically
 at every engine bump, so coverage is re-proven per DuckDB version, not asserted once.
 
-Two known degraded shapes (parsed leniently, no false errors, reduced inner structure):
-suffix-form `UNPIVOT` inside a `SELECT`, and `QUALIFY` after a named `WINDOW` clause.
+## Function coverage
 
-## Function coverage — honest status
-
-**943 built-in functions** (with kinds) and **489 keywords**, harvested from
-`duckdb_functions()` / `duckdb_keywords()` of DuckDB 1.5.5 itself — regenerated on every engine
-bump, never hand-maintained. **Not yet included:** functions from extensions you `INSTALL`/`LOAD`
-(e.g. `spatial`); a live per-connection catalog keyed on engine version + loaded extensions is the
-next milestone.
+Live: whatever your connected engine reports — version- and extension-exact, replaced (never
+merged) per connection. Offline: **943 built-in functions** (with kind icons) and **489
+keywords** from `duckdb_functions()` / `duckdb_keywords()` of DuckDB 1.5.5, plus a harvested
+extension→functions map (189 functions across 5 extensions) powering the
+*"requires \<extension\>"* completion hints.
 
 ## Requirements
 
@@ -57,12 +84,20 @@ no bundled engine, no configuration.
 ```bash
 ./gradlew buildPlugin   # → build/distributions/duckdb-intellij-plugin.zip
 ./gradlew test          # census scoreboard + validator grading + boundary contracts
+# optional: live wire suite against a quack server
+./gradlew test -Dquack.live.url='jdbc:quack://localhost:9494?token=<token>'
 ```
 
 DataGrip 2026.1 SDK (auto-downloaded), Kotlin 2.3.0, JVM 21.
+
+**Engine bump checklist** (when moving to a new DuckDB): bump `duckdb_jdbc` in build.gradle.kts
+and the artifact pin in `config/duckdb-brikk-artifacts.xml`, then re-run all three harvests and
+commit their output: `./gradlew harvestCensus harvestFunctionCatalog harvestExtensionCatalog`
+(the last needs network for extension INSTALLs).
 
 ## License
 
 Apache-2.0. Independent community plugin by Sortdev SRL — not affiliated with DuckDB Labs, the
 DuckDB Foundation, or GizmoSQL. "DuckDB" is a trademark of the DuckDB Foundation, used only to
-identify the database this plugin supports. See THIRD_PARTY_NOTICES.md.
+identify the database this plugin supports; the DuckDB logo is used unmodified per the
+[DuckDB design manual](https://duckdb.org/design/manual/). See THIRD_PARTY_NOTICES.md.
