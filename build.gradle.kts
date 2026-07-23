@@ -116,6 +116,16 @@ val harvestFunctionCatalog by tasks.registering(JavaExec::class) {
     args(layout.projectDirectory.dir("src/main/resources/duckdb").asFile.absolutePath)
 }
 
+// Usage: ./gradlew harvestExtensionCatalog — regenerates extension-functions.tsv by diffing
+// duckdb_functions() across INSTALL+LOAD for each curated extension (network required — INSTALL
+// pulls from the DuckDB extension repo). Depends on functions.tsv (the base catalog) for its
+// no-overlap assertion. Commit output.
+val harvestExtensionCatalog by tasks.registering(JavaExec::class) {
+    classpath = sourceSets["tools"].runtimeClasspath
+    mainClass = "dev.sort.duckdb.tools.ExtensionCatalogHarvestKt"
+    args(layout.projectDirectory.dir("src/main/resources/duckdb").asFile.absolutePath)
+}
+
 val harvestCensus by tasks.registering(JavaExec::class) {
     classpath = sourceSets["tools"].runtimeClasspath
     mainClass = "dev.sort.duckdb.tools.SltCensusHarvestKt"
