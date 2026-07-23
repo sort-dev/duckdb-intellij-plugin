@@ -64,6 +64,13 @@
         <externalAnnotator language="DuckDBBrikk" implementationClass="dev.sort.duckdb.validate.DuckdbErrorAnnotator"/>
         <!-- Stage 4: function completion from the bundled duckdb_functions() catalog. -->
         <completion.contributor language="DuckDBBrikk" implementationClass="dev.sort.duckdb.sql.DuckdbCompletionContributor"/>
+        <!-- Catalog-refresh balloons (manual action + INSTALL/LOAD observer). -->
+        <notificationGroup id="DuckDB (Brikk)" displayType="BALLOON"/>
+        <!-- Stage 4b refresh-on-INSTALL/LOAD: one root DataAuditor per project (DataBus.addRootAuditor)
+             re-harvests a Brikk data source's live catalog when INSTALL/FORCE INSTALL/LOAD runs in a
+             console (debounced ~2s per source). Autoloaded extensions are NOT observable here — the
+             manual Refresh DuckDB Catalog action covers them. -->
+        <postStartupActivity implementation="dev.sort.duckdb.catalog.DuckdbInstallLoadStartup"/>
     </extensions>
 
     <extensions defaultExtensionNs="com.intellij.database">
@@ -81,4 +88,15 @@
         <driversConfig config="config/duckdb-brikk-drivers.xml"/>
         <artifactsConfig config="config/duckdb-brikk-artifacts.xml"/>
     </extensions>
+
+    <actions>
+        <!-- Manual live-catalog refresh; also the ONLY trigger that surfaces autoloaded
+             extensions (no INSTALL/LOAD ever runs for those, so the observer can't see them). -->
+        <action id="Duckdb.RefreshCatalog"
+                class="dev.sort.duckdb.catalog.DuckdbRefreshCatalogAction"
+                text="Refresh DuckDB Catalog"
+                description="Re-read functions, keywords, and loaded extensions from the connected DuckDB engine">
+            <add-to-group group-id="EditorPopupMenu" anchor="last"/>
+        </action>
+    </actions>
 </idea-plugin>

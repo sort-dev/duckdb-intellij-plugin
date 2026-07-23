@@ -96,8 +96,13 @@ Three-source function/keyword catalog, in priority order:
    into a per-data-source cache (`DuckdbLiveCatalog`, one TSV under `$SYSTEM/duckdb-brikk/catalog`
    so completion survives restarts offline) that REPLACES the bundled snapshot for that editor
    (`DuckdbCatalogResolver`: the console's data source, else the project's single Brikk source);
-   fail-soft with a 5s deadline, never blocks connect. Still open from this bullet: parameter
-   hints/quick-doc, `duckdb_settings()`, refresh on observed `INSTALL`/`LOAD`.
+   fail-soft with a 5s deadline, never blocks connect. Refresh on observed `INSTALL`/`LOAD` —
+   **DONE**: a project-root `DataAuditor` (`DataBus.addRootAuditor`, flag-free API) head-scans every
+   finished request and re-harvests the source debounced ~2s (`DuckdbInstallLoadObserver`), plus a
+   manual "Refresh DuckDB Catalog" action (editor menu + Find Action, balloon lists loaded
+   extensions) — the action is the ONLY path that picks up AUTOLOADED extensions (no INSTALL/LOAD
+   ever executes for those, so no observer can see them). Still open from this bullet: parameter
+   hints/quick-doc, `duckdb_settings()`.
 2. **Not connected**: bundled **base snapshot** harvested at build time in CI from the pinned
    duckdb_jdbc (self-updating with the build, zero hand-maintenance — or via brikk-sql-metadata
    if a DUCKDB catalog lands there; coordinate, don't duplicate).

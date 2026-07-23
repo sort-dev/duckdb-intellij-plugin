@@ -2,7 +2,6 @@ package dev.sort.duckdb.catalog
 
 import com.intellij.database.dataSource.DatabaseConnectionCore
 import com.intellij.database.dataSource.DatabaseConnectionInterceptor
-import com.intellij.database.remote.jdbc.helpers.JdbcNativeUtil
 import com.intellij.openapi.diagnostic.Logger
 import dev.sort.duckdb.DuckdbDbms
 
@@ -48,7 +47,7 @@ class DuckdbCatalogConnectionInterceptor : DatabaseConnectionInterceptor {
         if (connection.dbms != DuckdbDbms.DUCKDB_BRIKK) return
         val dataSource = connection.connectionPoint.dataSource
         try {
-            val entry = DuckdbCatalogHarvester.harvest(RemoteRowSource(connection))
+            val entry = DuckdbCatalogHarvester.harvest(DuckdbRemoteRowSource(connection))
             if (entry == null) {
                 LOG.info("live-catalog harvest for '${dataSource.name}' abandoned; keeping previous catalog")
                 return
@@ -65,31 +64,4 @@ class DuckdbCatalogConnectionInterceptor : DatabaseConnectionInterceptor {
         }
     }
 
-    /**
-     * [CatalogRowSource] over the platform's out-of-process JDBC: statement lifecycle through
-     * [JdbcNativeUtil] (the doris interceptor's proven execute shape), row reads as direct
-     * `RemoteResultSet` calls — any exception propagates to the fail-soft catch above.
-     */
-    private class RemoteRowSource(private val connection: DatabaseConnectionCore) : CatalogRowSource {
-        override fun forEachRow(sql: String, onRow: (col: (Int) -> String?) -> Unit) {
-            val statement = JdbcNativeUtil.computeRemote {
-                connection.remoteConnection.createStatement()
-            } ?: throw IllegalStateException("could not create statement")
-            try {
-                // Per-query guard under the harvest's wall-clock deadline; drivers without
-                // timeout support (quack) just skip it.
-                JdbcNativeUtil.performSafe { statement.setQueryTimeout(3) }
-                val resultSet = JdbcNativeUtil.computeRemote { statement.executeQuery(sql) } ?: return
-                try {
-                    while (resultSet.next()) {
-                        onRow { i -> resultSet.getString(i) }
-                    }
-                } finally {
-                    JdbcNativeUtil.performSafe { resultSet.close() }
-                }
-            } finally {
-                JdbcNativeUtil.closeRemoteStatementSafe(statement)
-            }
-        }
-    }
 }

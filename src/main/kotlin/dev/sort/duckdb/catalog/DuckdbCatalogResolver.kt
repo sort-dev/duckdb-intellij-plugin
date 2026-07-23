@@ -1,7 +1,9 @@
 package dev.sort.duckdb.catalog
 
 import com.intellij.database.console.JdbcConsoleProvider
+import com.intellij.database.dataSource.LocalDataSource
 import com.intellij.database.dataSource.LocalDataSourceManager
+import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiFile
 import dev.sort.duckdb.DuckdbDbms
 import dev.sort.duckdb.sql.DuckdbFunctionCatalog
@@ -37,17 +39,25 @@ object DuckdbCatalogResolver {
     }
 
     /** Everything best-effort: any surprise resolves to `null` -> bundled snapshot. */
-    fun dataSourceIdFor(file: PsiFile): String? {
+    fun dataSourceIdFor(file: PsiFile): String? = dataSourceFor(file)?.uniqueId
+
+    /** Same resolution, keeping the [LocalDataSource] itself (the refresh action's target). */
+    fun dataSourceFor(file: PsiFile): LocalDataSource? {
         val project = file.project
         val virtualFile = file.originalFile.virtualFile
         if (virtualFile != null) {
             val console = runCatching { JdbcConsoleProvider.getValidConsole(project, virtualFile) }.getOrNull()
             val dataSource = console?.dataSource
-            if (dataSource != null && dataSource.dbms == DuckdbDbms.DUCKDB_BRIKK) return dataSource.uniqueId
+            if (dataSource != null && dataSource.dbms == DuckdbDbms.DUCKDB_BRIKK) return dataSource
         }
+        return singleDataSource(project)
+    }
+
+    /** The project's single DuckDB (Brikk) data source; 0 or 2+ resolve to `null` (no guessing). */
+    fun singleDataSource(project: Project): LocalDataSource? {
         val ours = runCatching {
             LocalDataSourceManager.getInstance(project).dataSources.filter { it.dbms == DuckdbDbms.DUCKDB_BRIKK }
         }.getOrDefault(emptyList())
-        return ours.singleOrNull()?.uniqueId
+        return ours.singleOrNull()
     }
 }
