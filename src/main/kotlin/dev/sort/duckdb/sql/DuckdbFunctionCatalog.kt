@@ -21,7 +21,7 @@ object DuckdbFunctionCatalog {
                 val tab = line.indexOf('\t')
                 if (tab <= 0) return@mapNotNull null
                 val name = line.substring(0, tab)
-                if (!name.first().isLetter() && name.first() != '_') return@mapNotNull null
+                if (!isCompletableName(name)) return@mapNotNull null
                 Fn(name, kindOf(line.substring(tab + 1)))
             }
             .toList()
@@ -31,7 +31,12 @@ object DuckdbFunctionCatalog {
         resource("/duckdb/keywords.txt").lineSequence().filter { it.isNotBlank() }.map { it.uppercase() }.toSet()
     }
 
-    private fun kindOf(raw: String): Kind = when (raw.trim().lowercase()) {
+    /** The operator filter above, shared with the live harvest (same rows, same rule). */
+    internal fun isCompletableName(name: String): Boolean =
+        name.isNotEmpty() && (name.first().isLetter() || name.first() == '_')
+
+    /** duckdb_functions().function_type -> [Kind]; single mapping for bundled AND live rows. */
+    internal fun kindOf(raw: String): Kind = when (raw.trim().lowercase()) {
         "scalar" -> Kind.SCALAR
         "aggregate" -> Kind.AGGREGATE
         "table" -> Kind.TABLE

@@ -91,16 +91,21 @@ the server would have said, before I ran it."**
 
 Three-source function/keyword catalog, in priority order:
 
-1. **Connected**: harvest `duckdb_functions()` (name, kind → icons, parameters + types →
-   parameter hints, description → quick-doc), `duckdb_keywords()`, `duckdb_settings()`,
-   `duckdb_extensions()`. **Cache key = engine version + sorted loaded-extension set**; persist
-   per data source so completion survives offline; refresh on connect and after any observed
-   `INSTALL`/`LOAD` execution.
+1. **Connected** — **DONE (Stage 4b)**: a `<database.connectionInterceptor>` harvests
+   `version()`/`duckdb_extensions()`/`duckdb_functions()`/`duckdb_keywords()` on every connect
+   into a per-data-source cache (`DuckdbLiveCatalog`, one TSV under `$SYSTEM/duckdb-brikk/catalog`
+   so completion survives restarts offline) that REPLACES the bundled snapshot for that editor
+   (`DuckdbCatalogResolver`: the console's data source, else the project's single Brikk source);
+   fail-soft with a 5s deadline, never blocks connect. Still open from this bullet: parameter
+   hints/quick-doc, `duckdb_settings()`, refresh on observed `INSTALL`/`LOAD`.
 2. **Not connected**: bundled **base snapshot** harvested at build time in CI from the pinned
    duckdb_jdbc (self-updating with the build, zero hand-maintenance — or via brikk-sql-metadata
    if a DUCKDB catalog lands there; coordinate, don't duplicate).
-3. **Extension-aware offers**: a harvested extension→functions map lets completion offer
-   `st_read(...)` etc. labeled *"requires spatial"* even before LOAD.
+3. **Extension-aware offers** — **DONE (Stage 4b, code side)**: optional
+   `duckdb/extension-functions.tsv` resource (`name<TAB>kind<TAB>extension`, mixed-case names as
+   duckdb_functions() reports them) adds e.g. `ST_Read(...)` labeled *"requires spatial"* — only
+   names the active catalog lacks, matched case-folded; resource absent = layer silently off
+   (the harvested map arrives from its own lane).
 
 Plus: TVF named-parameter completion for `read_csv`/`read_parquet`/`read_json` (from function
 metadata), `PRAGMA`/`SET` completion from settings, keyword completion, the doris
