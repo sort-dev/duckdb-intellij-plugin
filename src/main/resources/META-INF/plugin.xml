@@ -74,6 +74,10 @@
         <extensionFallback dbms="DUCKDB_BRIKK" fallbackDbms="POSTGRES"/>
         <modelFacade dbms="DUCKDB_BRIKK" implementationClass="dev.sort.duckdb.DuckdbModelFacade"/>
         <errorHandler dbms="DUCKDB_BRIKK" implementationClass="com.intellij.database.dialects.generic.GenericDatabaseErrorHandler"/>
+        <!-- Stage 4b: on-connect duckdb_functions()/duckdb_keywords() harvest -> live
+             per-data-source catalog that replaces the bundled snapshot for that source
+             (persisted under $SYSTEM/duckdb-brikk/catalog, fail-soft, never blocks connect). -->
+        <database.connectionInterceptor implementation="dev.sort.duckdb.catalog.DuckdbCatalogConnectionInterceptor"/>
         <driversConfig config="config/duckdb-brikk-drivers.xml"/>
         <artifactsConfig config="config/duckdb-brikk-artifacts.xml"/>
     </extensions>

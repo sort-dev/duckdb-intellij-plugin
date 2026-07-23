@@ -8,13 +8,20 @@ import com.intellij.codeInsight.completion.CompletionType
 import com.intellij.codeInsight.lookup.LookupElementBuilder
 import com.intellij.patterns.PlatformPatterns
 import com.intellij.util.ProcessingContext
+import dev.sort.duckdb.catalog.DuckdbCatalogResolver
+import dev.sort.duckdb.catalog.DuckdbExtensionOffers
 import icons.DatabaseIcons
 
 /**
- * DuckDB function completion from the bundled catalog (doris FunctionProvider pattern): every
- * duckdb_functions() name with its kind as the type text, parens inserted with the caret placed
- * between them. Table functions and macros complete in FROM positions too (they ARE relations).
- * Live per-data-source catalogs (extension-aware) replace the bundled list when Stage 4b lands.
+ * DuckDB function completion (doris FunctionProvider pattern): every function of the ACTIVE
+ * catalog with its kind as the type text, parens inserted with the caret placed between them.
+ * Table functions and macros complete in FROM positions too (they ARE relations).
+ *
+ * The active catalog comes from [DuckdbCatalogResolver]: the editor's data source's live
+ * duckdb_functions() harvest when one exists (REPLACING the bundled list — version-exact both
+ * ways), the bundled snapshot otherwise. On top, [DuckdbExtensionOffers] adds functions specific
+ * extensions would provide (`requires <extension>` type text) — only names the active catalog
+ * does not already have, matched case-folded (DuckDB resolves function names case-insensitively).
  */
 class DuckdbCompletionContributor : CompletionContributor() {
 
@@ -40,22 +47,31 @@ class DuckdbCompletionContributor : CompletionContributor() {
             result: CompletionResultSet,
         ) {
             val out = result.caseInsensitive()
-            for (fn in DuckdbFunctionCatalog.functions) {
-                out.addElement(
-                    LookupElementBuilder.create(fn.name)
-                        .withIcon(kindIcon(fn.kind))
-                        .withTypeText(fn.kind.name.lowercase(), true)
-                        .withInsertHandler { ctx, _ ->
-                            val editor = ctx.editor
-                            val at = ctx.tailOffset
-                            val already = editor.document.charsSequence.let { at < it.length && it[at] == '(' }
-                            if (!already) {
-                                editor.document.insertString(at, "()")
-                                editor.caretModel.moveToOffset(at + 1)
-                            }
-                        },
-                )
+            val active = DuckdbCatalogResolver.activeCatalogFor(parameters.originalFile)
+            for (fn in active.functions) {
+                out.addElement(element(fn.name, fn.kind, fn.kind.name.lowercase()))
+            }
+            // Extension-aware offers: only names the active catalog (live or bundled) lacks —
+            // case-folded match, original case inserted (`ST_Area` stays `ST_Area`).
+            val have = active.functions.mapTo(HashSet(active.functions.size * 2)) { it.name.lowercase() }
+            for (offer in DuckdbExtensionOffers.offers) {
+                if (offer.name.lowercase() in have) continue
+                out.addElement(element(offer.name, offer.kind, "requires ${offer.extension}"))
             }
         }
+
+        private fun element(name: String, kind: DuckdbFunctionCatalog.Kind, typeText: String) =
+            LookupElementBuilder.create(name)
+                .withIcon(kindIcon(kind))
+                .withTypeText(typeText, true)
+                .withInsertHandler { ctx, _ ->
+                    val editor = ctx.editor
+                    val at = ctx.tailOffset
+                    val already = editor.document.charsSequence.let { at < it.length && it[at] == '(' }
+                    if (!already) {
+                        editor.document.insertString(at, "()")
+                        editor.caretModel.moveToOffset(at + 1)
+                    }
+                }
     }
 }

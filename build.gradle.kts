@@ -81,6 +81,14 @@ tasks {
         systemProperty("idea.load.plugins.id", "com.intellij.database,dev.sort.duckdb-intellij-plugin")
         // DuckDB syntax corpus for the substrate scoreboard (DuckdbSyntaxProbeTest).
         systemProperty("corpus.dir", layout.projectDirectory.dir("src/test/resources/corpus").asFile.absolutePath)
+// Live quack-wire suites (QuackLiveTruthTest, DuckdbLiveHarvestOverQuackTest) are gated on
+        // this property; forward it from the Gradle invocation (`-Dquack.live.url=...` or
+        // `-Pquack.live.url=...`) into the forked test JVM. Absent => those tests JUnit-Assume
+        // out, keeping the committed run offline-deterministic.
+        val quackLiveUrl = providers.systemProperty("quack.live.url")
+            .orElse(providers.gradleProperty("quack.live.url"))
+            .orNull
+        if (quackLiveUrl != null) systemProperty("quack.live.url", quackLiveUrl)
     }
 }
 
@@ -109,6 +117,16 @@ dependencies {
 val harvestFunctionCatalog by tasks.registering(JavaExec::class) {
     classpath = sourceSets["tools"].runtimeClasspath
     mainClass = "dev.sort.duckdb.tools.FunctionCatalogHarvestKt"
+    args(layout.projectDirectory.dir("src/main/resources/duckdb").asFile.absolutePath)
+}
+
+// Usage: ./gradlew harvestExtensionCatalog — regenerates extension-functions.tsv by diffing
+// duckdb_functions() across INSTALL+LOAD for each curated extension (network required — INSTALL
+// pulls from the DuckDB extension repo). Depends on functions.tsv (the base catalog) for its
+// no-overlap assertion. Commit output.
+val harvestExtensionCatalog by tasks.registering(JavaExec::class) {
+    classpath = sourceSets["tools"].runtimeClasspath
+    mainClass = "dev.sort.duckdb.tools.ExtensionCatalogHarvestKt"
     args(layout.projectDirectory.dir("src/main/resources/duckdb").asFile.absolutePath)
 }
 
