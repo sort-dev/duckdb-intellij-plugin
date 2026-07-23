@@ -27,7 +27,7 @@ dependencies {
     // TESTS ONLY: the GizmoSQL quack driver (brikk build) — QuackDriverFactsTest extracts the
     // driver class and URL scheme from the jar itself (acceptsURL needs no server), keeping
     // config/duckdb-brikk-drivers.xml honest. The plugin does not bundle or link this jar.
-    testImplementation("dev.brikk.duckdb:quack-jdbc:0.3.0")
+    testImplementation("dev.brikk.duckdb:quack-jdbc:0.4.0")
 
     // TESTS ONLY (for now): the sqllogictest format layer + expander — powers the upstream
     // duckdb test/sql census harvest (SltHarvestSmokeTest exercises the API contract).
