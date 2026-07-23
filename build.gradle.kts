@@ -81,6 +81,14 @@ tasks {
         systemProperty("idea.load.plugins.id", "com.intellij.database,dev.sort.duckdb-intellij-plugin")
         // DuckDB syntax corpus for the substrate scoreboard (DuckdbSyntaxProbeTest).
         systemProperty("corpus.dir", layout.projectDirectory.dir("src/test/resources/corpus").asFile.absolutePath)
+        // Live GizmoSQL/quack truth suite (QuackLiveTruthTest) is gated on this property; forward it
+        // from the Gradle invocation (`-Dquack.live.url=...` or `-Pquack.live.url=...`) into the
+        // forked test JVM. Absent => that suite JUnit-Assumes out, keeping the committed run
+        // offline-deterministic.
+        val quackLiveUrl = providers.systemProperty("quack.live.url")
+            .orElse(providers.gradleProperty("quack.live.url"))
+            .orNull
+        if (quackLiveUrl != null) systemProperty("quack.live.url", quackLiveUrl)
     }
 }
 
