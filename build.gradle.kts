@@ -81,10 +81,14 @@ tasks {
         systemProperty("idea.load.plugins.id", "com.intellij.database,dev.sort.duckdb-intellij-plugin")
         // DuckDB syntax corpus for the substrate scoreboard (DuckdbSyntaxProbeTest).
         systemProperty("corpus.dir", layout.projectDirectory.dir("src/test/resources/corpus").asFile.absolutePath)
-        // Opt-in live quack-wire harvest test (DuckdbLiveHarvestOverQuackTest):
-        // ./gradlew test -Dquack.live.url='jdbc:quack://host:9494?token=...' — property absent,
-        // the test Assumes itself out and the suite stays offline-green.
-        providers.systemProperty("quack.live.url").orNull?.let { systemProperty("quack.live.url", it) }
+// Live quack-wire suites (QuackLiveTruthTest, DuckdbLiveHarvestOverQuackTest) are gated on
+        // this property; forward it from the Gradle invocation (`-Dquack.live.url=...` or
+        // `-Pquack.live.url=...`) into the forked test JVM. Absent => those tests JUnit-Assume
+        // out, keeping the committed run offline-deterministic.
+        val quackLiveUrl = providers.systemProperty("quack.live.url")
+            .orElse(providers.gradleProperty("quack.live.url"))
+            .orNull
+        if (quackLiveUrl != null) systemProperty("quack.live.url", quackLiveUrl)
     }
 }
 
