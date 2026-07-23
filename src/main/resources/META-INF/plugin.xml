@@ -22,8 +22,24 @@
     ]]></description>
 
     <change-notes><![CDATA[
-        <b>0.1.0</b> — initial seed: DuckDB (Brikk) dialect (Postgres-based), local + GizmoSQL
-        (quack) driver templates.
+        <b>0.1.0</b> — first public preview.
+        <ul>
+            <li><b>DuckDB dialect</b> with correct statement/run-block boundaries across the
+                DuckDB statement surface — <code>SELECT * EXCLUDE(...)</code>,
+                <code>QUALIFY</code>, <code>GROUP BY ALL</code>, struct/list literals, lambdas,
+                <code>PIVOT</code>/<code>UNPIVOT</code>, FROM-first queries, <code>ATTACH</code>,
+                <code>SUMMARIZE</code>, <code>CREATE MACRO/SECRET</code> and more. Coverage is
+                measured against DuckDB's own test suite: 226/226 sampled syntax families parse
+                clean at DuckDB 1.5.5.</li>
+            <li><b>Engine-exact error checking:</b> statements are validated by a real DuckDB
+                (found on your data source's driver; EXPLAIN-based, never executes) — squiggles
+                carry the engine's own parser messages.</li>
+            <li><b>Function completion:</b> 943 built-ins with kind icons (scalar / aggregate /
+                table / macro), harvested from duckdb_functions() itself.</li>
+            <li><b>Ready-made data sources:</b> local DuckDB and GizmoSQL servers (token-auth
+                quack-jdbc, port 9494); driver versions pinned and auto-downloaded from Maven
+                Central, matched to the tested engine version.</li>
+        </ul>
     ]]></change-notes>
 
     <depends>com.intellij.modules.platform</depends>

@@ -8,6 +8,7 @@ import com.intellij.codeInsight.completion.CompletionType
 import com.intellij.codeInsight.lookup.LookupElementBuilder
 import com.intellij.patterns.PlatformPatterns
 import com.intellij.util.ProcessingContext
+import icons.DatabaseIcons
 
 /**
  * DuckDB function completion from the bundled catalog (doris FunctionProvider pattern): every
@@ -25,6 +26,14 @@ class DuckdbCompletionContributor : CompletionContributor() {
     }
 
     private object FunctionProvider : CompletionProvider<CompletionParameters>() {
+        // doris parity (0.6.0 function-kind icons): distinct icons per kind, same icon set.
+        private fun kindIcon(kind: DuckdbFunctionCatalog.Kind): javax.swing.Icon = when (kind) {
+            DuckdbFunctionCatalog.Kind.AGGREGATE -> DatabaseIcons.Aggregate
+            DuckdbFunctionCatalog.Kind.TABLE, DuckdbFunctionCatalog.Kind.TABLE_MACRO -> DatabaseIcons.Table
+            DuckdbFunctionCatalog.Kind.MACRO -> DatabaseIcons.Routine
+            else -> DatabaseIcons.Function
+        }
+
         override fun addCompletions(
             parameters: CompletionParameters,
             context: ProcessingContext,
@@ -34,6 +43,7 @@ class DuckdbCompletionContributor : CompletionContributor() {
             for (fn in DuckdbFunctionCatalog.functions) {
                 out.addElement(
                     LookupElementBuilder.create(fn.name)
+                        .withIcon(kindIcon(fn.kind))
                         .withTypeText(fn.kind.name.lowercase(), true)
                         .withInsertHandler { ctx, _ ->
                             val editor = ctx.editor
