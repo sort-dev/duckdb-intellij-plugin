@@ -95,9 +95,20 @@ and the artifact pin in `config/duckdb-brikk-artifacts.xml`, then re-run all thr
 commit their output: `./gradlew harvestCensus harvestFunctionCatalog harvestExtensionCatalog`
 (the last needs network for extension INSTALLs).
 
+## Credits
+
+- **[DuckDB](https://duckdb.org)** — the database this plugin exists for, built by DuckDB Labs
+  and the DuckDB Foundation community. We are an independent project: not affiliated with them,
+  and not them. "DuckDB" and the DuckDB logo are trademarks of the DuckDB Foundation; the logo is
+  used unmodified, per the [DuckDB design manual](https://duckdb.org/design/manual/), solely to
+  identify the database this plugin supports.
+- **[GizmoSQL](https://gizmosql.com)** — the Quack wire protocol and the `quack-jdbc` driver are
+  their work. The plugin currently ships a brikk-published build of the driver
+  (`dev.brikk.duckdb:quack-jdbc`) carrying fixes we are contributing back upstream; we expect to
+  return to the upstream artifact.
+- Full third-party attributions (including the StarRocks-lineage parser techniques):
+  THIRD_PARTY_NOTICES.md.
+
 ## License
 
-Apache-2.0. Independent community plugin by Sortdev SRL — not affiliated with DuckDB Labs, the
-DuckDB Foundation, or GizmoSQL. "DuckDB" is a trademark of the DuckDB Foundation, used only to
-identify the database this plugin supports; the DuckDB logo is used unmodified per the
-[DuckDB design manual](https://duckdb.org/design/manual/). See THIRD_PARTY_NOTICES.md.
+Apache-2.0. Independent community plugin by Sortdev SRL.
