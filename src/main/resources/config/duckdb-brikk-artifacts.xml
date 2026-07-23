@@ -15,6 +15,10 @@
   </artifact>
 
   <artifact id="quack-jdbc-brikk" name="Quack JDBC (Brikk)">
+    <version version="0.5.0">
+      <item type="maven" url="dev.brikk.duckdb:quack-jdbc:0.5.0"/>
+      <item type="license" url="https://www.apache.org/licenses/LICENSE-2.0.txt"/>
+    </version>
     <version version="0.4.0">
       <item type="maven" url="dev.brikk.duckdb:quack-jdbc:0.4.0"/>
       <item type="license" url="https://www.apache.org/licenses/LICENSE-2.0.txt"/>
