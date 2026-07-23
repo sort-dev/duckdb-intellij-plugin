@@ -77,7 +77,7 @@ class DuckdbPsiParser : PgParser(false) {
             "COPY" -> {
                 if (statementContainsAny(
                         builder,
-                        "PARQUET", "PARTITION_BY", "COMPRESSION", "OVERWRITE_OR_IGNORE",
+                        "PARQUET", "BLOB", "PARTITION_BY", "COMPRESSION", "OVERWRITE_OR_IGNORE",
                         "FILE_SIZE_BYTES", "PER_THREAD_OUTPUT", "APPEND", "AUTO_DETECT",
                         "SAMPLE_SIZE", "ALL_VARCHAR", "IGNORE_ERRORS", "NULL_PADDING",
                         "NORMALIZE_NAMES", "FILENAME", "HIVE_PARTITIONING", "UNION_BY_NAME",
@@ -105,8 +105,13 @@ class DuckdbPsiParser : PgParser(false) {
             }
 
             // INSERT OR REPLACE/IGNORE INTO — PG has no OR-conflict-shorthand form.
+            // INSERT INTO t FROM ... — DuckDB's from-first source (FROM appears where PG demands
+            // SELECT/VALUES; "FROM before any SELECT/VALUES" is the unambiguous signature).
             "INSERT" -> {
                 if (wordAt(builder, 1) == "OR") return parseLenientStatement(builder, SQL_STATEMENT)
+                if (statementFirstOf(builder, "FROM", "SELECT", "VALUES", "DEFAULT") == "FROM") {
+                    return parseLenientStatement(builder, SQL_STATEMENT)
+                }
             }
         }
         return super.parseSqlStatement(builder, level)
@@ -143,6 +148,25 @@ class DuckdbPsiParser : PgParser(false) {
         }
         marker.rollbackTo()
         return result
+    }
+
+    /** The FIRST of [words] to appear before the next ';' (uppercased), or null. Non-consuming. */
+    private fun statementFirstOf(builder: PsiBuilder, vararg words: String): String? {
+        val expected = words.toHashSet()
+        val marker = builder.mark()
+        var scanned = 0
+        var found: String? = null
+        while (!builder.eof() && builder.tokenText != ";" && scanned < MAX_LOOKAHEAD) {
+            val text = builder.tokenText?.uppercase()
+            if (text != null && text in expected) {
+                found = text
+                break
+            }
+            builder.advanceLexer()
+            scanned++
+        }
+        marker.rollbackTo()
+        return found
     }
 
     /** True if [word] appears with [next] as the following letter-word, within the window. Non-consuming. */

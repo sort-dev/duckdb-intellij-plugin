@@ -57,7 +57,9 @@ class DuckdbLexer : LookAheadLexer(PgLexer()) {
         val upper = text.uppercase()
         when {
             text == "{" -> { collapseBraceSpan(baseLexer); return }
-            text == "[" && bracketIsComprehension(baseLexer) -> { collapseBracketSpan(baseLexer); return }
+            text == "[" && (bracketIsComprehension(baseLexer) || lastMeaningful in setOf("(", ",", "=")) -> {
+                collapseBracketSpan(baseLexer); return
+            }
             upper == "INTERVAL" && (nextIsNumber(baseLexer) || nextIs(baseLexer, "(")) -> {
                 collapseInterval(baseLexer); return
             }
@@ -75,6 +77,11 @@ class DuckdbLexer : LookAheadLexer(PgLexer()) {
             }
             upper == "FILTER" && nextIs(baseLexer, "(") && !parenStartsWithWhere(baseLexer) -> {
                 maskThroughMatchingParen(baseLexer); return
+            }
+            upper == "VALUES" && lastMeaningful == "FROM" -> { collapseValuesTableFactor(baseLexer); return }
+            upper == "LAMBDA" -> { maskLambdaHead(baseLexer); return }
+            (upper == "ASOF" || upper == "ANTI" || upper == "SEMI") && nextWordIsJoinish(baseLexer) -> {
+                maskWords(baseLexer, 1); return
             }
             upper == "USING" && wordsFollow(baseLexer, "SAMPLE") -> { maskSampleSuffix(baseLexer); return }
             upper == "TABLESAMPLE" -> { maskSampleSuffix(baseLexer); return }
@@ -102,10 +109,33 @@ class DuckdbLexer : LookAheadLexer(PgLexer()) {
             upper == "GENERATED" && inCreateColumns && wordsFollow(baseLexer, "ALWAYS", "AS") -> {
                 maskGeneratedClause(baseLexer); return // PG demands STORED; DuckDB omits it
             }
+            upper == "BLOB" && (inCreateColumns || lastMeaningful == "::" || lastMeaningful == "AS") -> {
+                advanceAs(baseLexer, SqlTokens.SQL_IDENT) // BLOB is a type name in DuckDB
+                noteToken(upper)
+                return
+            }
             upper == "DOUBLE" && !wordsFollow(baseLexer, "PRECISION") &&
                 (inCreateColumns || lastMeaningful == "::") -> {
                 advanceAs(baseLexer, SqlTokens.SQL_IDENT) // bare DOUBLE is a type in DuckDB
                 noteToken(upper)
+                return
+            }
+            upper == "COLUMN" && statementHead == "ALTER" && dottedIdentFollows(baseLexer) -> {
+                noteToken(upper); trackStructure(text)
+                super.lookAhead(baseLexer) // emit COLUMN itself
+                collapseDottedPath(baseLexer)
+                return
+            }
+            upper == "TABLE" && statementHead == "CREATE" -> {
+                noteToken(upper); trackStructure(text)
+                super.lookAhead(baseLexer)
+                var guard = 4
+                while (baseLexer.tokenType != null && baseLexer.tokenText.isNullOrBlank() && guard-- > 0) {
+                    super.lookAhead(baseLexer)
+                }
+                if (baseLexer.tokenType == SqlTokens.SQL_STRING_TOKEN) {
+                    advanceAs(baseLexer, SqlTokens.SQL_IDENT) // CREATE TABLE 'file-ish name'
+                }
                 return
             }
             (upper == "FROM" || upper == "JOIN") && statementHead != "COPY" -> {
@@ -189,10 +219,12 @@ class DuckdbLexer : LookAheadLexer(PgLexer()) {
             }
             base.advance()
         } while (base.tokenType != null && depth > 0)
-        // optional array suffixes: [] (possibly repeated)
-        while (base.tokenText == "[") {
+        // optional array suffixes: [] (possibly repeated; whitespace may precede)
+        while (true) {
+            skipWs(base)
+            if (base.tokenText != "[") break
             base.advance()
-            if (base.tokenText == "]") base.advance()
+            if (base.tokenText == "]") base.advance() else break
         }
         addToken(base.tokenStart, SqlTokens.SQL_IDENT)
         noteToken("TYPE_COLLAPSED")
@@ -361,6 +393,71 @@ class DuckdbLexer : LookAheadLexer(PgLexer()) {
         return false
     }
 
+    /** `FROM VALUES (…),(…)` — collapse the bare VALUES table factor to ONE ident; a trailing
+     *  `t(a)` alias then reads as a normal aliased table ref. (PG only allows parenthesized
+     *  VALUES in FROM; DuckDB allows it bare.) */
+    private fun collapseValuesTableFactor(base: Lexer) {
+        base.advance() // VALUES
+        var guard = 64
+        while (base.tokenType != null && guard-- > 0) {
+            skipWs(base)
+            when (base.tokenText) {
+                "(" -> {
+                    var depth = 0
+                    do {
+                        when (base.tokenText) { "(" -> depth++; ")" -> depth-- }
+                        base.advance()
+                    } while (base.tokenType != null && depth > 0)
+                }
+                "," -> base.advance()
+                else -> break
+            }
+        }
+        addToken(base.tokenStart, SqlTokens.SQL_IDENT)
+        noteToken("VALUES_TABLE")
+    }
+
+    /** Mask `lambda x[, y]*:` (python-style lambda head) as one comment; the body survives. */
+    private fun maskLambdaHead(base: Lexer) {
+        base.advance() // LAMBDA
+        var guard = 12
+        while (base.tokenType != null && guard-- > 0 && base.tokenText != ":") {
+            val t = base.tokenText ?: break
+            if (t == "(" || t == ")" || t == ";") break
+            base.advance()
+        }
+        if (base.tokenText == ":") base.advance()
+        addToken(base.tokenStart, SqlTokens.SQL_BLOCK_COMMENT)
+        noteToken("MASKED_LAMBDA")
+    }
+
+    /** Next word is JOIN or a join qualifier (LEFT/RIGHT/FULL/INNER/OUTER). */
+    private fun nextWordIsJoinish(base: Lexer): Boolean =
+        listOf("JOIN", "LEFT", "RIGHT", "FULL", "INNER", "OUTER").any { wordsFollow(base, it) }
+
+    /** ident(.ident)+ follows on the raw buffer (a dotted column path). */
+    private fun dottedIdentFollows(base: Lexer): Boolean {
+        val seq = base.bufferSequence
+        var i = base.tokenEnd
+        while (i < seq.length && seq[i].isWhitespace()) i++
+        val start = i
+        while (i < seq.length && (seq[i].isLetterOrDigit() || seq[i] == '_')) i++
+        return i > start && i < seq.length && seq[i] == '.'
+    }
+
+    /** Collapse `a.b.c` into ONE ident token. */
+    private fun collapseDottedPath(base: Lexer) {
+        skipWs(base)
+        var guard = 16
+        while (base.tokenType != null && guard-- > 0) {
+            base.advance() // ident
+            if (base.tokenText != ".") break
+            base.advance() // dot
+        }
+        addToken(base.tokenStart, SqlTokens.SQL_IDENT)
+        noteToken("DOTTED_COLUMN")
+    }
+
     /** After FILTER: does the upcoming paren group start with WHERE (the PG-legal form)? */
     private fun parenStartsWithWhere(base: Lexer): Boolean {
         val seq = base.bufferSequence
@@ -402,6 +499,10 @@ class DuckdbLexer : LookAheadLexer(PgLexer()) {
                     createColumnsDepth = 0
                 }
                 parenDepth--
+                // pop TRY_CAST frames whose parens just closed (nested try_cast support)
+                while (tryCastAsDepths.isNotEmpty() && tryCastAsDepths.last() > parenDepth) {
+                    tryCastAsDepths.removeLast()
+                }
             }
             ";" -> {
                 inCreateColumns = false
