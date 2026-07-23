@@ -102,8 +102,8 @@ commit their output: `./gradlew harvestCensus harvestFunctionCatalog harvestExte
   and not them. "DuckDB" and the DuckDB logo are trademarks of the DuckDB Foundation; the logo is
   used unmodified, per the [DuckDB design manual](https://duckdb.org/design/manual/), solely to
   identify the database this plugin supports.
-- **[GizmoSQL](https://gizmosql.com)** — the Quack wire protocol and the `quack-jdbc` driver are
-  their work. The plugin currently ships a brikk-published build of the driver
+- **[GizmoSQL](https://gizmosql.com)** — the `quack-jdbc` driver, their JDBC port of the Quack
+  wire protocol, is their work. The plugin currently ships a brikk-published build of the driver
   (`dev.brikk.duckdb:quack-jdbc`) carrying fixes we are contributing back upstream; we expect to
   return to the upstream artifact.
 - Full third-party attributions (including the StarRocks-lineage parser techniques):
