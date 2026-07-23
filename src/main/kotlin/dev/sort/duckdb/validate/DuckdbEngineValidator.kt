@@ -55,23 +55,41 @@ object DuckdbEngineValidator {
 
     val available: Boolean get() = driver != null
 
+    /** Per-jar driver cache (isolated URLClassLoaders; duckdb extracts its native lib per loader). */
+    private val jarDrivers = java.util.concurrent.ConcurrentHashMap<String, java.util.Optional<java.sql.Driver>>()
+
+    /** Load (and cache) the DuckDB driver from an explicit jar — the driver-classpath path. */
+    fun driverForJar(jarPath: String): java.sql.Driver? =
+        jarDrivers.computeIfAbsent(jarPath) {
+            java.util.Optional.ofNullable(
+                runCatching {
+                    val loader = java.net.URLClassLoader(
+                        arrayOf(java.io.File(jarPath).toURI().toURL()),
+                        ClassLoader.getPlatformClassLoader(),
+                    )
+                    loader.loadClass("org.duckdb.DuckDBDriver").getDeclaredConstructor().newInstance() as java.sql.Driver
+                }.getOrNull(),
+            )
+        }.orElse(null)
+
     /** A fresh in-memory engine per pass: statements can't pollute each other across validations. */
-    private fun connect(): Connection? =
-        runCatching { driver?.connect("jdbc:duckdb:", java.util.Properties()) }.getOrNull()
+    private fun connect(d: java.sql.Driver?): Connection? =
+        runCatching { d?.connect("jdbc:duckdb:", java.util.Properties()) }.getOrNull()
 
     /**
      * Validate [statements] (raw text, in order). Returns engine-confirmed PARSER errors per
      * statement index. One connection per call; DDL executed by EXPLAIN-binding stays inside the
      * throwaway instance.
      */
-    fun validate(statements: List<String>): Map<Int, EngineError> =
-        verdicts(statements).withIndex()
+    fun validate(statements: List<String>, jarPath: String? = null): Map<Int, EngineError> =
+        verdicts(statements, jarPath).withIndex()
             .mapNotNull { (i, v) -> (v as? Verdict.Flagged)?.let { i to it.error } }
             .toMap()
 
     /** Full three-way verdicts, aligned with [statements] by index. */
-    fun verdicts(statements: List<String>): List<Verdict> {
-        val conn = connect() ?: return statements.map { Verdict.Clean }
+    fun verdicts(statements: List<String>, jarPath: String? = null): List<Verdict> {
+        val engine = jarPath?.let { driverForJar(it) } ?: driver
+        val conn = connect(engine) ?: return statements.map { Verdict.Clean }
         val out = ArrayList<Verdict>(statements.size)
         conn.use { c ->
             for (raw in statements) {
@@ -139,7 +157,15 @@ object DuckdbEngineValidator {
             val caret = if (lineIdx >= 0 && lineIdx + 1 < lines.size) lines[lineIdx + 1].indexOf('^') else -1
             if (caret >= 0 && shownLine != null) {
                 val contentStart = shownLine.indexOf(':') + 2 // after "LINE n: "
-                if (line == 1 && (caret - contentStart) in 0..prefixLen) return Verdict.HeadRejected
+                if (line == 1 && (caret - contentStart) in 0..prefixLen &&
+                    payloadLeadWords.firstOrNull() in KNOWN_STATEMENT_HEADS &&
+                    payloadLeadWords.firstOrNull() !in EXPLAINABLE_HEADS
+                ) {
+                    // caret at the payload's first char = EXPLAIN's statement-type rejection —
+                    // but only for KNOWN-VALID non-query heads; a typo'd head carets there too
+                    // and must FLAG.
+                    return Verdict.HeadRejected
+                }
             }
             // Statement-form rejection: a head EXPLAIN only partially supports (CREATE
             // [PERSISTENT] SECRET, ANALYZE t(c), EXPORT ...) errors "near" one of the payload's
@@ -147,11 +173,15 @@ object DuckdbEngineValidator {
             // offending word). Query-family heads are ALWAYS fully explainable, so for them any
             // parser error is real (SELECT FROM WHERE must flag even though WHERE is word 3).
             if (near != null &&
+                payloadLeadWords.firstOrNull() in KNOWN_STATEMENT_HEADS &&
                 payloadLeadWords.firstOrNull() !in EXPLAINABLE_HEADS &&
                 payloadLeadWords.any { w ->
                     near.equals(w.takeWhile { it.isLetterOrDigit() || it == '_' }, ignoreCase = true)
                 }
             ) {
+                // ...but only for KNOWN-VALID heads: a typo'd head (SELEC 1) also errors near
+                // itself, and that must FLAG — head-rejection is for real statement forms
+                // EXPLAIN merely can't take, never for garbage.
                 return Verdict.HeadRejected
             }
         }
@@ -163,5 +193,11 @@ object DuckdbEngineValidator {
     private const val PARSER_MARKER = "Parser Error"
     private const val EXPLAIN_PREFIX_LEN = "EXPLAIN ".length
     private val EXPLAINABLE_HEADS = setOf("SELECT", "WITH", "VALUES", "FROM", "INSERT", "UPDATE", "DELETE")
+    private val KNOWN_STATEMENT_HEADS = EXPLAINABLE_HEADS + setOf(
+        "COMMENT", "PREPARE", "EXECUTE", "DEALLOCATE", "EXPORT", "IMPORT", "ANALYZE", "VACUUM",
+        "CHECKPOINT", "CALL", "INSTALL", "LOAD", "FORCE", "ATTACH", "DETACH", "USE", "BEGIN",
+        "COMMIT", "ROLLBACK", "ABORT", "SET", "RESET", "PRAGMA", "CREATE", "ALTER", "DROP",
+        "COPY", "TRUNCATE", "SUMMARIZE", "DESCRIBE", "SHOW", "PIVOT", "UNPIVOT", "EXPLAIN",
+    )
     private const val MAX_STATEMENT = 100_000
 }

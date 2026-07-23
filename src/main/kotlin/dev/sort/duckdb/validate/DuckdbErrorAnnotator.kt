@@ -20,7 +20,7 @@ import dev.sort.duckdb.sql.DuckdbSqlDialect
  */
 class DuckdbErrorAnnotator : ExternalAnnotator<DuckdbErrorAnnotator.Info, DuckdbErrorAnnotator.Result>() {
 
-    data class Info(val statements: List<Pair<TextRange, String>>)
+    data class Info(val statements: List<Pair<TextRange, String>>, val engineJar: String?)
     data class Result(val errors: List<Pair<TextRange, DuckdbEngineValidator.EngineError>>)
 
     // The default 3-arg variant bails when the file has PSI errors — but broken-looking PSI is
@@ -30,16 +30,18 @@ class DuckdbErrorAnnotator : ExternalAnnotator<DuckdbErrorAnnotator.Info, Duckdb
 
     override fun collectInformation(file: PsiFile): Info? {
         if (!file.language.isKindOf(DuckdbSqlDialect.INSTANCE)) return null
-        if (!DuckdbEngineValidator.available) return null
+        // engine sources: driver-classpath / downloaded drivers (locator) or sysprop/test classpath
+        val engineJar = DuckdbEngineLocator.engineJarFor(file)?.toString()
+        if (engineJar == null && !DuckdbEngineValidator.available) return null
         val statements = PsiTreeUtil.findChildrenOfType(file, SqlStatement::class.java)
             .filterNot { it.parent is SqlStatement }
             .map { it.textRange to it.text }
-        return if (statements.isEmpty()) null else Info(statements)
+        return if (statements.isEmpty()) null else Info(statements, engineJar)
     }
 
     override fun doAnnotate(collectedInfo: Info?): Result? {
         val info = collectedInfo ?: return null
-        val flagged = DuckdbEngineValidator.validate(info.statements.map { it.second })
+        val flagged = DuckdbEngineValidator.validate(info.statements.map { it.second }, info.engineJar)
         if (flagged.isEmpty()) return Result(emptyList())
         return Result(flagged.map { (i, err) -> info.statements[i].first to err })
     }
