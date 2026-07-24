@@ -17,7 +17,9 @@ object DuckdbDbms {
     @JvmField
     val DUCKDB_BRIKK: Dbms = Dbms.create(
         "DUCKDB_BRIKK",
-        "DuckDB (Brikk)",
+        // User-facing dialect label (the SQL-dialect picker); "sort.dev" is the vendor. The
+        // internal id stays DUCKDB_BRIKK / DuckDBBrikk (code + existing file→dialect mappings).
+        "DuckDB (sort.dev)",
         { icon },
         Dbms.defaultPattern("duckdb")
     )

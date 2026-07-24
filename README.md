@@ -2,7 +2,12 @@
 
 A real **DuckDB SQL dialect** for DataGrip and IntelliJ-family IDEs, with ready-made data sources
 for **local/embedded DuckDB** and **[GizmoSQL](https://gizmosql.com) servers** (token-auth
-`quack-jdbc` driver — plain JDBC, no Arrow).
+`quack-jdbc` driver — plain JDBC, no Arrow). Part of our SQL-tooling family alongside
+[brikk-house](https://github.com/brikk/brikk-house).
+
+> **In the IDE, use the `DuckDB (sort.dev)` dialect.** It's picked automatically for the bundled
+> DuckDB data source; for a plain SQL file, set it via the dialect switcher in the editor's
+> status bar, or **Settings → Languages & Frameworks → SQL Dialects**.
 
 ## Why
 
