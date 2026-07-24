@@ -6,10 +6,12 @@ for **local/embedded DuckDB** and via the **[Quack protocol](https://duckdb.org/
 
 Part of our SQL-tooling family alongside:
 
-* [Apache Doris dialect plugin](https://plugins.jetbrains.com/plugin/32777-sql-dialect-for-apache-doris)
-* [SQL Transpiler plugin](https://plugins.jetbrains.com/plugin/32900-sql-transpiler)
-* [Trino - Ducklake Connector](https://github.com/brikk/trino-ducklake)
-* [Trino - Doris Connector](https://github.com/brikk/trino-doris-connector)
+* [Trino - Ducklake Connector](https://github.com/brikk/trino-ducklake) - native Ducklake support in Trino
+* [Trino - Duckbridge](https://github.com/brikk/duckbridge) - remote Quack based Duckdb connector
+* [Trino - Doris Connector](https://github.com/brikk/trino-doris-connector) - access Doris from Trino clusters
+* [Apache Doris dialect plugin](https://plugins.jetbrains.com/plugin/32777-sql-dialect-for-apache-doris) - First class Doris SQL support in DataGrip & Jetbrains IDE's
+* [DuckDB dialect plugin](https://plugins.jetbrains.com/plugin/33098-sql-dialect-for-duckdb-embedded--quack-) - First class DuckDB SQL support in DataGrip & Jetbrains IDE's
+* [SQL Transpiler plugin](https://plugins.jetbrains.com/plugin/32900-sql-transpiler) - Transpile SQL between common datalake SQL dialects
 * [brikk-house](https://github.com/brikk/brikk-house) - Data engineering platform (coming soon)
 
 > **In the IDE, use one of the `DuckDB (sort.dev)` dialects.**
