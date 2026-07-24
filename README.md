@@ -11,8 +11,8 @@ Part of our SQL-tooling family alongside:
 * [**DuckDB SQL** (embedded+Quack) for DataGrip & Jetbrains IDE's](https://plugins.jetbrains.com/plugin/33098-sql-dialect-for-duckdb-embedded--quack-)
 * [**Trino native DuckLake Catalog** with full Read/Write support](https://github.com/brikk/ducklake-integrations/tree/main/jvm/trino-ducklake)
 * [**Trino Duckbridge** - remote access to DuckDB via Quack](https://github.com/brikk/duckbridge)
-* [**Trino - Doris connector**](https://github.com/brikk/trino-doris-connector)s
-* [**brikk-house**](https://github.com/brikk/brikk-house) - Data engineering platform (coming soon)
+* [**Trino - Doris connector**](https://github.com/brikk/trino-doris-connector)
+* [**brikk-house** - Data engineering platform](https://github.com/brikk/brikk-house) (coming soon)
 
 > **In the IDE, use one of the `DuckDB (sort.dev)` dialects.**
 
