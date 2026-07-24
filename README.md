@@ -93,7 +93,7 @@ no bundled engine, no configuration.
 ./gradlew test -Dquack.live.url='jdbc:quack://localhost:9494?token=<token>'
 ```
 
-DataGrip 2026.1 SDK (auto-downloaded), Kotlin 2.3.0, JVM 21.
+DataGrip 2026.1 SDK (auto-downloaded), Kotlin 2.4.10, JVM 21.
 
 **Engine bump checklist** (when moving to a new DuckDB): bump `duckdb_jdbc` in build.gradle.kts
 and the artifact pin in `config/duckdb-brikk-artifacts.xml`, then re-run all three harvests and
