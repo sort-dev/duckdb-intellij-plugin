@@ -1,22 +1,27 @@
 # SQL Dialect for DuckDB (embedded & Quack)
 
-A real **DuckDB SQL dialect** for DataGrip and IntelliJ-family IDEs, with ready-made data sources
-for **local/embedded DuckDB** and **[GizmoSQL](https://gizmosql.com) servers** (token-auth
-`quack-jdbc` driver — plain JDBC, no Arrow). Part of our SQL-tooling family alongside
-[brikk-house](https://github.com/brikk/brikk-house).
+A full **DuckDB SQL dialect** for DataGrip and IntelliJ-family IDEs, with ready-made data sources
+for **local/embedded DuckDB** and via the **[Quack protocol](https://duckdb.org/quack/)** (token-auth
+`quack-jdbc` driver — plain JDBC, no Arrow). 
 
-> **In the IDE, use the `DuckDB (sort.dev)` dialect.** It's picked automatically for the bundled
-> DuckDB data source; for a plain SQL file, set it via the dialect switcher in the editor's
-> status bar, or **Settings → Languages & Frameworks → SQL Dialects**.
+Part of our SQL-tooling family alongside:
+
+* [Apache Doris dialect plugin](https://plugins.jetbrains.com/plugin/32777-sql-dialect-for-apache-doris)
+* [SQL Transpiler plugin](https://plugins.jetbrains.com/plugin/32900-sql-transpiler)
+* [Trino - Ducklake Connector](https://github.com/brikk/trino-ducklake)
+* [Trino - Doris Connector](https://github.com/brikk/trino-doris-connector)
+* [brikk-house](https://github.com/brikk/brikk-house) - Data engineering platform (coming soon)
+
+> **In the IDE, use one of the `DuckDB (sort.dev)` dialects.**
 
 ## Why
 
-Stock DataGrip has no DuckDB dialect — DuckDB connects as a *generic* data source with the
+The built-in DataGrip / Intellij has only a minimal DuckDB dialect — DuckDB connects as a *generic* data source with the
 Generic SQL editor. Everything that makes DuckDB SQL worth using red-flags or breaks statement
 boundaries: `SELECT * EXCLUDE (…)`, `QUALIFY`, `GROUP BY ALL`, struct/list literals, lambdas,
 `PIVOT`, FROM-first queries, `ATTACH`, `SUMMARIZE`. This plugin gives DuckDB the first-class
-treatment, using the architecture proven by our
-[SQL Dialect for Apache Doris](https://github.com/sort-dev/doris-intellij-plugin).
+treatment, using the architecture proven by our other plugins, editing using custom parsers 
+yet validating SQL with the real engines.
 
 ## What it does
 
@@ -35,27 +40,26 @@ treatment, using the architecture proven by our
   extension functions (spatial, inet, fts, sqlite_scanner, postgres_scanner).
 - **Object tree from DuckDB's JDBC metadata**: tables, views, columns (STRUCT/LIST spellings),
   PK/FK — and `ATTACH`ed databases appear as catalogs, on both drivers.
-- **Two data-source templates, one dialect**: local/embedded DuckDB and GizmoSQL
+- **Two data-source templates, one dialect**: local/embedded DuckDB and Quack remote
   (`jdbc:quack://`, default port 9494). Driver versions are pinned by the plugin and
   auto-download from Maven Central — always matching the engine version the plugin is built and
   tested against (currently **DuckDB 1.5.5**).
 
-## Connecting to GizmoSQL (quack) — read this first
+## Connecting to a remote Quack DuckDB server
 
-- **Token goes in the Password field** (it is stored in the IDE's secure storage and injected as
-  the `token=` URL parameter at connect time). GizmoSQL has no user concept —
-  **leave the User field blank**.
+- The **connection token** goes in the Password field (it is stored in the IDE's secure storage and injected as
+  the `token=` URL parameter at connect time). While leaving the user field blank.
 - **TLS is off by default** (matching the driver). For HTTPS endpoints add `tls=true` in the URL
-  parameters. The IDE's generic SSH/SSL tab is not what this driver reads — the `tls` parameter
-  is the real switch.
+  parameters. The IDE's generic SSH/SSL tab is not what this driver reads — the `tls` URL parameter
+  is the only switch.
 - Default port **9494**; `tokenEnv`/`tokenFile`/`connectTimeout`/`requestTimeout` may be appended
   as extra URL parameters.
 
 ## Known issues
 
-- **Query cancel over GizmoSQL is a no-op** in the current quack driver — Stop returns but the
+- **Query cancel over Quack is a no-op** in the current quack driver — Stop returns but the
   query keeps running server-side. Local/embedded cancel works correctly (interrupt in ~300 ms).
-  A driver-side fix is tracked.
+  When Quack allows cancellation, we will support it.
 - The stock User/Password fields cannot be hidden or relabeled from driver config — hence the
   "leave User blank" rule above. A dedicated token auth panel is planned.
 - Two known degraded parse shapes (parsed leniently, no false errors, reduced inner structure):
@@ -111,8 +115,7 @@ commit their output: `./gradlew harvestCensus harvestFunctionCatalog harvestExte
   wire protocol, is their work. The plugin currently ships a brikk-published build of the driver
   (`dev.brikk.duckdb:quack-jdbc`) carrying fixes we are contributing back upstream; we expect to
   return to the upstream artifact.
-- Full third-party attributions (including the StarRocks-lineage parser techniques):
-  THIRD_PARTY_NOTICES.md.
+- Full third-party attributions: THIRD_PARTY_NOTICES.md.
 
 ## License
 

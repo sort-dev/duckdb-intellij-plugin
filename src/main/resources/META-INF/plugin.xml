@@ -44,6 +44,15 @@
     ]]></description>
 
     <change-notes><![CDATA[
+        <b>0.1.1</b> — polish.
+        <ul>
+            <li>Fixed the DuckDB icon rendering oversized in the data source / driver UI.</li>
+            <li>Clearer names: the dialect is <b>DuckDB (sort.dev)</b>, and the data-source
+                drivers are <b>DuckDB Embedded (sort.dev)</b> and <b>DuckDB via Quack (sort.dev)</b>
+                — distinct from the stock generic DuckDB driver.</li>
+            <li>Refreshed README; Kotlin/build toolchain updated. No behavior changes.</li>
+        </ul>
+        <br/>
         <b>0.1.0</b> — first public release.
         <ul>
             <li><b>DuckDB dialect</b> with correct statement/run-block boundaries — coverage
