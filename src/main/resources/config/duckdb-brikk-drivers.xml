@@ -6,7 +6,9 @@
        auto-download always matches the engine version this plugin is built and graded against. -->
   <!-- icon: official DuckDB mark (icons/duckdb.svg + _dark variant, duckdb.org/design/manual —
        used unmodified per the manual's no-recolor/no-stretch rules). -->
-  <driver id="duckdb-brikk-native" name="DuckDB (Brikk) — Local" dialect="DuckDBBrikk"
+  <!-- Name "DuckDB Embedded (sort.dev)": distinct from DataGrip's stock generic "DuckDB" driver,
+       matches the dialect label, and the new-data-source default name reads clearly. -->
+  <driver id="duckdb-brikk-native" name="DuckDB Embedded (sort.dev)" dialect="DuckDBBrikk"
           forced-dbms="DUCKDB_BRIKK" driver-class="org.duckdb.DuckDBDriver" icon="/icons/duckdb.svg">
     <url-template name="default" template="jdbc:duckdb:{file::identifier.db}"/>
     <url-template name="In-memory" template="jdbc:duckdb:"/>
@@ -21,7 +23,7 @@
        keeps upstream's com.gizmodata package — relabel if/when the fork becomes permanent).
        Downloadable via the "Quack JDBC (Brikk)" artifact (config/duckdb-brikk-artifacts.xml,
        resolved from Maven Central) — no manual jar attach needed. -->
-  <driver id="duckdb-brikk-quack" name="DuckDB (Brikk) — GizmoSQL (quack)" dialect="DuckDBBrikk"
+  <driver id="duckdb-brikk-quack" name="DuckDB via Quack (sort.dev)" dialect="DuckDBBrikk"
           forced-dbms="DUCKDB_BRIKK" driver-class="com.gizmodata.quack.jdbc.sql.QuackDriver"
           icon="/icons/duckdb.svg">
     <!-- Auth is a TOKEN and the driver needs it as a `token` URL parameter at test/connect time
