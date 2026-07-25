@@ -98,15 +98,21 @@
         <!-- Stage 3: engine-confirmed PARSER errors from a real in-memory DuckDB (EXPLAIN-based,
              never executes). Silent when no engine is reachable. -->
         <externalAnnotator language="DuckDBSQL" implementationClass="dev.sort.duckdb.validate.DuckdbErrorAnnotator"/>
-        <!-- Stage 4: function completion from the bundled duckdb_functions() catalog. -->
+        <!-- Stage 4: function completion from the bundled duckdb_functions() catalog. The SAME
+             contributor carries the lazy schema-tree deepening trigger (QualifiedPathIntrospectProvider). -->
         <completion.contributor language="DuckDBSQL" implementationClass="dev.sort.duckdb.sql.DuckdbCompletionContributor"/>
         <!-- Catalog-refresh balloons (manual action + INSTALL/LOAD observer). -->
         <notificationGroup id="DuckDB (Brikk)" displayType="BALLOON"/>
-        <!-- Stage 4b refresh-on-INSTALL/LOAD: one root DataAuditor per project (DataBus.addRootAuditor)
-             re-harvests a Brikk data source's live catalog when INSTALL/FORCE INSTALL/LOAD runs in a
-             console (debounced ~2s per source). Autoloaded extensions are NOT observable here — the
-             manual Refresh DuckDB Catalog action covers them. -->
+        <!-- Execution observer: one root DataAuditor per project (DataBus.addRootAuditor) watching
+             for the two things a console changes that the model would otherwise keep stale —
+             INSTALL/FORCE INSTALL/LOAD re-harvests the live function catalog, ATTACH/DETACH re-lists
+             the object tree's namespaces (debounced ~2s per source per kind). Autoloaded extensions
+             are NOT observable here — the manual Refresh DuckDB Catalog action covers them. -->
         <postStartupActivity implementation="dev.sort.duckdb.catalog.DuckdbInstallLoadStartup"/>
+        <!-- Banner while a completion-kicked lazy introspection is in flight: the async model
+             refresh lands after the current completion pass, so this tells the user to invoke
+             completion again once the namespace finishes loading. -->
+        <editorNotificationProvider implementation="dev.sort.duckdb.catalog.DuckdbIntrospectNotifier"/>
     </extensions>
 
     <extensions defaultExtensionNs="com.intellij.database">

@@ -16,10 +16,17 @@ import com.intellij.openapi.startup.ProjectActivity
 import dev.sort.duckdb.DuckdbDbms
 
 /**
- * Execution observer: when the user runs `INSTALL` / `FORCE INSTALL` / `LOAD` in a console on a
- * DuckDB (Brikk) data source, re-harvest that source's live catalog so completion picks the new
- * extension's functions up immediately — the PLAN.md Stage-4 "refresh on observed INSTALL/LOAD"
- * item, and the automated sibling of the manual "Refresh DuckDB Catalog" action.
+ * Execution observer for the two things a DuckDB console can change that the IDE would otherwise
+ * keep showing stale, each with its own detector and its own refresh:
+ *
+ *  - **`INSTALL` / `FORCE INSTALL` / `LOAD`** ([DuckdbInstallLoadDetector]) -> re-harvest the
+ *    source's live FUNCTION catalog so completion picks the new extension's functions up
+ *    immediately (the PLAN.md Stage-4 item, and the automated sibling of the manual "Refresh
+ *    DuckDB Catalog" action).
+ *  - **`ATTACH` / `DETACH`** ([DuckdbAttachDetector]) -> re-list the source's namespaces so a
+ *    freshly attached database appears in the object tree (and a detached one leaves). The
+ *    platform's own post-execution auto-sync cannot do this — it only refreshes elements already
+ *    in the model; see [DuckdbTreeRefresh].
  *
  * ## Seam
  *
@@ -38,9 +45,12 @@ import dev.sort.duckdb.DuckdbDbms
  * balloon lists loaded extensions for exactly this reason). Likewise `UPDATE EXTENSIONS` does not
  * trigger (repo-metadata only, loads nothing — see [DuckdbInstallLoadDetector]).
  *
- * Multiple INSTALL/LOAD in quick succession coalesce into ONE re-harvest per data source
- * ([DuckdbRefreshDebouncer], ~2s trailing window). The observer-triggered refresh posts the same
- * success balloon as the manual action, so the user sees the catalog update happen.
+ * Multiple triggers in quick succession coalesce into ONE refresh per data source per kind
+ * ([DuckdbRefreshDebouncer], ~2s trailing window; the tree branch uses its own key namespace so a
+ * script that installs an extension AND attaches through it gets both refreshes). The
+ * observer-triggered function refresh posts the same success balloon as the manual action, so the
+ * user sees the catalog update happen; the tree refresh is silent — the object tree updating IS
+ * the feedback.
  */
 // API status: the whole seam is javap-verified free of ApiStatus flags on DataGrip 2026.1.3 —
 // DataBus.addRootAuditor, DataAuditor, DataRequest(+Context/Owner/QueryRequest), SessionClient,
@@ -60,10 +70,23 @@ class DuckdbInstallLoadObserver(
             DuckdbCatalogRefresh.notify(p, outcome)
         }
     },
+    /**
+     * Seam for tests; production re-lists the data source's namespaces after ATTACH/DETACH. The
+     * one-shot deepen claims are dropped first: the catalog list just changed, so a namespace that
+     * deepened to nothing earlier (or a name now backed by a different database) must be allowed
+     * to introspect again.
+     */
+    private val refreshTree: (Project, LocalDataSource) -> Unit = { p, ds ->
+        DuckdbAutoIntrospect.forgetClaims(ds.uniqueId)
+        DuckdbTreeRefresh.listNamespaces(p, ds)
+    },
 ) : DataAuditor {
 
     private companion object {
         val LOG = Logger.getInstance(DuckdbInstallLoadObserver::class.java)
+
+        /** Debounce namespace: ATTACH and INSTALL coalesce independently on the same data source. */
+        const val TREE_KEY_PREFIX = "tree:"
     }
 
     override fun requestFinished(context: DataRequest.Context) {
@@ -73,11 +96,26 @@ class DuckdbInstallLoadObserver(
         try {
             val dataSource = brikkDataSourceOf(context) ?: return
             val text = executedTextOf(context) ?: return
-            if (!DuckdbInstallLoadDetector.triggersCatalogChange(text)) return
+            dispatch(dataSource, text)
+        } catch (t: Throwable) {
+            LOG.warn("execution observation failed (ignored): ${t.message}")
+        }
+    }
+
+    /**
+     * The routing decision, factored off [DataRequest.Context] so it is directly unit-testable:
+     * which refresh(es) an executed [text] earns on [dataSource]. Both branches are independent —
+     * a script may do both (`INSTALL ducklake; ATTACH 'ducklake:…' AS lake`), and each gets its own
+     * coalescing window so neither refresh swallows the other.
+     */
+    internal fun dispatch(dataSource: LocalDataSource, text: String) {
+        if (DuckdbInstallLoadDetector.triggersCatalogChange(text)) {
             LOG.info("observed INSTALL/LOAD on '${dataSource.name}'; scheduling debounced catalog refresh")
             debouncer.submit(dataSource.uniqueId) { refresh(project, dataSource) }
-        } catch (t: Throwable) {
-            LOG.warn("install/load observation failed (ignored): ${t.message}")
+        }
+        if (DuckdbAttachDetector.triggersNamespaceChange(text)) {
+            LOG.info("observed ATTACH/DETACH on '${dataSource.name}'; scheduling debounced tree refresh")
+            debouncer.submit(TREE_KEY_PREFIX + dataSource.uniqueId) { refreshTree(project, dataSource) }
         }
     }
 

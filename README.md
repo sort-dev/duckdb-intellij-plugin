@@ -42,6 +42,13 @@ yet validating SQL with the real engines.
   extension functions (spatial, inet, fts, sqlite_scanner, postgres_scanner).
 - **Object tree from DuckDB's JDBC metadata**: tables, views, columns (STRUCT/LIST spellings),
   PK/FK — and `ATTACH`ed databases appear as catalogs, on both drivers.
+- **A tree that keeps up with your session**: run `ATTACH` (or `DETACH`) in a console and the new
+  catalog appears by itself — the IDE's own post-execution refresh only revisits objects it already
+  knows about, so without this an attached database stays invisible until you refresh by hand. The
+  catalog arrives empty and fills in *as you type*: completing into `lake.` introspects that
+  catalog's schemas, `lake.raw.` that schema's tables — one level per step, so
+  `ATTACH 'ducklake:…'` or `'postgres:…'` over a large remote database never turns into a full
+  crawl.
 - **Two data-source templates, one dialect**: local/embedded DuckDB and Quack remote
   (`jdbc:quack://`, default port 9494). Driver versions are pinned by the plugin and
   auto-download from Maven Central — always matching the engine version the plugin is built and
@@ -68,6 +75,10 @@ yet validating SQL with the real engines.
   suffix-form `UNPIVOT` inside a `SELECT`, and `QUALIFY` after a named `WINDOW` clause.
 - Constraint and index *names* are not shown in the tree (DuckDB's JDBC metadata returns them
   as null).
+- `ATTACH` is *instance* state, not file state: DuckDB drops attachments once the last connection
+  to a database closes. If the IDE's connection pool goes fully idle, a catalog attached in a
+  console is gone on the next connect and leaves the tree again. That is DuckDB's own behaviour —
+  re-run the `ATTACH`, or put it in a startup script on the data source.
 
 ## SQL coverage — measured, not claimed
 
