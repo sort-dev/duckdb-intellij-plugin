@@ -44,6 +44,11 @@
     ]]></description>
 
     <change-notes><![CDATA[
+        <b>0.2.0</b> — the injected-SQL language id is now <code>DuckDBSQL</code> (was
+        <code>DuckDBBrikk</code>), so embedding DuckDB SQL in a host language (Kotlin/Java string
+        injection, <code>@Language</code>) reads cleanly. If you had manually set a file's dialect,
+        re-pick <b>DuckDB (sort.dev)</b> once; connected data sources are unaffected.
+        <br/>
         <b>0.1.1</b> — polish.
         <ul>
             <li>Fixed the DuckDB icon rendering oversized in the data source / driver UI.</li>
@@ -77,11 +82,11 @@
     <depends>com.intellij.database</depends>
 
     <extensions defaultExtensionNs="com.intellij">
-        <lang.parserDefinition language="DuckDBBrikk" implementationClass="dev.sort.duckdb.sql.DuckdbParserDefinition"/>
-        <lang.commenter language="DuckDBBrikk" implementationClass="dev.sort.duckdb.sql.DuckdbCommenter"/>
+        <lang.parserDefinition language="DuckDBSQL" implementationClass="dev.sort.duckdb.sql.DuckdbParserDefinition"/>
+        <lang.commenter language="DuckDBSQL" implementationClass="dev.sort.duckdb.sql.DuckdbCommenter"/>
         <!-- LOAD-BEARING beyond colors: the SQL todo/id indexers derive their filter lexer from
              the language's syntax highlighter; absence crashes the TODO index on our files. -->
-        <lang.syntaxHighlighterFactory language="DuckDBBrikk" implementationClass="dev.sort.duckdb.sql.DuckdbSyntaxHighlighterFactory"/>
+        <lang.syntaxHighlighterFactory language="DuckDBSQL" implementationClass="dev.sort.duckdb.sql.DuckdbSyntaxHighlighterFactory"/>
         <sql.dialect dbms="DUCKDB_BRIKK" implementationClass="dev.sort.duckdb.sql.DuckdbSqlDialect" order="first"/>
         <!-- Stage-1 livability: suppress the PG substrate's false red on DuckDB-only syntax
              (display-only; the scoreboard test keeps counting truth; Stage 3's PREPARE validator
@@ -89,12 +94,12 @@
         <highlightErrorFilter implementation="dev.sort.duckdb.sql.DuckdbHighlightErrorFilter"/>
         <!-- Repaints DuckdbLexer's masked spans (comment-masked modifiers, string-collapsed
              struct literals) with real word colors — TextAttributes only. -->
-        <annotator language="DuckDBBrikk" implementationClass="dev.sort.duckdb.sql.DuckdbMaskedSpanRecolorAnnotator"/>
+        <annotator language="DuckDBSQL" implementationClass="dev.sort.duckdb.sql.DuckdbMaskedSpanRecolorAnnotator"/>
         <!-- Stage 3: engine-confirmed PARSER errors from a real in-memory DuckDB (EXPLAIN-based,
              never executes). Silent when no engine is reachable. -->
-        <externalAnnotator language="DuckDBBrikk" implementationClass="dev.sort.duckdb.validate.DuckdbErrorAnnotator"/>
+        <externalAnnotator language="DuckDBSQL" implementationClass="dev.sort.duckdb.validate.DuckdbErrorAnnotator"/>
         <!-- Stage 4: function completion from the bundled duckdb_functions() catalog. -->
-        <completion.contributor language="DuckDBBrikk" implementationClass="dev.sort.duckdb.sql.DuckdbCompletionContributor"/>
+        <completion.contributor language="DuckDBSQL" implementationClass="dev.sort.duckdb.sql.DuckdbCompletionContributor"/>
         <!-- Catalog-refresh balloons (manual action + INSTALL/LOAD observer). -->
         <notificationGroup id="DuckDB (Brikk)" displayType="BALLOON"/>
         <!-- Stage 4b refresh-on-INSTALL/LOAD: one root DataAuditor per project (DataBus.addRootAuditor)

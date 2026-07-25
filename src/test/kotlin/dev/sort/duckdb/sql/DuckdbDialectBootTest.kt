@@ -21,7 +21,7 @@ class DuckdbDialectBootTest : BasePlatformTestCase() {
     fun testDialectRegistersWithOwnDbms() {
         assertEquals("DUCKDB_BRIKK", DuckdbDbms.DUCKDB_BRIKK.name)
         assertEquals(DuckdbDbms.DUCKDB_BRIKK, DuckdbSqlDialect.INSTANCE.dbms)
-        assertEquals("DuckDBBrikk", DuckdbSqlDialect.INSTANCE.id)
+        assertEquals("DuckDBSQL", DuckdbSqlDialect.INSTANCE.id)
     }
 
     fun testFriendlySqlParsesClean() {

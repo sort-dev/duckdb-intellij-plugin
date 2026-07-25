@@ -26,7 +26,7 @@ import icons.DatabaseIcons
 class DuckdbCompletionContributor : CompletionContributor() {
 
     init {
-        // scope comes from the plugin.xml registration (language="DuckDBBrikk") — a
+        // scope comes from the plugin.xml registration (language="DuckDBSQL") — a
         // withLanguage(...) pattern here does NOT match completion-position leaves and would
         // silently disable the provider (empirically bisected).
         extend(CompletionType.BASIC, PlatformPatterns.psiElement(), FunctionProvider)

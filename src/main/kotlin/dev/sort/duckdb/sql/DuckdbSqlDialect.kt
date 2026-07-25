@@ -26,7 +26,7 @@ import dev.sort.duckdb.DuckdbDbms
  * an EMPTY builtin-function map, breaking special-form builtins (CAST(x AS t), EXTRACT, ...).
  * Loading PgDialect's own definitions keeps us in sync with the platform.
  */
-class DuckdbSqlDialect private constructor() : PgDialectBase("DuckDBBrikk") {
+class DuckdbSqlDialect private constructor() : PgDialectBase("DuckDBSQL") {
     override fun getDbms(): Dbms = DuckdbDbms.DUCKDB_BRIKK
 
     // PgDialectBase leaves these abstract (the concrete per-version dialects fill them in).

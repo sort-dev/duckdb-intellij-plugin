@@ -57,7 +57,7 @@ class DuckdbRefreshCatalogAction : AnAction() {
     }
 
     private fun isOurFile(file: PsiFile?): Boolean =
-        file != null && runCatching { file.language.id == "DuckDBBrikk" }.getOrDefault(false)
+        file != null && runCatching { file.language.id == "DuckDBSQL" }.getOrDefault(false)
 
     private fun resolveTarget(project: Project, file: PsiFile?): LocalDataSource? =
         if (file != null) DuckdbCatalogResolver.dataSourceFor(file)

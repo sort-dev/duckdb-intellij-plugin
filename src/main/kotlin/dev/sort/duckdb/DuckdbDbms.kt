@@ -18,7 +18,7 @@ object DuckdbDbms {
     val DUCKDB_BRIKK: Dbms = Dbms.create(
         "DUCKDB_BRIKK",
         // User-facing dialect label (the SQL-dialect picker); "sort.dev" is the vendor. The
-        // internal id stays DUCKDB_BRIKK / DuckDBBrikk (code + existing file→dialect mappings).
+        // internal id stays DUCKDB_BRIKK / DuckDBSQL (code + existing file→dialect mappings).
         "DuckDB (sort.dev)",
         { icon },
         Dbms.defaultPattern("duckdb")
