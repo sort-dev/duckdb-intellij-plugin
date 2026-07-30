@@ -2,11 +2,10 @@
 
 A full **DuckDB SQL dialect** for DataGrip and IntelliJ-family IDEs, with ready-made data sources
 for **local/embedded DuckDB** and via the **[Quack protocol](https://duckdb.org/quack/)** (token-auth
-`quack-jdbc` driver — plain JDBC, no Arrow). 
+`quack-jdbc` driver — plain JDBC, no Arrow).
 
 Part of our SQL-tooling family alongside:
 
-* [**DuckDB SQL** (embedded+Quack) for DataGrip & Jetbrains IDE's](https://plugins.jetbrains.com/plugin/33098-sql-dialect-for-duckdb-embedded--quack-)
 * [**Trino native DuckLake Catalog** with full Read/Write support](https://github.com/brikk/ducklake-integrations/tree/main/jvm/trino-ducklake)
 * [**Trino Duckbridge** - remote access to DuckDB via Quack](https://github.com/brikk/duckbridge)
 * [**SQL Dialect Transpiler** for various datalake dialects and DataGrip & Jetbrains IDE's](https://plugins.jetbrains.com/plugin/32900-sql-transpiler)
@@ -23,8 +22,8 @@ The built-in DataGrip / Intellij has only a minimal DuckDB dialect — DuckDB co
 Generic SQL editor. Everything that makes DuckDB SQL worth using red-flags or breaks statement
 boundaries: `SELECT * EXCLUDE (…)`, `QUALIFY`, `GROUP BY ALL`, struct/list literals, lambdas,
 `PIVOT`, FROM-first queries, `ATTACH`, `SUMMARIZE`. This plugin gives DuckDB the first-class
-treatment, using the architecture proven by our other plugins, editing using custom parsers 
-yet validating SQL with the real engines.
+treatment, using the architecture proven by our other plugins: editing with custom parsers,
+validating SQL with the real engine.
 
 ## What it does
 
