@@ -46,5 +46,7 @@ Seeded 2026-07-16 from the doris-intellij playbook. Decisions and open threads.
 5. Error suppression pass once real red-noise is observed in dogfooding (HighlightInfoFilter
    machinery ports 1:1).
 6. Marketplace prep: real icon, screenshots, description pass, `intellijPlatformPublishingToken`.
-7. Doris Pipes / brikk-sql integration: same optional-transpiler-plugin seam as doris
-   (`doris-pipes.xml` pattern) once the dialect is stable — DuckDB is a brikk-house surface too.
+7. DuckDB PIPE support: follow [PIPE-SUPPORT-PLAN.md](PIPE-SUPPORT-PLAN.md).
+   Doris now bundles brikk-sql instead of relying on SQL Transpiler, and its
+   Execute actions cooperate with other dialect plugins. Preserve DuckDB's
+   native FROM-first queries.

@@ -47,6 +47,31 @@ validating SQL with the real engine.
   auto-download from Maven Central — always matching the engine version the plugin is built and
   tested against (currently **DuckDB 1.5.5**).
 
+## PIPE queries
+
+Version 0.3.0 bundles brikk-sql 0.18.0 for PIPE authoring. SQL Transpiler is
+not required. Enable **Settings > Tools > DuckDB PIPE > Enable PIPE syntax in
+this project**; it defaults off and is saved per workspace.
+
+```sql
+FROM range(5) AS t(i)
+|> WHERE i > 1
+|> SELECT i * 2 AS doubled
+|> ORDER BY doubled;
+```
+
+Execute uses the normal console and results grid. Right-click **DuckDB PIPE**
+or use Alt+Enter to preview generated SQL or run only the stages up to the
+caret. Translation errors and unsupported/lossy translations block execution;
+they never fall back to sending raw PIPE syntax. Mixed scripts keep ordinary
+SQL unchanged. Native FROM-first DuckDB queries do not require this setting.
+Stage completion offers operators and known output aliases from previous stages.
+Server errors remain in the normal output against the generated SQL; exact
+source mapping is not yet enabled for DuckDB server errors.
+
+Only the translator is bundled, not a native database engine. To disable PIPE
+globally as an emergency override, use `-Dduckdb.pipes=false`.
+
 ## Connecting to a remote Quack DuckDB server
 
 - The **connection token** goes in the Password field (it is stored in the IDE's secure storage and injected as
@@ -87,14 +112,15 @@ extension→functions map (189 functions across 5 extensions) powering the
 ## Requirements
 
 **DataGrip** or **IntelliJ IDEA Ultimate**, **2026.1 or 2026.2** (platform builds 261/262, one
-artifact for both). A DuckDB engine for validation comes from your data source's driver —
-no bundled engine, no configuration.
+artifact for both). A native DuckDB engine for validation comes from your data source's
+driver. The built-in PIPE translator is independent of that driver.
 
 ## Building from source
 
 ```bash
 ./gradlew buildPlugin   # → build/distributions/duckdb-intellij-plugin.zip
 ./gradlew test          # census scoreboard + validator grading + boundary contracts
+./gradlew verifyEmbeddedPipes verifyPlugin # ZIP contents, bytecode, IDE API compatibility
 # optional: live wire suite against a quack server
 ./gradlew test -Dquack.live.url='jdbc:quack://localhost:9494?token=<token>'
 ```

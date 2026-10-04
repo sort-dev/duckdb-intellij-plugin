@@ -29,8 +29,21 @@ import com.intellij.sql.psi.SqlCompositeElementTypes.SQL_STATEMENT
  * words.
  */
 class DuckdbPsiParser : PgParser(false) {
+    private var pipeText: CharSequence? = null
+    private var pipeChunks: List<dev.sort.duckdb.pipes.DuckdbPipes.Chunk> = emptyList()
 
     override fun parseSqlStatement(builder: PsiBuilder, level: Int): Boolean {
+        // Raw lexical ranges avoid PSI masking and the bounded PG lookahead. Bare FROM
+        // remains ordinary DuckDB SQL, independently of the PIPE setting.
+        if (dev.sort.duckdb.pipes.DuckdbPipes.isEnabled(builder.project)) {
+            if (pipeText !== builder.originalText) {
+                pipeText = builder.originalText
+                val text = builder.originalText.toString()
+                pipeChunks = if (text.contains("|>")) dev.sort.duckdb.pipes.DuckdbPipes.chunks(text) else emptyList()
+            }
+            val chunk = pipeChunks.firstOrNull { builder.currentOffset >= it.startOffset && builder.currentOffset < it.endOffset }
+            if (chunk?.hasPipeOperator == true) return parseLenientStatement(builder, SQL_STATEMENT)
+        }
         when (wordAt(builder, 0)) {
             // Statement heads PG has no rule for at all — always lenient.
             "ATTACH", "DETACH", "SUMMARIZE", "DESCRIBE", "PIVOT", "UNPIVOT",

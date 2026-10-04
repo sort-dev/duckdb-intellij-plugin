@@ -1,4 +1,4 @@
-<idea-plugin>
+<idea-plugin xmlns:xi="http://www.w3.org/2001/XInclude">
     <id>dev.sort.duckdb-intellij-plugin</id>
     <name>SQL Dialect for DuckDB (embedded &amp; Quack)</name>
     <vendor url="https://sort.dev" email="jayson@sort.dev">Sortdev SRL</vendor>
@@ -9,6 +9,10 @@
         <b>GizmoSQL servers</b> (Arrow-free quack-jdbc driver).</p>
 
         <ul>
+            <li><b>Built-in PIPE authoring:</b> enable DuckDB PIPE under Settings &gt; Tools,
+                write <code>FROM t |&gt; WHERE ... |&gt; SELECT ...</code>, and execute as
+                DuckDB SQL. Includes generated-SQL preview and run-to-stage. No SQL Transpiler
+                plugin required; ordinary FROM-first queries are unchanged.</li>
             <li><b>DuckDB syntax, measured:</b> correct statement and run-block boundaries across
                 the DuckDB statement surface — <code>SELECT * EXCLUDE(...)</code>,
                 <code>QUALIFY</code>, <code>GROUP BY ALL</code>, struct/list literals, lambdas,
@@ -44,6 +48,14 @@
     ]]></description>
 
     <change-notes><![CDATA[
+        <b>0.3.0</b> - built-in, per-project PIPE support.
+        <ul>
+            <li>Bundles brikk-sql 0.18.0 for PIPE translation, with no native database engine.</li>
+            <li>Enable under Settings &gt; Tools &gt; DuckDB PIPE. Defaults off.</li>
+            <li>Preview generated SQL, run stages up to the caret, and execute mixed scripts
+                with normal console parameter prompting. Unsafe translations are blocked.</li>
+            <li>Cooperative Execute wrappers preserve Doris and other dialect handlers.</li>
+        </ul>
         <b>0.2.0</b> — the injected-SQL language id is now <code>DuckDBSQL</code> (was
         <code>DuckDBBrikk</code>), so embedding DuckDB SQL in a host language (Kotlin/Java string
         injection, <code>@Language</code>) reads cleanly. If you had manually set a file's dialect,
@@ -80,6 +92,7 @@
 
     <depends>com.intellij.modules.platform</depends>
     <depends>com.intellij.database</depends>
+    <xi:include href="/META-INF/duckdb-pipes.xml" xpointer="xpointer(/idea-plugin/*)"/>
 
     <extensions defaultExtensionNs="com.intellij">
         <lang.parserDefinition language="DuckDBSQL" implementationClass="dev.sort.duckdb.sql.DuckdbParserDefinition"/>

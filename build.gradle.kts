@@ -1,11 +1,20 @@
+import org.jetbrains.intellij.platform.gradle.tasks.VerifyPluginTask
+import org.jetbrains.intellij.platform.gradle.tasks.PrepareSandboxTask
+import java.util.jar.JarInputStream
+import java.util.zip.ZipFile
+
 plugins {
     id("java")
     id("org.jetbrains.kotlin.jvm") version "2.4.10"
-    id("org.jetbrains.intellij.platform") version "2.10.2"
+    id("org.jetbrains.intellij.platform") version "2.19.0"
 }
 
 group = "dev.sort.duckdb"
-version = "0.2.0"
+version = "0.3.0"
+
+val brikkSqlVersion = "0.18.0"
+val companionInstalled = providers.gradleProperty("test.sqlTranspiler").orNull == "installed"
+val dorisZip = providers.gradleProperty("test.dorisPluginZip").map(::File).orNull
 
 repositories {
     mavenCentral()
@@ -15,6 +24,15 @@ repositories {
 }
 
 dependencies {
+    // Translator only. Native DuckDB and brikk-sql-verify are never bundled.
+    implementation("dev.brikk.house:brikk-sql-jvm:$brikkSqlVersion") {
+        exclude(group = "org.jetbrains.kotlin", module = "kotlin-stdlib")
+        exclude(group = "org.jetbrains.kotlinx", module = "kotlinx-serialization-core")
+        exclude(group = "org.jetbrains.kotlinx", module = "kotlinx-serialization-json")
+        exclude(group = "org.jetbrains.kotlinx", module = "kotlinx-serialization-core-jvm")
+        exclude(group = "org.jetbrains.kotlinx", module = "kotlinx-serialization-json-jvm")
+    }
+    compileOnly("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
     testImplementation(kotlin("test"))
     testImplementation("junit:junit:4.13.2")
 
@@ -36,10 +54,16 @@ dependencies {
     intellijPlatform {
         // Same platform window as doris-intellij: compiled against DataGrip 2026.1 (build 261),
         // one artifact serving 261+262. Remote SDK so any clone/CI can build without an IDE.
-        datagrip("2026.1.3")
+        val localIde = providers.gradleProperty("duckdb.localIde")
+        if (localIde.isPresent) local(localIde) else datagrip("2026.1.3")
         bundledPlugin("com.intellij.database")
         // Test-runtime transitive requirement of com.intellij.database (see doris-intellij notes).
         bundledPlugin("com.intellij.modules.json")
+        if (companionInstalled) plugin("dev.sort.sql-transpiler-intellij-plugin:0.3.0")
+        if (dorisZip != null) {
+            require(dorisZip.isFile) { "Missing Doris plugin ZIP: $dorisZip" }
+            localPlugin(dorisZip)
+        }
         testFramework(org.jetbrains.intellij.platform.gradle.TestFrameworkType.Platform)
     }
 }
@@ -54,9 +78,22 @@ intellijPlatform {
         }
     }
     pluginVerification {
+        failureLevel.set(listOf(
+            VerifyPluginTask.FailureLevel.COMPATIBILITY_PROBLEMS,
+            VerifyPluginTask.FailureLevel.COMPATIBILITY_WARNINGS,
+            VerifyPluginTask.FailureLevel.INVALID_PLUGIN,
+            VerifyPluginTask.FailureLevel.MISSING_DEPENDENCIES,
+            VerifyPluginTask.FailureLevel.OVERRIDE_ONLY_API_USAGES,
+            VerifyPluginTask.FailureLevel.NON_EXTENDABLE_API_USAGES,
+            VerifyPluginTask.FailureLevel.PLUGIN_STRUCTURE_WARNINGS,
+        ))
         ides {
-            ide("DB", "2026.1.3")
-            ide("IU", "262.8665.81")
+            create("DB", "2026.1.3") {}
+            create("IU", "262.8665.81") {}
+            create("DB", "2026.2.5") {}
+            // Exact forward-compatibility targets used by the Doris release verifier.
+            create("IU", "263.4732.28") {}
+            create("IU", "263.5701.42") {}
         }
     }
     publishing {
@@ -65,6 +102,9 @@ intellijPlatform {
 }
 
 tasks {
+    processResources {
+        from(files("LICENSE", "THIRD_PARTY_NOTICES.md")) { into("META-INF") }
+    }
     // Stable artifact name (no version suffix) so install-from-disk always points at the same file.
     buildPlugin {
         archiveVersion = ""
@@ -77,8 +117,14 @@ tasks {
 
     named<Test>("test") {
         useJUnit()
+        systemProperty("java.awt.headless", "true")
         // Load our plugin (and the database plugin it depends on) in the light test fixture.
-        systemProperty("idea.load.plugins.id", "com.intellij.database,dev.sort.duckdb-intellij-plugin")
+        systemProperty("idea.load.plugins.id", buildList {
+            add("com.intellij.database")
+            add("dev.sort.duckdb-intellij-plugin")
+            if (companionInstalled) add("dev.sort.sql-transpiler-intellij-plugin")
+            if (dorisZip != null) add("dev.sort.doris-intellij-plugin")
+        }.joinToString(","))
         // DuckDB syntax corpus for the substrate scoreboard (DuckdbSyntaxProbeTest).
         systemProperty("corpus.dir", layout.projectDirectory.dir("src/test/resources/corpus").asFile.absolutePath)
 // Live quack-wire suites (QuackLiveTruthTest, DuckdbLiveHarvestOverQuackTest) are gated on
@@ -95,6 +141,78 @@ tasks {
 kotlin {
     compilerOptions {
         jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
+    }
+}
+
+val verifyEmbeddedPipes by tasks.registering {
+    val engineVersion = brikkSqlVersion
+    group = "verification"
+    description = "Checks bundled PIPE libraries, Java 21 bytecode, notices, and independence."
+    val archive = tasks.named<Zip>("buildPlugin").flatMap { it.archiveFile }
+    val ownJar = tasks.named<org.gradle.jvm.tasks.Jar>("composedJar").flatMap { it.archiveFileName }
+    dependsOn("buildPlugin")
+    inputs.file(archive)
+    doLast {
+        ZipFile(archive.get().asFile).use { zip ->
+            val jars = zip.entries().asSequence().filter { it.name.endsWith(".jar") }.toList()
+            val expected = setOf(ownJar.get(), "brikk-sql-jvmMain-$engineVersion.jar",
+                "brikk-sql-metadata-jvmMain-$engineVersion.jar")
+            check(jars.size == expected.size && jars.map { it.name.substringAfterLast('/') }.toSet() == expected) {
+                "Unexpected bundled libraries: ${jars.map { it.name }}"
+            }
+            for (library in jars) JarInputStream(zip.getInputStream(library)).use { jar ->
+                while (true) {
+                    val entry = jar.nextJarEntry ?: break
+                    if (!entry.name.endsWith(".class")) continue
+                    val header = jar.readNBytes(8)
+                    check(header.size == 8)
+                    val major = ((header[6].toInt() and 255) shl 8) or (header[7].toInt() and 255)
+                    check(major <= 65) { "Java 21 incompatible: ${library.name}/${entry.name} ($major)" }
+                }
+            }
+            val resources = mutableMapOf<String, String>()
+            JarInputStream(zip.getInputStream(jars.single { it.name.substringAfterLast('/') == ownJar.get() })).use { jar ->
+                while (true) {
+                    val entry = jar.nextJarEntry ?: break
+                    if (entry.name in setOf("META-INF/plugin.xml", "META-INF/THIRD_PARTY_NOTICES.md", "META-INF/LICENSE"))
+                        resources[entry.name] = jar.readBytes().toString(Charsets.UTF_8)
+                }
+            }
+            check(resources.size == 3) { "Missing descriptor/notices" }
+            check("brikk-sql-jvm:$engineVersion" in resources.getValue("META-INF/THIRD_PARTY_NOTICES.md"))
+            check(!resources.getValue("META-INF/plugin.xml").contains("<depends>dev.sort.sql-transpiler"))
+        }
+    }
+}
+tasks.named("check") { dependsOn(verifyEmbeddedPipes) }
+
+// Fixtures flatten loaders; normal companion tests must exercise our pinned engine, not theirs.
+tasks.named<Test>("test") {
+    if (companionInstalled) classpath = classpath.filter {
+        !(it.path.contains("/sql-transpiler-intellij-plugin/") && it.name.startsWith("brikk-sql-"))
+    }
+    if (dorisZip != null) classpath = classpath.filter {
+        !(it.path.contains("/doris-intellij-plugin/") && it.name.startsWith("brikk-sql-"))
+    }
+}
+if (companionInstalled || dorisZip != null) tasks.named<PrepareSandboxTask>("prepareTestSandbox") {
+    sandboxSuffix.set("-test-pipes-peers")
+}
+if (providers.gradleProperty("test.pluginIsolation").orNull == "true") {
+    val mainOutputs = sourceSets.main.get().output.files.map { it.absoluteFile }.toSet() +
+        layout.buildDirectory.dir("instrumented/instrumentCode").get().asFile.absoluteFile
+    val testResources = sourceSets.test.get().output.resourcesDir?.absoluteFile
+    tasks.named<Test>("test") {
+        include("**/DuckdbPipesIsolationTest.class")
+        systemProperty("test.pluginIsolation", "true")
+        classpath = classpath.filter {
+            it.absoluteFile !in mainOutputs && it.absoluteFile != testResources &&
+                !it.path.contains("/sql-transpiler-intellij-plugin/") && !it.path.contains("/doris-intellij-plugin/") &&
+                !it.name.startsWith("duckdb-intellij-plugin-") && !it.name.startsWith("brikk-sql-")
+        }
+        jvmArgumentProviders.add(CommandLineArgumentProvider {
+            listOf("-Didea.force.use.core.classloader=true", "-Didea.use.core.classloader.for.plugin.path=false")
+        })
     }
 }
 

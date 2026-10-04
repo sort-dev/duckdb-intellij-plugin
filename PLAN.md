@@ -152,9 +152,10 @@ auto-introspect, already invented for doris).
   honest change-notes per the house rules.
 - Real icon, screenshots, listing copy; GizmoSQL connection recipes (docker compose for tests);
   quack relabel decision (com.gizmodata → brikk) when upstream's PR appetite is known.
-- **brikk-house integration**: the optional-transpiler seam (doris-pipes.xml pattern) brings
-  Doris Pipes-style authoring to DuckDB consoles when brikk-sql speaks duckdb — second surface,
-  same architecture, engine stays out of this plugin.
+- **DuckDB PIPE authoring**: implement the [PIPE support plan](PIPE-SUPPORT-PLAN.md).
+  Bundle brikk-sql in this plugin's own classloader, opt in per project, and
+  cooperate with Doris's Execute action wrappers. SQL Transpiler is no longer
+  a prerequisite; DuckDB's native database engine remains unbundled.
 
 ## Stage 8 — END OF TIME (the long tail that makes it *loved*)
 
@@ -175,6 +176,7 @@ auto-introspect, already invented for doris).
 - Scoreboard + golden corpus stay green in CI; no silent regressions.
 - Verifier on both generations for every release branch; internal-API usage only with a defense
   note; watch-list maintained.
-- No engine bundled, ever. The authority is always the user's engine version.
+- No native DuckDB engine bundled, ever. The user's engine version remains the
+  authority for ordinary SQL; the PIPE plan bundles only the brikk-sql translator.
 - Design-first with Jayson on anything user-visible; publish only on his word; version numbers
   and change-notes move only with explicit direction.

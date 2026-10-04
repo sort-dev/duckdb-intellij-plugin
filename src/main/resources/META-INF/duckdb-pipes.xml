@@ -1,0 +1,29 @@
+<idea-plugin>
+    <extensions defaultExtensionNs="com.intellij">
+        <dynamicActionConfigurationCustomizer implementation="dev.sort.duckdb.pipes.DuckdbPipesActionConfiguration"/>
+        <actionPromoter implementation="dev.sort.duckdb.pipes.DuckdbPipesActionPromoter" order="first"/>
+        <projectConfigurable id="dev.sort.duckdb.pipes" displayName="DuckDB PIPE" parentId="tools"
+                             nonDefaultProject="true" instance="dev.sort.duckdb.pipes.DuckdbPipesConfigurable"/>
+        <intentionAction>
+            <language>DuckDBSQL</language>
+            <className>dev.sort.duckdb.pipes.PreviewPipeSqlIntention</className>
+            <category>DuckDB PIPE</category>
+        </intentionAction>
+        <intentionAction>
+            <language>DuckDBSQL</language>
+            <className>dev.sort.duckdb.pipes.RunPipesToStageIntention</className>
+            <category>DuckDB PIPE</category>
+        </intentionAction>
+        <notificationGroup id="DuckDB PIPE" displayType="BALLOON"/>
+        <completion.contributor language="DuckDBSQL" implementationClass="dev.sort.duckdb.pipes.DuckdbPipesCompletionContributor" order="first"/>
+    </extensions>
+    <actions>
+        <group id="DuckdbPipes.EditorMenu" text="DuckDB PIPE" popup="true">
+            <add-to-group group-id="EditorPopupMenu" anchor="first"/>
+            <action id="DuckdbPipes.PreviewSql" class="dev.sort.duckdb.pipes.PreviewPipeSqlAction"
+                    text="Preview Generated SQL" description="Preview the DuckDB SQL generated from this PIPE statement"/>
+            <action id="DuckdbPipes.RunToStage" class="dev.sort.duckdb.pipes.RunPipesToStageAction"
+                    text="Run Stages up to Caret" description="Execute PIPE stages up to and including the caret"/>
+        </group>
+    </actions>
+</idea-plugin>

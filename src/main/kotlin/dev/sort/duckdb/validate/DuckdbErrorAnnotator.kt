@@ -10,6 +10,9 @@ import com.intellij.psi.PsiFile
 import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.sql.psi.SqlStatement
 import dev.sort.duckdb.sql.DuckdbSqlDialect
+import dev.sort.duckdb.pipes.DuckdbPipes
+import dev.sort.duckdb.pipes.DuckdbPipesEngine
+import dev.sort.duckdb.pipes.runPipeCatching
 
 /**
  * Editor surface for [DuckdbEngineValidator]: statement text goes to a real in-memory DuckDB,
@@ -20,8 +23,11 @@ import dev.sort.duckdb.sql.DuckdbSqlDialect
  */
 class DuckdbErrorAnnotator : ExternalAnnotator<DuckdbErrorAnnotator.Info, DuckdbErrorAnnotator.Result>() {
 
-    data class Info(val statements: List<Pair<TextRange, String>>, val engineJar: String?)
-    data class Result(val errors: List<Pair<TextRange, DuckdbEngineValidator.EngineError>>)
+    data class Info(val statements: List<Pair<TextRange, String>>, val engineJar: String?,
+                    val pipesEnabled: Boolean = false, val pipes: List<DuckdbPipes.Chunk> = emptyList())
+    data class Result(val errors: List<Pair<TextRange, DuckdbEngineValidator.EngineError>>,
+                      val pipesEnabled: Boolean = false,
+                      val pipeErrors: List<Pair<TextRange, DuckdbPipesEngine.Transpile.Err>> = emptyList())
 
     // The default 3-arg variant bails when the file has PSI errors — but broken-looking PSI is
     // exactly when the engine's opinion matters most (the substrate can't parse everything).
@@ -32,28 +38,53 @@ class DuckdbErrorAnnotator : ExternalAnnotator<DuckdbErrorAnnotator.Info, Duckdb
         if (!file.language.isKindOf(DuckdbSqlDialect.INSTANCE)) return null
         // engine sources: driver-classpath / downloaded drivers (locator) or sysprop/test classpath
         val engineJar = DuckdbEngineLocator.engineJarFor(file)?.toString()
-        if (engineJar == null && !DuckdbEngineValidator.available) return null
+        val enabled = DuckdbPipes.isEnabled(file.project)
+        val pipes = if (enabled) DuckdbPipes.chunks(file.text).filter { it.hasPipeOperator } else emptyList()
+        if (engineJar == null && !DuckdbEngineValidator.available && pipes.isEmpty()) return null
         val statements = PsiTreeUtil.findChildrenOfType(file, SqlStatement::class.java)
             .filterNot { it.parent is SqlStatement }
             .map { it.textRange to it.text }
-        return if (statements.isEmpty()) null else Info(statements, engineJar)
+            .filterNot { (range, _) -> pipes.any { range.startOffset >= it.startOffset && range.startOffset < it.endOffset } }
+        return if (statements.isEmpty() && pipes.isEmpty()) null else Info(statements, engineJar, enabled, pipes)
     }
 
     override fun doAnnotate(collectedInfo: Info?): Result? {
         val info = collectedInfo ?: return null
         val flagged = DuckdbEngineValidator.validate(info.statements.map { it.second }, info.engineJar)
-        if (flagged.isEmpty()) return Result(emptyList())
-        return Result(flagged.map { (i, err) -> info.statements[i].first to err })
+        val pipeErrors = info.pipes.mapNotNull { chunk ->
+            val result = runPipeCatching { DuckdbPipesEngine.transpile(chunk.text) }.getOrElse {
+                DuckdbPipesEngine.Transpile.Err(null, null, "PIPE translation failed: ${it.message}")
+            }
+            val error = when (result) {
+                is DuckdbPipesEngine.Transpile.Err -> result
+                is DuckdbPipesEngine.Transpile.Ok -> result.executionError
+                else -> null
+            } ?: return@mapNotNull null
+            TextRange(chunk.startOffset, chunk.endOffset) to error
+        }
+        return Result(flagged.map { (i, err) -> info.statements[i].first to err }, info.pipesEnabled, pipeErrors)
     }
 
     override fun apply(file: PsiFile, annotationResult: Result?, holder: AnnotationHolder) {
         val result = annotationResult ?: return
+        if (result.pipesEnabled != DuckdbPipes.isEnabled(file.project)) return
         val doc = PsiDocumentManager.getInstance(file.project).getDocument(file) ?: return
         for ((stmtRange, err) in result.errors) {
             val range = errorRange(doc, stmtRange, err)
             holder.newAnnotation(HighlightSeverity.ERROR, "DuckDB: ${err.message}")
                 .range(range)
                 .create()
+        }
+        for ((stmtRange, err) in result.pipeErrors) {
+            val text = doc.charsSequence.subSequence(stmtRange.startOffset, stmtRange.endOffset).toString()
+            var offset = text.length - text.trimStart().length
+            repeat(((err.line ?: 1) - 1).coerceAtLeast(0)) {
+                offset = (text.indexOf('\n', offset).takeIf { it >= 0 }?.plus(1) ?: offset)
+            }
+            offset = (offset + ((err.col ?: 1) - 1).coerceAtLeast(0)).coerceIn(0, (text.length - 1).coerceAtLeast(0))
+            val start = stmtRange.startOffset + offset
+            holder.newAnnotation(HighlightSeverity.ERROR, "DuckDB PIPE: ${err.message}")
+                .range(TextRange(start, (start + 2).coerceAtMost(stmtRange.endOffset))).create()
         }
     }
 
