@@ -132,6 +132,10 @@ and the artifact pin in `config/duckdb-brikk-artifacts.xml`, then re-run all thr
 commit their output: `./gradlew harvestCensus harvestFunctionCatalog harvestExtensionCatalog`
 (the last needs network for extension INSTALLs).
 
+For the upcoming 2.0 release, read [the plugin integration watch note](DUCKDB-2.0-WATCH.md)
+before bumping the engine. Grammar extensions and validator session state need more than a catalog
+harvest.
+
 ## Credits
 
 - **[DuckDB](https://duckdb.org)** — the database this plugin exists for, built by DuckDB Labs
