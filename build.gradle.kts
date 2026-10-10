@@ -10,11 +10,12 @@ plugins {
 }
 
 group = "dev.sort.duckdb"
-version = "0.3.0"
+version = "0.3.1"
 
 val brikkSqlVersion = "0.18.0"
 val companionInstalled = providers.gradleProperty("test.sqlTranspiler").orNull == "installed"
 val dorisZip = providers.gradleProperty("test.dorisPluginZip").map(::File).orNull
+val kotlinInstalled = providers.gradleProperty("test.kotlin").orNull != "absent"
 
 repositories {
     mavenCentral()
@@ -52,13 +53,17 @@ dependencies {
     testImplementation("dev.brikk.ducklake:slt-format:0.3.0")
 
     intellijPlatform {
-        // Same platform window as doris-intellij: compiled against DataGrip 2026.1 (build 261),
-        // one artifact serving 261+262. Remote SDK so any clone/CI can build without an IDE.
+        // Compile on 261 IDEA for optional Kotlin injection APIs. The same artifact still
+        // runs in DataGrip without Kotlin; all Kotlin registrations use an optional descriptor.
         val localIde = providers.gradleProperty("duckdb.localIde")
-        if (localIde.isPresent) local(localIde) else datagrip("2026.1.3")
+        if (localIde.isPresent) local(localIde) else intellijIdeaUltimate("2026.1.3")
         bundledPlugin("com.intellij.database")
         // Test-runtime transitive requirement of com.intellij.database (see doris-intellij notes).
         bundledPlugin("com.intellij.modules.json")
+        if (kotlinInstalled) {
+            bundledPlugin("org.jetbrains.kotlin")
+            bundledPlugin("com.intellij.java")
+        }
         if (companionInstalled) plugin("dev.sort.sql-transpiler-intellij-plugin:0.3.0")
         if (dorisZip != null) {
             require(dorisZip.isFile) { "Missing Doris plugin ZIP: $dorisZip" }
@@ -105,6 +110,11 @@ tasks {
     processResources {
         from(files("LICENSE", "THIRD_PARTY_NOTICES.md")) { into("META-INF") }
     }
+    processTestResources {
+        // prepareTest places the fixture descriptor here; its optional descriptor must be
+        // beside it, not only on a different flattened classpath entry.
+        from("src/main/resources/META-INF/duckdb-kotlin.xml") { into("META-INF") }
+    }
     // Stable artifact name (no version suffix) so install-from-disk always points at the same file.
     buildPlugin {
         archiveVersion = ""
@@ -122,9 +132,14 @@ tasks {
         systemProperty("idea.load.plugins.id", buildList {
             add("com.intellij.database")
             add("dev.sort.duckdb-intellij-plugin")
+            if (kotlinInstalled) {
+                add("org.jetbrains.kotlin")
+                add("com.intellij.java")
+            }
             if (companionInstalled) add("dev.sort.sql-transpiler-intellij-plugin")
             if (dorisZip != null) add("dev.sort.doris-intellij-plugin")
         }.joinToString(","))
+        if (!kotlinInstalled) exclude("**/brikk/**")
         // DuckDB syntax corpus for the substrate scoreboard (DuckdbSyntaxProbeTest).
         systemProperty("corpus.dir", layout.projectDirectory.dir("src/test/resources/corpus").asFile.absolutePath)
 // Live quack-wire suites (QuackLiveTruthTest, DuckdbLiveHarvestOverQuackTest) are gated on

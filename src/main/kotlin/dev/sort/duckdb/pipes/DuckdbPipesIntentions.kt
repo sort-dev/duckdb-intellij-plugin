@@ -19,11 +19,16 @@ import javax.swing.JTextArea
 
 internal object DuckdbPipesUi {
     fun chunk(file: PsiFile, editor: Editor): DuckdbPipes.Chunk? {
-        if (!file.language.isKindOf(DuckdbSqlDialect.INSTANCE) || !DuckdbPipes.isEnabled(file.project)) return null
+        if (!file.language.isKindOf(DuckdbSqlDialect.INSTANCE) || !DuckdbPipes.isEnabled(file)) return null
         return DuckdbPipes.chunkAt(editor.document.text, editor.caretModel.offset)?.takeIf { it.hasPipeOperator }
     }
     fun preview(project: Project, file: PsiFile, editor: Editor) {
-        val text = chunk(file, editor)?.text ?: return
+        val text = if (dev.sort.duckdb.brikk.isBrikkInjectedSql(file)) {
+            val manager = com.intellij.lang.injection.InjectedLanguageManager.getInstance(project)
+            DuckdbPipes.chunkAt(manager.getUnescapedText(file), manager.mapInjectedOffsetToUnescaped(file, editor.caretModel.offset))
+                ?.takeIf { it.hasPipeOperator }?.text
+        } else chunk(file, editor)?.text
+        if (text == null) return
         val result = DuckdbPipesEngine.transpile(text)
         val sql = if (result is DuckdbPipesEngine.Transpile.Ok) result.sql else ""
         val error = when (result) {
@@ -48,6 +53,7 @@ internal object DuckdbPipesUi {
             .setResizable(true).setMovable(true).setRequestFocus(true).createPopup().showInBestPositionFor(editor)
     }
     fun runToStage(project: Project, file: PsiFile, editor: Editor) {
+        if (dev.sort.duckdb.brikk.isBrikkInjectedSql(file)) return
         val chunk = chunk(file, editor) ?: return
         val console = JdbcConsoleProvider.getValidConsole(project, file.viewProvider.virtualFile) ?: return
         if (console.session.connectionPoint.dbms !== DuckdbDbms.DUCKDB_BRIKK) return
@@ -76,7 +82,7 @@ class RunPipesToStageIntention : IntentionAction {
     override fun getFamilyName() = "DuckDB PIPE"
     override fun startInWriteAction() = false
     override fun isAvailable(project: Project, editor: Editor?, file: PsiFile?) =
-        editor != null && file != null && DuckdbPipesUi.chunk(file, editor) != null
+        editor != null && file != null && !dev.sort.duckdb.brikk.isBrikkInjectedSql(file) && DuckdbPipesUi.chunk(file, editor) != null
     override fun invoke(project: Project, editor: Editor?, file: PsiFile?) {
         if (editor != null && file != null) DuckdbPipesUi.runToStage(project, file, editor)
     }
@@ -97,5 +103,10 @@ class PreviewPipeSqlAction : DuckdbPipesMenuAction() {
     override fun perform(project: Project, file: PsiFile, editor: Editor) = DuckdbPipesUi.preview(project, file, editor)
 }
 class RunPipesToStageAction : DuckdbPipesMenuAction() {
+    override fun update(e: AnActionEvent) {
+        super.update(e)
+        if (e.getData(CommonDataKeys.PSI_FILE)?.let { dev.sort.duckdb.brikk.isBrikkInjectedSql(it) } == true)
+            e.presentation.isEnabledAndVisible = false
+    }
     override fun perform(project: Project, file: PsiFile, editor: Editor) = DuckdbPipesUi.runToStage(project, file, editor)
 }

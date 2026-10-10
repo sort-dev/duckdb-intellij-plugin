@@ -4,6 +4,8 @@ import com.intellij.openapi.components.service
 import com.intellij.openapi.progress.ProcessCanceledException
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.project.Project
+import com.intellij.psi.PsiFile
+import dev.sort.duckdb.brikk.BrikkDuckdbProfile
 import java.util.concurrent.CancellationException
 
 /** Recover optional editor operations, never cancellation or JVM errors. */
@@ -23,6 +25,10 @@ object DuckdbPipes {
 
     fun isEnabled(project: Project?): Boolean = project != null && !project.isDisposed && !project.isDefault &&
         !"false".equals(System.getProperty(PROPERTY), true) && project.service<DuckdbPipesSettings>().enabled
+
+    /** Automatic Brikk enablement is scoped to one injected file, never the project service. */
+    fun isEnabled(file: PsiFile): Boolean = !"false".equals(System.getProperty(PROPERTY), true) &&
+        (BrikkDuckdbProfile.forFile(file) != null || isEnabled(file.project))
 
     data class Chunk(val text: String, val startOffset: Int, val endOffset: Int,
                      val hasPipeOperator: Boolean, val hasSql: Boolean, val boundaryError: String? = null)

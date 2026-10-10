@@ -72,6 +72,27 @@ source mapping is not yet enabled for DuckDB server errors.
 Only the translator is bundled, not a native database engine. To disable PIPE
 globally as an emergency override, use `-Dduckdb.pipes=false`.
 
+## Brikk Kotlin SQL
+
+Since 0.3.1, with the Kotlin K2 plugin installed, a resolved `Sql.duckdb(...)` call inside
+`dev.brikk.house.sql.runtime.BrikkSql` activates DuckDB's Brikk editing profile
+automatically. The injected language stays `DuckDBSQL`. PIPE editing is enabled
+for that SQL host even when the project's PIPE checkbox is off; other files
+and Doris calls are unchanged.
+
+Scalar Kotlin interpolations such as `$tenant` and `${tenant}` appear to SQL
+inspections as named binds, `:tenant`, while the original Kotlin reference
+keeps usages, rename and navigation. `Rel` parameters stay relation slots,
+and literal SQL constants are inserted as text. Unsupported expressions or
+computed constants get host diagnostics rather than guessed SQL values. JSON
+paths, escaped dollars, `trimIndent()` and default `trimMargin()` retain their
+source mappings.
+
+This is an inspection view, not runnable SQL. Run the compiled/composed Brikk
+relation with its bindings. This plugin's Execute and run-to-stage handlers do
+not execute the inspection placeholders. Schema-backed completion for `Rel`
+inputs remains separate work; a DDL data source still resolves physical tables.
+
 ## Connecting to a remote Quack DuckDB server
 
 - The **connection token** goes in the Password field (it is stored in the IDE's secure storage and injected as
@@ -125,7 +146,9 @@ driver. The built-in PIPE translator is independent of that driver.
 ./gradlew test -Dquack.live.url='jdbc:quack://localhost:9494?token=<token>'
 ```
 
-DataGrip 2026.1 SDK (auto-downloaded), Kotlin 2.4.10, JVM 21.
+IntelliJ IDEA Ultimate 2026.1 SDK (auto-downloaded), Kotlin 2.4.10, JVM 21.
+The SDK supplies optional Kotlin injection APIs; Kotlin is not required to use
+the dialect or PIPE consoles in DataGrip.
 
 **Engine bump checklist** (when moving to a new DuckDB): bump `duckdb_jdbc` in build.gradle.kts
 and the artifact pin in `config/duckdb-brikk-artifacts.xml`, then re-run all three harvests and

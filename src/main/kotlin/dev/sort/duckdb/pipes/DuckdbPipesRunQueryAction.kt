@@ -53,6 +53,14 @@ internal class DuckdbPipesRunSelectionAction(
 
 internal object PipesExecuteInterceptor {
     fun handle(e: AnActionEvent, option: DatabaseSettings.ExecOption): Boolean {
+        val file = e.getData(CommonDataKeys.PSI_FILE)
+        if (file != null && dev.sort.duckdb.brikk.isBrikkInjectedSql(file)) {
+            NotificationGroupManager.getInstance().getNotificationGroup("DuckDB PIPE")
+                .createNotification("Brikk SQL is an inspection view",
+                    "Run the compiled/composed relation with its binding map. SQL inspection placeholders are not runtime values.",
+                    NotificationType.WARNING).notify(e.project)
+            return true
+        }
         val console = JdbcConsole.findConsole(e) ?: return false
         if (console.session.connectionPoint.dbms !== DuckdbDbms.DUCKDB_BRIKK || !DuckdbPipes.isEnabled(console.project)) return false
         val editor = e.getData(CommonDataKeys.EDITOR)

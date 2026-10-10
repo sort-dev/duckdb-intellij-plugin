@@ -11,6 +11,8 @@ package dev.sort.duckdb.sql
 import com.intellij.lang.PsiBuilder
 import com.intellij.sql.dialects.postgres.PgParser
 import com.intellij.sql.psi.SqlCompositeElementTypes.SQL_STATEMENT
+import com.intellij.psi.impl.source.resolve.FileContextUtil
+import dev.sort.duckdb.brikk.BrikkDuckdbProfile
 
 /**
  * DuckDB statement parsing on the PG foundation, Tier-1 (statement boundaries).
@@ -35,7 +37,9 @@ class DuckdbPsiParser : PgParser(false) {
     override fun parseSqlStatement(builder: PsiBuilder, level: Int): Boolean {
         // Raw lexical ranges avoid PSI masking and the bounded PG lookahead. Bare FROM
         // remains ordinary DuckDB SQL, independently of the PIPE setting.
-        if (dev.sort.duckdb.pipes.DuckdbPipes.isEnabled(builder.project)) {
+        val file = builder.getUserData(FileContextUtil.CONTAINING_FILE_KEY)
+        if (file?.let { dev.sort.duckdb.pipes.DuckdbPipes.isEnabled(it) }
+                ?: dev.sort.duckdb.pipes.DuckdbPipes.isEnabled(builder.project)) {
             if (pipeText !== builder.originalText) {
                 pipeText = builder.originalText
                 val text = builder.originalText.toString()
@@ -128,6 +132,23 @@ class DuckdbPsiParser : PgParser(false) {
             }
         }
         return super.parseSqlStatement(builder, level)
+    }
+
+    override fun parseParameterOrVariableReference(builder: PsiBuilder, allowVariable: Boolean): Boolean {
+        val file = builder.getUserData(FileContextUtil.CONTAINING_FILE_KEY)
+        if (BrikkDuckdbProfile.forFile(file) != null && builder.tokenText == ":") {
+            val marker = builder.mark()
+            val start = builder.currentOffset
+            builder.advanceLexer()
+            val name = builder.tokenText
+            if (builder.currentOffset == start + 1 && name?.matches(Regex("[A-Za-z_][A-Za-z_0-9]*")) == true) {
+                builder.advanceLexer()
+                marker.done(com.intellij.sql.psi.SqlElementTypes.SQL_PARAMETER_REFERENCE)
+                return true
+            }
+            marker.rollbackTo()
+        }
+        return super.parseParameterOrVariableReference(builder, allowVariable)
     }
 
     // --- lenient machinery (adapted from doris-intellij / StarRocks lineage) ---

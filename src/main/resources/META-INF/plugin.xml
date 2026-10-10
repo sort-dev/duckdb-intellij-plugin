@@ -48,6 +48,15 @@
     ]]></description>
 
     <change-notes><![CDATA[
+        <b>0.3.1</b> - automatic DuckDB Brikk editing in Kotlin K2.
+        <ul>
+            <li>Recognizes resolved <code>Sql.duckdb</code> calls inside <code>@BrikkSql</code>
+                and enables PIPE editing for that host without changing project settings.</li>
+            <li>Scalar Kotlin interpolations become named SQL binds while preserving Kotlin
+                references and rename. Relation slots and literal constants retain their roles.</li>
+            <li>Preserves trimmed/escaped source mappings and rejects unsupported interpolations.
+                Kotlin is optional; ordinary SQL and Doris injections are unchanged.</li>
+        </ul>
         <b>0.3.0</b> - built-in, per-project PIPE support.
         <ul>
             <li>Bundles brikk-sql 0.18.0 for PIPE translation, with no native database engine.</li>
@@ -92,6 +101,10 @@
 
     <depends>com.intellij.modules.platform</depends>
     <depends>com.intellij.database</depends>
+    <depends optional="true" config-file="duckdb-kotlin.xml">org.jetbrains.kotlin</depends>
+    <extensions defaultExtensionNs="org.jetbrains.kotlin">
+        <supportsKotlinPluginMode supportsK2="true" supportsK1="false"/>
+    </extensions>
     <xi:include href="/META-INF/duckdb-pipes.xml" xpointer="xpointer(/idea-plugin/*)"/>
 
     <extensions defaultExtensionNs="com.intellij">

@@ -13,6 +13,11 @@ import dev.sort.duckdb.sql.DuckdbSqlDialect
 import dev.sort.duckdb.pipes.DuckdbPipes
 import dev.sort.duckdb.pipes.DuckdbPipesEngine
 import dev.sort.duckdb.pipes.runPipeCatching
+import dev.sort.duckdb.brikk.BrikkDuckdbProfile
+import dev.brikk.house.sql.shape.SqlFragment
+import dev.brikk.house.sql.parser.ParseError
+import dev.brikk.house.sql.parser.TokenError
+import dev.brikk.house.sql.shape.ShapeError
 
 /**
  * Editor surface for [DuckdbEngineValidator]: statement text goes to a real in-memory DuckDB,
@@ -24,7 +29,8 @@ import dev.sort.duckdb.pipes.runPipeCatching
 class DuckdbErrorAnnotator : ExternalAnnotator<DuckdbErrorAnnotator.Info, DuckdbErrorAnnotator.Result>() {
 
     data class Info(val statements: List<Pair<TextRange, String>>, val engineJar: String?,
-                    val pipesEnabled: Boolean = false, val pipes: List<DuckdbPipes.Chunk> = emptyList())
+                    val pipesEnabled: Boolean = false, val pipes: List<DuckdbPipes.Chunk> = emptyList(),
+                    val brikk: BrikkDuckdbProfile? = null, val brikkText: String? = null)
     data class Result(val errors: List<Pair<TextRange, DuckdbEngineValidator.EngineError>>,
                       val pipesEnabled: Boolean = false,
                       val pipeErrors: List<Pair<TextRange, DuckdbPipesEngine.Transpile.Err>> = emptyList())
@@ -36,9 +42,12 @@ class DuckdbErrorAnnotator : ExternalAnnotator<DuckdbErrorAnnotator.Info, Duckdb
 
     override fun collectInformation(file: PsiFile): Info? {
         if (!file.language.isKindOf(DuckdbSqlDialect.INSTANCE)) return null
+        val profile = BrikkDuckdbProfile.forFile(file)
+        if (profile != null) return Info(emptyList(), null, DuckdbPipes.isEnabled(file),
+            brikk = profile, brikkText = com.intellij.lang.injection.InjectedLanguageManager.getInstance(file.project).getUnescapedText(file))
         // engine sources: driver-classpath / downloaded drivers (locator) or sysprop/test classpath
         val engineJar = DuckdbEngineLocator.engineJarFor(file)?.toString()
-        val enabled = DuckdbPipes.isEnabled(file.project)
+        val enabled = DuckdbPipes.isEnabled(file)
         val pipes = if (enabled) DuckdbPipes.chunks(file.text).filter { it.hasPipeOperator } else emptyList()
         if (engineJar == null && !DuckdbEngineValidator.available && pipes.isEmpty()) return null
         val statements = PsiTreeUtil.findChildrenOfType(file, SqlStatement::class.java)
@@ -50,6 +59,24 @@ class DuckdbErrorAnnotator : ExternalAnnotator<DuckdbErrorAnnotator.Info, Duckdb
 
     override fun doAnnotate(collectedInfo: Info?): Result? {
         val info = collectedInfo ?: return null
+        if (info.brikk != null) {
+            val text = info.brikkText.orEmpty()
+            val errors = mutableListOf<Pair<TextRange, DuckdbPipesEngine.Transpile.Err>>()
+            val range = TextRange(0, text.length)
+            // Interpolation refusals belong to authored Kotlin ranges, handled by the optional
+            // host annotator. Never underline a guessed synthetic bind as if it were SQL text.
+            if (info.brikk.issues.isEmpty()) {
+                try { SqlFragment(text, "duckdb").ast } catch (e: ParseError) {
+                    val first = e.errors.firstOrNull()
+                    errors.add(range to DuckdbPipesEngine.Transpile.Err(first?.line, first?.col, first?.description ?: "Invalid Brikk SQL"))
+                } catch (e: TokenError) {
+                    errors.add(range to DuckdbPipesEngine.Transpile.Err(null, null, e.message ?: "Invalid SQL token"))
+                } catch (e: ShapeError) {
+                    errors.add(range to DuckdbPipesEngine.Transpile.Err(null, null, e.message ?: "Brikk SQL requires exactly one statement"))
+                }
+            }
+            return Result(emptyList(), info.pipesEnabled, errors)
+        }
         val flagged = DuckdbEngineValidator.validate(info.statements.map { it.second }, info.engineJar)
         val pipeErrors = info.pipes.mapNotNull { chunk ->
             val result = runPipeCatching { DuckdbPipesEngine.transpile(chunk.text) }.getOrElse {
@@ -67,7 +94,7 @@ class DuckdbErrorAnnotator : ExternalAnnotator<DuckdbErrorAnnotator.Info, Duckdb
 
     override fun apply(file: PsiFile, annotationResult: Result?, holder: AnnotationHolder) {
         val result = annotationResult ?: return
-        if (result.pipesEnabled != DuckdbPipes.isEnabled(file.project)) return
+        if (result.pipesEnabled != DuckdbPipes.isEnabled(file)) return
         val doc = PsiDocumentManager.getInstance(file.project).getDocument(file) ?: return
         for ((stmtRange, err) in result.errors) {
             val range = errorRange(doc, stmtRange, err)
@@ -76,13 +103,28 @@ class DuckdbErrorAnnotator : ExternalAnnotator<DuckdbErrorAnnotator.Info, Duckdb
                 .create()
         }
         for ((stmtRange, err) in result.pipeErrors) {
-            val text = doc.charsSequence.subSequence(stmtRange.startOffset, stmtRange.endOffset).toString()
+            val brikk = BrikkDuckdbProfile.forFile(file) != null
+            val text = if (brikk) com.intellij.lang.injection.InjectedLanguageManager.getInstance(file.project).getUnescapedText(file)
+                else doc.charsSequence.subSequence(stmtRange.startOffset, stmtRange.endOffset).toString()
             var offset = text.length - text.trimStart().length
             repeat(((err.line ?: 1) - 1).coerceAtLeast(0)) {
                 offset = (text.indexOf('\n', offset).takeIf { it >= 0 }?.plus(1) ?: offset)
             }
             offset = (offset + ((err.col ?: 1) - 1).coerceAtLeast(0)).coerceIn(0, (text.length - 1).coerceAtLeast(0))
             val start = stmtRange.startOffset + offset
+            if (brikk) {
+                val manager = com.intellij.lang.injection.InjectedLanguageManager.getInstance(file.project)
+                val mapped = manager.mapUnescapedOffsetToInjected(file, start)
+                val candidate = TextRange(mapped, (mapped + 1).coerceAtMost(file.textLength))
+                val range = manager.intersectWithAllEditableFragments(file, candidate).firstOrNull()
+                    ?: if (err.line == null) manager.intersectWithAllEditableFragments(file, TextRange(0, file.textLength))
+                        .firstOrNull()?.let { TextRange(it.startOffset, (it.startOffset + 1).coerceAtMost(it.endOffset)) }
+                    else null
+                if (range == null) continue
+                holder.newAnnotation(HighlightSeverity.ERROR, "DuckDB Brikk: ${err.message}")
+                    .range(range).create()
+                continue
+            }
             holder.newAnnotation(HighlightSeverity.ERROR, "DuckDB PIPE: ${err.message}")
                 .range(TextRange(start, (start + 2).coerceAtMost(stmtRange.endOffset))).create()
         }

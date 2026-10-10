@@ -21,11 +21,14 @@ class DuckdbPipesCompletionContributor : CompletionContributor() {
         }
         override fun addCompletions(parameters: CompletionParameters, context: ProcessingContext, result: CompletionResultSet) {
             val file = parameters.originalFile
-            if (!file.language.isKindOf(DuckdbSqlDialect.INSTANCE) || !DuckdbPipes.isEnabled(file.project)) return
-            val text = file.text
-            val chunk = DuckdbPipes.chunkAt(text, parameters.offset.coerceAtMost(text.length)) ?: return
+            if (!file.language.isKindOf(DuckdbSqlDialect.INSTANCE) || !DuckdbPipes.isEnabled(file)) return
+            val injected = dev.sort.duckdb.brikk.isBrikkInjectedSql(file)
+            val manager = com.intellij.lang.injection.InjectedLanguageManager.getInstance(file.project)
+            val text = if (injected) manager.getUnescapedText(file) else file.text
+            val offset = if (injected) manager.mapInjectedOffsetToUnescaped(file, parameters.offset) else parameters.offset
+            val chunk = DuckdbPipes.chunkAt(text, offset.coerceAtMost(text.length)) ?: return
             if (!chunk.hasPipeOperator) return
-            val before = chunk.text.take((parameters.offset - chunk.startOffset).coerceIn(0, chunk.text.length))
+            val before = chunk.text.take((offset - chunk.startOffset).coerceIn(0, chunk.text.length))
             val sink = result.caseInsensitive()
             val split = runPipeCatching { PipeStageSplitter.split(before, "duckdb") }.getOrNull() ?: return
             // Resolve the completed input stages, never the partially typed current stage.
