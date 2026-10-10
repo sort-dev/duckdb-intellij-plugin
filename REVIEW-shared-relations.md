@@ -5,6 +5,9 @@ Development integration of
 Local. No helper release, plugin publication, push, compiler rebuild, or peer
 plugin modification is performed by this work.
 
+The snapshot section below records the initial integration. The later Central
+transition is recorded at the end of this report.
+
 ## Ownership and migration
 
 `BrikkDuckdbKotlinContext` now projects the helper's copied context. It no longer
@@ -132,3 +135,20 @@ Next publication step: publish the validated helper formally, then override or
 update `brikkIdeSupportVersion` and repeat the consumer gates. Maven Local is
 restricted to the development snapshot version, so it cannot shadow a released
 Central coordinate.
+
+## Central 0.1.0 transition
+
+The published `dev.brikk.house:brikk-engine-kotlin-intellij-support:0.1.0`
+POM and JAR are available directly from Maven Central. The default consumer
+coordinate is now 0.1.0, and Maven Local has been removed from the build.
+Packaged notices and the real-classloader assertion now name the release JAR.
+
+Central JAR SHA-256:
+`3505484cc5cce7aa0f0b614249be234146901c1d61d542428d515dd21585ff26`.
+All 31 class files match the previously validated snapshot byte for byte.
+
+The local consumer ZIP is now version 0.3.2 so it is distinguishable during IDE
+testing. This version bump and Central dependency transition are committed
+without waiting for the remaining verification lane; no push or publication
+is performed. The snapshot validation results above are historical, not a
+claim that the final 0.3.2 artifact has completed verification.

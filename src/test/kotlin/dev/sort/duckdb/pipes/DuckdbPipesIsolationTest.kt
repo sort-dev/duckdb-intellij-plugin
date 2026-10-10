@@ -17,7 +17,7 @@ class DuckdbPipesIsolationTest : BasePlatformTestCase() {
         assertSame(loader, fragment.classLoader)
         val contract = loader.loadClass("dev.brikk.house.intellij.ColumnContract")
         assertSame("The embedded helper is product-owned, not borrowed from fixture core", loader, contract.classLoader)
-        assertTrue(contract.getResource("ColumnContract.class").toString().contains("brikk-engine-kotlin-intellij-support-0.1.0-SNAPSHOT.jar"))
+        assertTrue(contract.getResource("ColumnContract.class").toString().contains("brikk-engine-kotlin-intellij-support-0.1.0.jar"))
         assertTrue(fragment.getResource("SqlFragment.class").toString().contains("0.18.0"))
         val value = fragment.getConstructor(String::class.java, String::class.java)
             .newInstance("FROM range(3) |> LIMIT 1", "duckdb")

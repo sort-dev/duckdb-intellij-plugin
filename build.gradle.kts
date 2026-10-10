@@ -10,18 +10,15 @@ plugins {
 }
 
 group = "dev.sort.duckdb"
-version = "0.3.1"
+version = "0.3.2"
 
 val brikkSqlVersion = "0.18.0"
-val brikkIdeSupportVersion = providers.gradleProperty("brikkIdeSupportVersion").getOrElse("0.1.0-SNAPSHOT")
+val brikkIdeSupportVersion = providers.gradleProperty("brikkIdeSupportVersion").getOrElse("0.1.0")
 val companionInstalled = providers.gradleProperty("test.sqlTranspiler").orNull == "installed"
 val dorisZip = providers.gradleProperty("test.dorisPluginZip").map(::File).orNull
 val kotlinInstalled = providers.gradleProperty("test.kotlin").orNull != "absent"
 
 repositories {
-    mavenLocal {
-        content { includeVersion("dev.brikk.house", "brikk-engine-kotlin-intellij-support", "0.1.0-SNAPSHOT") }
-    }
     mavenCentral()
     intellijPlatform {
         defaultRepositories()

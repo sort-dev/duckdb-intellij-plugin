@@ -156,12 +156,10 @@ IntelliJ IDEA Ultimate 2026.1 SDK (auto-downloaded), Kotlin 2.4.10, JVM 21.
 The SDK supplies optional Kotlin injection APIs; Kotlin is not required to use
 the dialect or PIPE consoles in DataGrip.
 
-This development build consumes
-`dev.brikk.house:brikk-engine-kotlin-intellij-support:0.1.0-SNAPSHOT` from
-Maven Local. Only that module may resolve locally. Publish it from the Brikk
-checkout as described in its helper README, then use `--refresh-dependencies`
-after same-version rebuilds. A formal Central coordinate is pending validation;
-the dependency does not bundle an IntelliJ SDK or compiler plugin.
+The plugin consumes
+`dev.brikk.house:brikk-engine-kotlin-intellij-support:0.1.0` from Maven Central.
+No Maven Local publication is required. The dependency does not bundle an
+IntelliJ SDK, Kotlin stdlib or compiler plugin.
 
 **Engine bump checklist** (when moving to a new DuckDB): bump `duckdb_jdbc` in build.gradle.kts
 and the artifact pin in `config/duckdb-brikk-artifacts.xml`, then re-run all three harvests and

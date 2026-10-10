@@ -48,6 +48,14 @@
     ]]></description>
 
     <change-notes><![CDATA[
+        <b>0.3.2</b> - shared Brikk relation-contract support.
+        <ul>
+            <li>Uses the published Brikk Kotlin IntelliJ support 0.1.0 library from Maven Central.</li>
+            <li>Resolves, completes and navigates Kotlin relation-input columns with statement-local
+                aliases, joins and supported PIPE-stage scopes.</li>
+            <li>Preserves partial/unavailable contract distinctions and labelled generated-column
+                navigation fallbacks. Kotlin remains optional.</li>
+        </ul>
         <b>0.3.1</b> - automatic DuckDB Brikk editing in Kotlin K2.
         <ul>
             <li>Recognizes resolved <code>Sql.duckdb</code> calls inside <code>@BrikkSql</code>

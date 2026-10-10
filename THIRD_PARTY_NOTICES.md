@@ -1,9 +1,9 @@
 # Third-party notices
 
-## Brikk Kotlin IntelliJ support (development snapshot)
+## Brikk Kotlin IntelliJ support 0.1.0
 
-This plugin embeds `dev.brikk.house:brikk-engine-kotlin-intellij-support:0.1.0-SNAPSHOT`
-from Maven Local for integration validation. Jayson Minard and Sortdev SRL,
+This plugin embeds `dev.brikk.house:brikk-engine-kotlin-intellij-support:0.1.0`
+from Maven Central. Jayson Minard and Sortdev SRL,
 https://github.com/brikk/brikk-house, Apache License 2.0. The helper contains
 Brikk context/interpolation and copied relation-contract APIs. Kotlin/IntelliJ
 APIs and compiler plugins are not bundled by this dependency.
