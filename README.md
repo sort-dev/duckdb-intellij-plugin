@@ -90,8 +90,14 @@ source mappings.
 
 This is an inspection view, not runnable SQL. Run the compiled/composed Brikk
 relation with its bindings. This plugin's Execute and run-to-stage handlers do
-not execute the inspection placeholders. Schema-backed completion for `Rel`
-inputs remains separate work; a DDL data source still resolves physical tables.
+not execute the inspection placeholders. `Rel<T>` input columns now resolve,
+complete and navigate through the shared Brikk Kotlin support library, including
+inherited trait bounds and available compiler-generated shapes. SQL aliases,
+outer-join nullability and supported PIPE stages have statement-local scopes.
+Partial contracts supply known guarantees, not a closed runtime inventory;
+unavailable shapes do not invent missing-column errors. Exact SQL types and
+generated SQL-column source spans are not supplied by this contract. A DDL
+data source still resolves physical tables.
 
 ## Connecting to a remote Quack DuckDB server
 
@@ -149,6 +155,13 @@ driver. The built-in PIPE translator is independent of that driver.
 IntelliJ IDEA Ultimate 2026.1 SDK (auto-downloaded), Kotlin 2.4.10, JVM 21.
 The SDK supplies optional Kotlin injection APIs; Kotlin is not required to use
 the dialect or PIPE consoles in DataGrip.
+
+This development build consumes
+`dev.brikk.house:brikk-engine-kotlin-intellij-support:0.1.0-SNAPSHOT` from
+Maven Local. Only that module may resolve locally. Publish it from the Brikk
+checkout as described in its helper README, then use `--refresh-dependencies`
+after same-version rebuilds. A formal Central coordinate is pending validation;
+the dependency does not bundle an IntelliJ SDK or compiler plugin.
 
 **Engine bump checklist** (when moving to a new DuckDB): bump `duckdb_jdbc` in build.gradle.kts
 and the artifact pin in `config/duckdb-brikk-artifacts.xml`, then re-run all three harvests and

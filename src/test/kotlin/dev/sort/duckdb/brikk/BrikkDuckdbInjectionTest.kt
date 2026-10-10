@@ -19,7 +19,7 @@ import org.jetbrains.kotlin.idea.references.mainReference
 import org.jetbrains.kotlin.psi.KtNameReferenceExpression
 
 /** Exercise real Kotlin resolution and injection, not a fake replacement string or SQL lexer alone. */
-class BrikkDuckdbInjectionTest : BasePlatformTestCase() {
+open class BrikkDuckdbInjectionTest : BasePlatformTestCase() {
     override fun setUp() {
         super.setUp()
         val stdlib = java.io.File(com.intellij.util.PathUtil.getJarPathForClass(kotlin.Unit::class.java))
@@ -41,17 +41,18 @@ class BrikkDuckdbInjectionTest : BasePlatformTestCase() {
         """.trimIndent())
     }
 
-    private fun configure(body: String): KtStringTemplateExpression {
+    protected fun configure(body: String): KtStringTemplateExpression {
         myFixture.configureByText("Sample.kt", """
             import dev.brikk.house.sql.runtime.*
             import kotlin.text.trimIndent
             import kotlin.text.trimMargin
             $body
         """.trimIndent())
-        return PsiTreeUtil.findChildrenOfType(myFixture.file, KtStringTemplateExpression::class.java)
+        val hostFile = InjectedLanguageManager.getInstance(project).getTopLevelFile(myFixture.file)
+        return PsiTreeUtil.findChildrenOfType(hostFile, KtStringTemplateExpression::class.java)
             .last { it.text.contains("SELECT") || it.text.contains("FROM") }
     }
-    private fun injected(host: KtStringTemplateExpression): PsiFile {
+    protected fun injected(host: KtStringTemplateExpression): PsiFile {
         val injections = InjectedLanguageManager.getInstance(project).getInjectedPsiFiles(host).orEmpty()
         assertFalse("No SQL injection for ${host.text}", injections.isEmpty())
         val file = injections.first().first.containingFile
@@ -157,7 +158,7 @@ class BrikkDuckdbInjectionTest : BasePlatformTestCase() {
     fun testUnresolvedBindIsNotManufacturedIntoAColumnAndRefreshesAfterEdit() {
         var host = configure("@BrikkSql fun query(tenant: String) = Sql.duckdb(\"SELECT tenant WHERE tenant = \$missing\")")
         val file = injected(host)
-        assertTrue(file.text, file.text.contains(":__brikk_unresolved_"))
+        assertTrue(file.text, file.text.contains(":__brikk_pending_"))
         assertTrue(BrikkDuckdbProfile.forFile(file)!!.issues.isNotEmpty())
         WriteCommandAction.runWriteCommandAction(project) {
             val i = myFixture.editor.document.text.indexOf("\$missing")
@@ -179,9 +180,11 @@ class BrikkDuckdbInjectionTest : BasePlatformTestCase() {
         }
         manager.addDataSource(source)
         try {
-            val sync = com.intellij.openapi.application.ApplicationManager.getApplication().executeOnPooledThread { source.sync() }
+            val sync = com.intellij.openapi.application.ApplicationManager.getApplication().executeOnPooledThread {
+                source.sync()
+                source.waitComputed()
+            }
             com.intellij.testFramework.PlatformTestUtil.waitForFuture(sync)
-            source.waitComputed()
             com.intellij.database.psi.DbPsiFacade.getInstance(project).clearCaches()
             com.intellij.sql.dialects.SqlResolveMappings.getInstance(project).setMapping(null,
                 com.intellij.sql.dialects.SqlResolveMappings.ALL_DATA_SOURCES)

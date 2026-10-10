@@ -1,5 +1,9 @@
 # DuckDB Brikk Kotlin editing profile
 
+This records the initial 0.3.1 implementation. The later helper migration,
+relation-input scopes and generated-shape validation are described in
+[REVIEW-shared-relations.md](REVIEW-shared-relations.md).
+
 Implements the DuckDB-only portion of
 `brikk-house/docs/IDE-brikk-house-mode.md`. No Doris integration, new dialect,
 compiler execution, runtime database connection, or global auto-enablement is

@@ -1,4 +1,7 @@
 <idea-plugin>
+    <extensions defaultExtensionNs="dev.sort.duckdb">
+        <brikkRelations implementation="dev.sort.duckdb.brikk.kotlin.KotlinBrikkRelationProvider"/>
+    </extensions>
     <extensions defaultExtensionNs="com.intellij">
         <languageInjectionContributor language="kotlin" implementationClass="dev.sort.duckdb.brikk.kotlin.BrikkDuckdbInjectionContributor" order="first"/>
         <languageInjectionPerformer language="kotlin" implementationClass="dev.sort.duckdb.brikk.kotlin.BrikkDuckdbInjectionPerformer" order="first"/>

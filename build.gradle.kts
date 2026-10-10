@@ -13,11 +13,15 @@ group = "dev.sort.duckdb"
 version = "0.3.1"
 
 val brikkSqlVersion = "0.18.0"
+val brikkIdeSupportVersion = providers.gradleProperty("brikkIdeSupportVersion").getOrElse("0.1.0-SNAPSHOT")
 val companionInstalled = providers.gradleProperty("test.sqlTranspiler").orNull == "installed"
 val dorisZip = providers.gradleProperty("test.dorisPluginZip").map(::File).orNull
 val kotlinInstalled = providers.gradleProperty("test.kotlin").orNull != "absent"
 
 repositories {
+    mavenLocal {
+        content { includeVersion("dev.brikk.house", "brikk-engine-kotlin-intellij-support", "0.1.0-SNAPSHOT") }
+    }
     mavenCentral()
     intellijPlatform {
         defaultRepositories()
@@ -25,6 +29,9 @@ repositories {
 }
 
 dependencies {
+    implementation("dev.brikk.house:brikk-engine-kotlin-intellij-support:$brikkIdeSupportVersion") {
+        exclude(group = "org.jetbrains.kotlin", module = "kotlin-stdlib")
+    }
     // Translator only. Native DuckDB and brikk-sql-verify are never bundled.
     implementation("dev.brikk.house:brikk-sql-jvm:$brikkSqlVersion") {
         exclude(group = "org.jetbrains.kotlin", module = "kotlin-stdlib")
@@ -140,6 +147,10 @@ tasks {
             if (dorisZip != null) add("dev.sort.doris-intellij-plugin")
         }.joinToString(","))
         if (!kotlinInstalled) exclude("**/brikk/**")
+        providers.gradleProperty("test.brikkCompilerPlugin").orNull?.let {
+            require(file(it).isFile) { "Missing compiler fixture JAR: $it" }
+            systemProperty("test.brikkCompilerPlugin", file(it).absolutePath)
+        } ?: exclude("**/BrikkCompilerRelationTest.class")
         // DuckDB syntax corpus for the substrate scoreboard (DuckdbSyntaxProbeTest).
         systemProperty("corpus.dir", layout.projectDirectory.dir("src/test/resources/corpus").asFile.absolutePath)
 // Live quack-wire suites (QuackLiveTruthTest, DuckdbLiveHarvestOverQuackTest) are gated on
@@ -161,6 +172,7 @@ kotlin {
 
 val verifyEmbeddedPipes by tasks.registering {
     val engineVersion = brikkSqlVersion
+    val supportVersion = brikkIdeSupportVersion
     group = "verification"
     description = "Checks bundled PIPE libraries, Java 21 bytecode, notices, and independence."
     val archive = tasks.named<Zip>("buildPlugin").flatMap { it.archiveFile }
@@ -171,7 +183,7 @@ val verifyEmbeddedPipes by tasks.registering {
         ZipFile(archive.get().asFile).use { zip ->
             val jars = zip.entries().asSequence().filter { it.name.endsWith(".jar") }.toList()
             val expected = setOf(ownJar.get(), "brikk-sql-jvmMain-$engineVersion.jar",
-                "brikk-sql-metadata-jvmMain-$engineVersion.jar")
+                "brikk-sql-metadata-jvmMain-$engineVersion.jar", "brikk-engine-kotlin-intellij-support-$supportVersion.jar")
             check(jars.size == expected.size && jars.map { it.name.substringAfterLast('/') }.toSet() == expected) {
                 "Unexpected bundled libraries: ${jars.map { it.name }}"
             }
@@ -195,6 +207,7 @@ val verifyEmbeddedPipes by tasks.registering {
             }
             check(resources.size == 3) { "Missing descriptor/notices" }
             check("brikk-sql-jvm:$engineVersion" in resources.getValue("META-INF/THIRD_PARTY_NOTICES.md"))
+            check("brikk-engine-kotlin-intellij-support:$supportVersion" in resources.getValue("META-INF/THIRD_PARTY_NOTICES.md"))
             check(!resources.getValue("META-INF/plugin.xml").contains("<depends>dev.sort.sql-transpiler"))
         }
     }
@@ -223,7 +236,8 @@ if (providers.gradleProperty("test.pluginIsolation").orNull == "true") {
         classpath = classpath.filter {
             it.absoluteFile !in mainOutputs && it.absoluteFile != testResources &&
                 !it.path.contains("/sql-transpiler-intellij-plugin/") && !it.path.contains("/doris-intellij-plugin/") &&
-                !it.name.startsWith("duckdb-intellij-plugin-") && !it.name.startsWith("brikk-sql-")
+                !it.name.startsWith("duckdb-intellij-plugin-") && !it.name.startsWith("brikk-sql-") &&
+                !it.name.startsWith("brikk-engine-kotlin-intellij-support-")
         }
         jvmArgumentProviders.add(CommandLineArgumentProvider {
             listOf("-Didea.force.use.core.classloader=true", "-Didea.use.core.classloader.for.plugin.path=false")

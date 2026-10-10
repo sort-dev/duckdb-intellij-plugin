@@ -14,7 +14,6 @@ import dev.sort.duckdb.pipes.DuckdbPipes
 import dev.sort.duckdb.pipes.DuckdbPipesEngine
 import dev.sort.duckdb.pipes.runPipeCatching
 import dev.sort.duckdb.brikk.BrikkDuckdbProfile
-import dev.brikk.house.sql.shape.SqlFragment
 import dev.brikk.house.sql.parser.ParseError
 import dev.brikk.house.sql.parser.TokenError
 import dev.brikk.house.sql.shape.ShapeError
@@ -30,7 +29,8 @@ class DuckdbErrorAnnotator : ExternalAnnotator<DuckdbErrorAnnotator.Info, Duckdb
 
     data class Info(val statements: List<Pair<TextRange, String>>, val engineJar: String?,
                     val pipesEnabled: Boolean = false, val pipes: List<DuckdbPipes.Chunk> = emptyList(),
-                    val brikk: BrikkDuckdbProfile? = null, val brikkText: String? = null)
+                    val brikk: BrikkDuckdbProfile? = null, val brikkText: String? = null,
+                    val brikkSlots: Set<String> = emptySet())
     data class Result(val errors: List<Pair<TextRange, DuckdbEngineValidator.EngineError>>,
                       val pipesEnabled: Boolean = false,
                       val pipeErrors: List<Pair<TextRange, DuckdbPipesEngine.Transpile.Err>> = emptyList())
@@ -44,7 +44,8 @@ class DuckdbErrorAnnotator : ExternalAnnotator<DuckdbErrorAnnotator.Info, Duckdb
         if (!file.language.isKindOf(DuckdbSqlDialect.INSTANCE)) return null
         val profile = BrikkDuckdbProfile.forFile(file)
         if (profile != null) return Info(emptyList(), null, DuckdbPipes.isEnabled(file),
-            brikk = profile, brikkText = com.intellij.lang.injection.InjectedLanguageManager.getInstance(file.project).getUnescapedText(file))
+            brikk = profile, brikkText = com.intellij.lang.injection.InjectedLanguageManager.getInstance(file.project).getUnescapedText(file),
+            brikkSlots = dev.sort.duckdb.brikk.BrikkSqlEditorSupport.contracts(file).keys)
         // engine sources: driver-classpath / downloaded drivers (locator) or sysprop/test classpath
         val engineJar = DuckdbEngineLocator.engineJarFor(file)?.toString()
         val enabled = DuckdbPipes.isEnabled(file)
@@ -66,7 +67,7 @@ class DuckdbErrorAnnotator : ExternalAnnotator<DuckdbErrorAnnotator.Info, Duckdb
             // Interpolation refusals belong to authored Kotlin ranges, handled by the optional
             // host annotator. Never underline a guessed synthetic bind as if it were SQL text.
             if (info.brikk.issues.isEmpty()) {
-                try { SqlFragment(text, "duckdb").ast } catch (e: ParseError) {
+                try { dev.sort.duckdb.brikk.BrikkSqlScopes.parse(text, info.brikkSlots) } catch (e: ParseError) {
                     val first = e.errors.firstOrNull()
                     errors.add(range to DuckdbPipesEngine.Transpile.Err(first?.line, first?.col, first?.description ?: "Invalid Brikk SQL"))
                 } catch (e: TokenError) {
