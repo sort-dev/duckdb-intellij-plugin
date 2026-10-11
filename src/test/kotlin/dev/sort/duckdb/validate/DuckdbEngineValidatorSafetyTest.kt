@@ -4,9 +4,11 @@ import com.sun.net.httpserver.HttpServer
 import com.intellij.openapi.progress.ProcessCanceledException
 import org.duckdb.DuckDBDriver
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Assert.assertSame
 import org.junit.Test
+import org.junit.Assume.assumeFalse
 import java.net.InetSocketAddress
 import java.nio.file.Files
 import java.sql.Connection
@@ -14,6 +16,10 @@ import java.sql.Driver
 import java.sql.Statement
 import java.util.Properties
 import java.util.concurrent.CancellationException
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 
 class DuckdbEngineValidatorSafetyTest {
@@ -81,12 +87,37 @@ class DuckdbEngineValidatorSafetyTest {
     }
 
     @Test
-    fun `file reading select is parsed without requiring a readable file`() {
-        val file = Files.createTempFile("duckdb-validation", ".csv")
-        Files.delete(file)
-        val sql = "SELECT * FROM read_csv('${file.toString().replace("'", "''")}')"
-        assertEquals(listOf(DuckdbEngineValidator.Verdict.Clean), DuckdbEngineValidator.verdictsWithDriver(listOf(sql), DuckDBDriver()))
-        assertTrue(Files.notExists(file))
+    fun `file reading select is parsed without accessing a FIFO`() {
+        assumeFalse(System.getProperty("os.name").startsWith("Windows"))
+        val directory = Files.createTempDirectory("duckdb-validation")
+        val fifo = directory.resolve("data.csv")
+        assertEquals(0, ProcessBuilder("mkfifo", fifo.toString()).start().waitFor())
+        val accessed = AtomicBoolean()
+        val started = CountDownLatch(1)
+        val executor = Executors.newSingleThreadExecutor()
+        val writer = executor.submit {
+            started.countDown()
+            Files.newOutputStream(fifo).use { stream ->
+                accessed.set(true)
+                stream.write("x\n1\n".toByteArray())
+            }
+        }
+        try {
+            assertTrue(started.await(10, TimeUnit.SECONDS))
+            requireNotNull(DuckDBDriver().connect("jdbc:duckdb:", Properties())).use { connection ->
+                val sql = "SELECT * FROM read_csv('${fifo.toString().replace("'", "''")}')"
+                assertEquals(DuckdbEngineValidator.Verdict.Clean, DuckdbEngineValidator.verdict(sql, connection))
+                assertFalse(accessed.get())
+                connection.createStatement().use { it.execute("EXPLAIN $sql") }
+                writer.get(10, TimeUnit.SECONDS)
+                assertTrue("the binding control must open the FIFO", accessed.get())
+            }
+        } finally {
+            if (!accessed.get()) Files.newInputStream(fifo).use { it.readBytes() }
+            writer.get(10, TimeUnit.SECONDS)
+            executor.shutdown()
+            directory.toFile().deleteRecursively()
+        }
     }
 
     @Test
