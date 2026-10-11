@@ -7,6 +7,7 @@ import com.intellij.notification.NotificationGroupManager
 import com.intellij.notification.NotificationType
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
+import dev.brikk.house.sql.intellij.recoverEditorOperation
 
 /**
  * On-demand live-catalog refresh — the shared core behind the manual "Refresh DuckDB Catalog"
@@ -48,9 +49,9 @@ object DuckdbCatalogRefresh {
      * and the previous cache stays — same fail-soft bar as the on-connect interceptor.
      */
     fun harvestAndStore(dataSourceId: String, rows: CatalogRowSource): Outcome {
-        val entry = try {
+        val entry = recoverEditorOperation {
             DuckdbCatalogHarvester.harvest(rows)
-        } catch (t: Throwable) {
+        }.getOrElse { t ->
             LOG.warn("catalog refresh for $dataSourceId failed; keeping previous catalog: ${t.message}")
             return Outcome.HarvestFailed
         } ?: return Outcome.HarvestFailed
@@ -74,12 +75,12 @@ object DuckdbCatalogRefresh {
     // createBlockingNonCancellable, ConnectionRequestor.Anonymous, GuardedRef — all javap-verified
     // free of ApiStatus flags on DataGrip 2026.1.3 (no @Internal/@Experimental/@Deprecated).
     fun harvestNow(project: Project, dataSource: LocalDataSource): Outcome {
-        val ref = try {
+        val ref = recoverEditorOperation {
             DatabaseConnectionManager.getInstance()
                 .build(project, dataSource)
                 .setRequestor(ConnectionRequestor.Anonymous())
                 .createBlockingNonCancellable()
-        } catch (t: Throwable) {
+        }.getOrElse { t ->
             LOG.warn("catalog refresh for '${dataSource.name}': helper connection failed: ${t.message}")
             return Outcome.ConnectFailed(t.message)
         } ?: return Outcome.ConnectFailed(null)

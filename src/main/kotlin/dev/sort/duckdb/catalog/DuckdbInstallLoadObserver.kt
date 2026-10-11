@@ -14,6 +14,7 @@ import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.startup.ProjectActivity
 import dev.sort.duckdb.DuckdbDbms
+import dev.brikk.house.sql.intellij.recoverEditorOperation
 
 /**
  * Execution observer: when the user runs `INSTALL` / `FORCE INSTALL` / `LOAD` in a console on a
@@ -67,16 +68,16 @@ class DuckdbInstallLoadObserver(
     }
 
     override fun requestFinished(context: DataRequest.Context) {
-        // Ordered cheapest-first and never throwing: this runs for EVERY request in the project
+        // Ordered cheapest-first: this runs for EVERY request in the project
         // (any dbms), so non-DuckDB traffic must exit on the dbms gate without touching anything
         // beyond the owner's session — data-source lists are never enumerated here.
-        try {
+        recoverEditorOperation {
             val dataSource = brikkDataSourceOf(context) ?: return
             val text = executedTextOf(context) ?: return
             if (!DuckdbInstallLoadDetector.triggersCatalogChange(text)) return
             LOG.info("observed INSTALL/LOAD on '${dataSource.name}'; scheduling debounced catalog refresh")
             debouncer.submit(dataSource.uniqueId) { refresh(project, dataSource) }
-        } catch (t: Throwable) {
+        }.onFailure { t ->
             LOG.warn("install/load observation failed (ignored): ${t.message}")
         }
     }

@@ -3,6 +3,7 @@ package dev.sort.duckdb.catalog
 import com.intellij.openapi.application.PathManager
 import com.intellij.openapi.diagnostic.Logger
 import dev.sort.duckdb.sql.DuckdbFunctionCatalog
+import dev.brikk.house.sql.intellij.recoverEditorOperation
 import org.jetbrains.annotations.TestOnly
 import java.nio.file.AtomicMoveNotSupportedException
 import java.nio.file.Files
@@ -52,7 +53,7 @@ object DuckdbLiveCatalog {
         if (dataSourceId == null) return null
         memory[dataSourceId]?.let { return it }
         if (!diskProbed.add(dataSourceId)) return null // probed before: nothing on disk either
-        val loaded = runCatching { load(fileFor(dataSourceId)) }.getOrNull() ?: return null
+        val loaded = recoverEditorOperation { load(fileFor(dataSourceId)) }.getOrNull() ?: return null
         // putIfAbsent: a harvest racing this lazy load wins (it is fresher than the file).
         return memory.putIfAbsent(dataSourceId, loaded) ?: loaded
     }
@@ -61,9 +62,9 @@ object DuckdbLiveCatalog {
     fun store(dataSourceId: String, entry: Entry) {
         memory[dataSourceId] = entry
         diskProbed.add(dataSourceId)
-        try {
+        recoverEditorOperation {
             save(fileFor(dataSourceId), entry)
-        } catch (t: Throwable) {
+        }.onFailure { t ->
             LOG.warn("live catalog for $dataSourceId not persisted (in-memory copy still active): ${t.message}")
         }
     }

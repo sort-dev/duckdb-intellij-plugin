@@ -6,11 +6,15 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.Assert.assertSame
+import org.junit.Assert.assertThrows
 import org.junit.Before
 import org.junit.Test
 import java.nio.file.Files
 import java.nio.file.Path
 import java.sql.DriverManager
+import com.intellij.openapi.progress.ProcessCanceledException
+import java.util.concurrent.CancellationException
 
 /**
  * The refresh core minus the IDE ([DuckdbCatalogRefresh.harvestAndStore] + the balloon texts):
@@ -85,9 +89,32 @@ class DuckdbCatalogRefreshTest {
             harvestedAtMillis = 1L,
         )
         DuckdbLiveCatalog.store("refresh-ds", previous)
-        val boom = CatalogRowSource { _, _ -> throw IllegalStateException("connection lost") }
-        assertEquals(DuckdbCatalogRefresh.Outcome.HarvestFailed, DuckdbCatalogRefresh.harvestAndStore("refresh-ds", boom))
+        val disconnected = DriverManager.getConnection("jdbc:duckdb:").also { it.close() }
+        assertEquals(DuckdbCatalogRefresh.Outcome.HarvestFailed,
+            DuckdbCatalogRefresh.harvestAndStore("refresh-ds", JdbcRowSource(disconnected)))
         assertEquals("previous cache must survive a failed refresh", previous, DuckdbLiveCatalog.entryFor("refresh-ds"))
+    }
+
+    @Test
+    fun `cancellation during a real harvest propagates and keeps last good catalog`() {
+        DriverManager.getConnection("jdbc:duckdb:").use { connection ->
+            val rows = JdbcRowSource(connection)
+            val refreshed = DuckdbCatalogRefresh.harvestAndStore("refresh-ds", rows) as DuckdbCatalogRefresh.Outcome.Refreshed
+            for (cancellation in listOf(ProcessCanceledException(), CancellationException(), LinkageError())) {
+                val interrupted = CatalogRowSource { sql, onRow ->
+                    rows.forEachRow(sql) { column ->
+                        onRow(column)
+                        throw cancellation
+                    }
+                }
+                assertSame(cancellation, assertThrows(cancellation.javaClass) {
+                    DuckdbCatalogRefresh.harvestAndStore("refresh-ds", interrupted)
+                })
+                assertEquals(refreshed.entry, DuckdbLiveCatalog.entryFor("refresh-ds"))
+                DuckdbLiveCatalog.clearForTests()
+                assertEquals(refreshed.entry, DuckdbLiveCatalog.entryFor("refresh-ds"))
+            }
+        }
     }
 
     @Test

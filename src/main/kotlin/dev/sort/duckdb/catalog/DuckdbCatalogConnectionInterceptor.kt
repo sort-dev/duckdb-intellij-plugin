@@ -4,6 +4,7 @@ import com.intellij.database.dataSource.DatabaseConnectionCore
 import com.intellij.database.dataSource.DatabaseConnectionInterceptor
 import com.intellij.openapi.diagnostic.Logger
 import dev.sort.duckdb.DuckdbDbms
+import dev.brikk.house.sql.intellij.recoverEditorOperation
 
 /**
  * `<database.connectionInterceptor>` — the on-connect harvester behind the live catalog
@@ -46,7 +47,7 @@ class DuckdbCatalogConnectionInterceptor : DatabaseConnectionInterceptor {
         // interceptConnection already gated on dbms; re-check defensively (cheap).
         if (connection.dbms != DuckdbDbms.DUCKDB_BRIKK) return
         val dataSource = connection.connectionPoint.dataSource
-        try {
+        recoverEditorOperation {
             val entry = DuckdbCatalogHarvester.harvest(DuckdbRemoteRowSource(connection))
             if (entry == null) {
                 LOG.info("live-catalog harvest for '${dataSource.name}' abandoned; keeping previous catalog")
@@ -58,8 +59,7 @@ class DuckdbCatalogConnectionInterceptor : DatabaseConnectionInterceptor {
                     "${entry.functions.size} functions, ${entry.keywords.size} keywords, " +
                     "extensions=${entry.loadedExtensions}",
             )
-        } catch (t: Throwable) {
-            // Never break the user's connect; the bundled snapshot / previous harvest still serves.
+        }.onFailure { t ->
             LOG.warn("live-catalog harvest for '${dataSource.name}' failed; keeping previous catalog: ${t.message}")
         }
     }
