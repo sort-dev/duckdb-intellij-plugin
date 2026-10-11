@@ -133,6 +133,11 @@ class DuckdbErrorAnnotator : ExternalAnnotator<DuckdbErrorAnnotator.Info, Duckdb
 
     /** Map the engine's statement-relative line + near-token onto a document range. */
     private fun errorRange(doc: Document, stmt: TextRange, err: DuckdbEngineValidator.EngineError): TextRange {
+        err.offset?.let { offset ->
+            val start = (stmt.startOffset + offset).coerceIn(stmt.startOffset, (stmt.endOffset - 1).coerceAtLeast(stmt.startOffset))
+            val length = err.nearToken?.length?.coerceAtLeast(1) ?: 1
+            return TextRange(start, (start + length).coerceAtMost(stmt.endOffset))
+        }
         val stmtStartLine = doc.getLineNumber(stmt.startOffset)
         val targetLine = (stmtStartLine + err.line - 1).coerceAtMost(doc.lineCount - 1)
         val lineStart = doc.getLineStartOffset(targetLine).coerceAtLeast(stmt.startOffset)

@@ -29,6 +29,8 @@ object DuckdbEngineValidator {
         val nearToken: String?,
         /** Full first line of the engine message, "Parser Error: ..." included. */
         val message: String,
+        /** UTF-16 offset within the validated statement, when supplied by the parser. */
+        val offset: Int? = null,
     )
 
     val available: Boolean get() = withDrivers { it.defaultDriver != null }
@@ -89,10 +91,12 @@ object DuckdbEngineValidator {
         if (parsed["error"]?.jsonPrimitive?.booleanOrNull == false) return Verdict.Clean
         if (parsed["error_type"]?.jsonPrimitive?.contentOrNull == "parser") {
             val message = parsed["error_message"]?.jsonPrimitive?.contentOrNull ?: return Verdict.Unavailable
-            val position = parsed["position"]?.jsonPrimitive?.contentOrNull?.toIntOrNull() ?: 0
-            val bytes = sql.toByteArray(Charsets.UTF_8)
-            val line = bytes.take(position.coerceIn(0, bytes.size)).count { it == '\n'.code.toByte() } + 1
-            return Verdict.Flagged(EngineError(line, NEAR_TOKEN.find(message)?.groupValues?.get(1), "Parser Error: $message"))
+            val position = parsed["position"]?.jsonPrimitive?.contentOrNull?.toIntOrNull()
+            val offset = position?.takeIf { it >= 0 }?.let {
+                sql.offsetByCodePoints(0, it.coerceAtMost(sql.codePointCount(0, sql.length)))
+            }
+            val line = sql.take(offset ?: 0).count { it == '\n' } + 1
+            return Verdict.Flagged(EngineError(line, NEAR_TOKEN.find(message)?.groupValues?.get(1), "Parser Error: $message", offset))
         }
 
         return Verdict.Unavailable
