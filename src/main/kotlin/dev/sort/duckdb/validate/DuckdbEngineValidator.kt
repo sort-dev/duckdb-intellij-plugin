@@ -1,6 +1,7 @@
 package dev.sort.duckdb.validate
 
 import com.intellij.openapi.progress.ProgressManager
+import com.intellij.openapi.components.service
 import dev.brikk.house.sql.parser.TokenType
 import dev.brikk.house.sql.parser.Tokenizer
 import dev.brikk.house.sql.parser.TokenizerConfigs
@@ -34,38 +35,11 @@ object DuckdbEngineValidator {
         val message: String,
     )
 
-    private val driver: java.sql.Driver? by lazy {
-        System.getProperty("duckdb.validator.jar")?.let { jarPath ->
-            runCatching {
-                val loader = java.net.URLClassLoader(
-                    arrayOf(java.io.File(jarPath).toURI().toURL()),
-                    ClassLoader.getPlatformClassLoader(),
-                )
-                loader.loadClass("org.duckdb.DuckDBDriver").getDeclaredConstructor().newInstance() as java.sql.Driver
-            }.getOrNull()
-        } ?: runCatching {
-            Class.forName("org.duckdb.DuckDBDriver").getDeclaredConstructor().newInstance() as java.sql.Driver
-        }.getOrNull()
-    }
+    private val driver: Driver? get() = service<DuckdbEngineDrivers>().defaultDriver
 
     val available: Boolean get() = driver != null
 
-    /** Per-jar driver cache (isolated URLClassLoaders; duckdb extracts its native lib per loader). */
-    private val jarDrivers = java.util.concurrent.ConcurrentHashMap<String, java.util.Optional<java.sql.Driver>>()
-
-    /** Load (and cache) the DuckDB driver from an explicit jar — the driver-classpath path. */
-    fun driverForJar(jarPath: String): java.sql.Driver? =
-        jarDrivers.computeIfAbsent(jarPath) {
-            java.util.Optional.ofNullable(
-                runCatching {
-                    val loader = java.net.URLClassLoader(
-                        arrayOf(java.io.File(jarPath).toURI().toURL()),
-                        ClassLoader.getPlatformClassLoader(),
-                    )
-                    loader.loadClass("org.duckdb.DuckDBDriver").getDeclaredConstructor().newInstance() as java.sql.Driver
-                }.getOrNull(),
-            )
-        }.orElse(null)
+    fun driverForJar(jarPath: String): Driver? = service<DuckdbEngineDrivers>().driverForJar(jarPath)
 
     internal fun connect(driver: Driver): Connection? = driver.connect("jdbc:duckdb:", Properties().apply {
         setProperty("enable_external_access", "false")

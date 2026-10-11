@@ -2,7 +2,11 @@ package dev.sort.duckdb.validate
 
 import com.intellij.database.dataSource.LocalDataSourceManager
 import com.intellij.openapi.application.PathManager
+import com.intellij.openapi.components.service
+import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiFile
+import com.intellij.util.text.VersionComparatorUtil
+import dev.brikk.house.sql.intellij.recoverEditorOperation
 import dev.sort.duckdb.DuckdbDbms
 import java.nio.file.Files
 import java.nio.file.Path
@@ -29,10 +33,11 @@ import kotlin.io.path.name
 object DuckdbEngineLocator {
 
     fun engineJarFor(file: PsiFile): Path? =
-        dataSourceDriverJar(file) ?: systemDriversScan()
+        file.project.service<DuckdbEngineLocation>().engineJar()
 
-    private fun dataSourceDriverJar(file: PsiFile): Path? {
-        val project = file.project
+    internal fun locate(project: Project): Path? = dataSourceDriverJar(project) ?: systemDriversScan()
+
+    private fun dataSourceDriverJar(project: Project): Path? {
         for (ds in LocalDataSourceManager.getInstance(project).dataSources) {
             if (ds.dbms != DuckdbDbms.DUCKDB_BRIKK) continue
             val driver = ds.databaseDriver ?: continue
@@ -60,22 +65,22 @@ object DuckdbEngineLocator {
     }
 
     private fun newestDriverJarUnder(dir: Path): Path? =
-        runCatching {
+        recoverEditorOperation {
             Files.walk(dir, 4).use { stream ->
                 stream.filter { it.name.endsWith(".jar") && it.name.contains("duckdb", ignoreCase = true) }
                     .filter { isDuckdbDriverJar(it) }
-                    .sorted(compareByDescending { it.name })
+                    .sorted { left, right -> VersionComparatorUtil.compare(right.name, left.name) }
                     .findFirst().orElse(null)
             }
         }.getOrNull()
 
     /** Cheap containment check: the jar really carries the native DuckDB JDBC driver. */
     fun isDuckdbDriverJar(path: Path): Boolean =
-        runCatching {
+        recoverEditorOperation {
             ZipFile(path.toFile()).use { it.getEntry("org/duckdb/DuckDBDriver.class") != null }
         }.getOrDefault(false)
 
-    private fun urlToPath(url: String): Path? = runCatching {
+    private fun urlToPath(url: String): Path? = recoverEditorOperation {
         var s = url.removePrefix("jar://").removePrefix("file://")
         s = s.removeSuffix("!/")
         Paths.get(s).takeIf { Files.exists(it) }

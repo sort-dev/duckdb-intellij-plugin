@@ -54,6 +54,11 @@ class DuckdbEngineLocatorTest {
             Files.createDirectories(decoyDir)
             Files.copy(real, decoyDir.resolve("duckdb_jdbc-0.0.1.jar"))
             assertEquals(placed, DuckdbEngineLocator.systemDriversScan(base))
+            val newerDir = base.resolve("DuckDB JDBC (Brikk)").resolve("1.10.0")
+            Files.createDirectories(newerDir)
+            val newer = newerDir.resolve("duckdb_jdbc-1.10.0.jar")
+            Files.copy(real, newer)
+            assertEquals(newer, DuckdbEngineLocator.systemDriversScan(base))
         } finally {
             base.toFile().deleteRecursively()
         }
