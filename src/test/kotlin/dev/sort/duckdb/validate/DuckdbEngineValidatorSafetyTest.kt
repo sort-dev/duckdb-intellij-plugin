@@ -44,12 +44,17 @@ class DuckdbEngineValidatorSafetyTest {
                 "EXPLAIN (ANALYZE true) SELECT nextval('s')",
                 "EXPLAIN (FORMAT JSON, ANALYZE) SELECT nextval('s')",
                 "CREATE TABLE t AS SELECT 1; SELECT nextval('s')",
+                "EXPLAIN SELECT * FROM range(nextval('s'))",
+                "CREATE TABLE t AS SELECT * FROM range(nextval('s'))",
+                "EXPLAIN SELECT * FROM query('SELECT * FROM range(nextval(''s''))')",
             )) {
-                assertEquals(sql, DuckdbEngineValidator.Verdict.HeadRejected,
+                assertEquals(sql, DuckdbEngineValidator.Verdict.Unavailable,
                     DuckdbEngineValidator.verdict(sql, connection))
             }
-            assertEquals(DuckdbEngineValidator.Verdict.Clean,
-                DuckdbEngineValidator.verdict("SELECT 1; SELECT nextval('s')", connection))
+            for (sql in listOf("SELECT 1; SELECT nextval('s')", "SELECT * FROM range(nextval('s'))",
+                "SELECT * FROM query('SELECT * FROM range(nextval(''s''))')")) {
+                assertEquals(sql, DuckdbEngineValidator.Verdict.Clean, DuckdbEngineValidator.verdict(sql, connection))
+            }
             connection.createStatement().use { statement ->
                 statement.executeQuery("SELECT nextval('s')").use { result ->
                     assertTrue(result.next())
@@ -64,7 +69,7 @@ class DuckdbEngineValidatorSafetyTest {
         val file = Files.createTempFile("duckdb-validation", ".csv")
         Files.delete(file)
         val sql = "SELECT * FROM read_csv('${file.toString().replace("'", "''")}')"
-        assertEquals(listOf(DuckdbEngineValidator.Verdict.Clean), DuckdbEngineValidator.verdicts(listOf(sql)))
+        assertEquals(listOf(DuckdbEngineValidator.Verdict.Clean), DuckdbEngineValidator.verdictsWithDriver(listOf(sql), DuckDBDriver()))
         assertTrue(Files.notExists(file))
     }
 
@@ -81,7 +86,7 @@ class DuckdbEngineValidatorSafetyTest {
         server.start()
         try {
             val sql = "SELECT * FROM read_csv('http://127.0.0.1:${server.address.port}/data.csv')"
-            assertEquals(listOf(DuckdbEngineValidator.Verdict.Clean), DuckdbEngineValidator.verdicts(listOf(sql)))
+            assertEquals(listOf(DuckdbEngineValidator.Verdict.Clean), DuckdbEngineValidator.verdictsWithDriver(listOf(sql), DuckDBDriver()))
             assertEquals(0, requests.get())
         } finally {
             server.stop(0)
@@ -89,9 +94,9 @@ class DuckdbEngineValidatorSafetyTest {
     }
 
     @Test
-    fun `restricted binding is unverified and never creates a table`() {
+    fun `unsupported serialization is unavailable and never creates a table`() {
         DuckdbEngineValidator.connect(DuckDBDriver())!!.use { connection ->
-            assertEquals(DuckdbEngineValidator.Verdict.Unverified,
+            assertEquals(DuckdbEngineValidator.Verdict.Unavailable,
                 DuckdbEngineValidator.verdict("CREATE TABLE t AS SELECT * FROM read_csv('/not-readable.csv')", connection))
             connection.createStatement().use { statement ->
                 statement.executeQuery("SELECT table_name FROM information_schema.tables WHERE table_name = 't'").use {
@@ -103,10 +108,9 @@ class DuckdbEngineValidatorSafetyTest {
 
     @Test
     fun `ordinary syntax errors reported and missing engine unavailable`() {
-        assertTrue(DuckdbEngineValidator.verdicts(listOf("SELECT FROM WHERE")).single() is DuckdbEngineValidator.Verdict.Flagged)
+        assertTrue(DuckdbEngineValidator.verdictsWithDriver(listOf("SELECT FROM WHERE"), DuckDBDriver()).single()
+            is DuckdbEngineValidator.Verdict.Flagged)
         assertEquals(listOf(DuckdbEngineValidator.Verdict.Unavailable),
             DuckdbEngineValidator.verdictsWithDriver(listOf("SELECT 1"), null))
-        assertEquals(listOf(DuckdbEngineValidator.Verdict.Unavailable),
-            DuckdbEngineValidator.verdicts(listOf("SELECT 1"), "/missing/duckdb.jar"))
     }
 }

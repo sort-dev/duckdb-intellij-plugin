@@ -29,10 +29,10 @@ validating SQL with the real engine.
 
 - **Correct statement & run-block boundaries** for the whole DuckDB statement surface — every
   statement gets a working run box, nothing bleeds into its neighbor.
-- **Engine-exact error checking**: your SQL is validated by a real DuckDB (`EXPLAIN` against an
-  in-memory instance found on your data source's driver — parses and binds, never executes).
-  Squiggles carry the engine's own messages, so there is zero grammar drift, ever. Only true
-  parser errors are shown; schema resolution stays with the IDE.
+- **Native parser error checking** uses DuckDB's `json_serialize_sql` in a restricted in-memory
+  instance from your data source's driver. SQL is never bound or executed. Unsupported serialization
+  is unavailable, so valid non-SELECT statements have no native validation. Parser failures still
+  carry the engine's messages; schema resolution stays with the IDE.
 - **Completion that follows your engine**: on connect, functions/keywords are harvested live from
   `duckdb_functions()` — your engine version, your loaded extensions — and cached per data source
   (survives restarts and offline sessions). Run `INSTALL`/`LOAD` in a console and completion

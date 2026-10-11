@@ -74,7 +74,7 @@ class DuckdbEngineValidatorGradingTest {
             silentlyClean.isEmpty(),
         )
         val flaggedCount = parserVerdicts.count { it is DuckdbEngineValidator.Verdict.Flagged }
-        val headRejected = parserVerdicts.count { it is DuckdbEngineValidator.Verdict.HeadRejected }
+        val unavailable = parserVerdicts.count { it is DuckdbEngineValidator.Verdict.Unavailable }
 
         // Upstream classified these as binder/catalog errors, but the ENGINE is the authority:
         // when its parser also rejects one (classification drift between upstream test labels and
@@ -101,7 +101,7 @@ class DuckdbEngineValidatorGradingTest {
 
         println(
             "validator grading: ${parserNegatives.size} parser negatives -> " +
-                "$flaggedCount flagged + $headRejected head-rejected (0 silently clean); " +
+                "$flaggedCount flagged + $unavailable unavailable (0 silently clean); " +
                 "${otherNegatives.size} binder/catalog negatives (${flaggedOther.size} engine-drift flags); " +
                 "${censusStatements.size} census statements all clean",
         )
