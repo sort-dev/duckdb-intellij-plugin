@@ -1,12 +1,15 @@
 # DuckDB shared SQL IntelliJ support backport
 
 This backport follows Trino's `HANDOFF-intellij-shared-extraction-duckdb.md`.
-The backport was validated as 0.3.3 and is now bumped to 0.3.4 for local testing.
-Its default dependency pins are Maven Central releases:
+The backport was originally validated as 0.3.3. The current dogfood version is 0.3.5.
+Its current dependency pins are Maven Central releases:
 
-- `dev.brikk.house:brikk-sql-intellij-support:0.1.0`
-- `dev.brikk.house:brikk-sql-jvm:0.19.0` and its metadata dependency
-- `dev.brikk.house:brikk-engine-kotlin-intellij-support:0.1.0`, unchanged
+- `dev.brikk.house:brikk-sql-intellij-support:0.1.1`
+- `dev.brikk.house:brikk-sql-jvm:0.19.1` and its metadata dependency
+- `dev.brikk.house:brikk-engine-kotlin-intellij-support:0.2.0`
+
+The initial integration and snapshot sections below are historical. The formal
+release transition at the end records the current build and dependency audit.
 
 DuckDB does not consume brikk-sql oracle or verify. Neither is bundled.
 No helper, core, peer-plugin or Marketplace publication is part of this work.
@@ -178,8 +181,167 @@ a release, which is gated on release branches.
 
 Local ZIP:
 `build/distributions/duckdb-intellij-plugin-0.3.4-local.zip`.
-SHA-256:
+Initial delivery SHA-256:
 `92f54febadc6a90953f165af519263ccaf8a7ea26dee378063ad6858f41691b2`.
 Version 0.3.4, packaging and exact snapshot bytes were checked. All plugin class
 files are byte-for-byte identical to the fully validated 0.3.3 snapshot candidate.
 The original 0.3.2 ZIP still has its recorded contents, size and modification time.
+
+At the user's request, the same 0.3.4 local ZIP was rebuilt with the completion
+label `brikk column` in place of `Kotlin column`. Packaging checks passed,
+the bundled label was checked directly and all dependency JARs are unchanged.
+The current ZIP SHA-256 is
+`4f36c43593b75741c0e8d52ec78d2c8d495d496f659b0d4b0ef7409209ba7263`.
+The protected 0.3.2 ZIP remains untouched.
+
+## Formal 0.19.1 / Kotlin helper 0.2.0 transition
+
+Both updated artifacts are available from Maven Central. SQL IntelliJ support
+stays at 0.1.0. The build now pins formal versions directly, with no property
+override or Maven Local repository. Snapshot notice rewriting and the temporary
+comment guard have been removed. The direct core boundary tests run by default.
+The source still contains the user's `brikk column` completion label.
+
+Released core 0.19.1 matches the validated 0.19.0-SNAPSHOT byte for byte, including
+the unfinished-comment fix. Metadata is also unchanged. Kotlin helper 0.2.0
+matches the peer's validated 0.2.0-SNAPSHOT bytes and adds Trino recognition.
+A consumer regression checks that the shared helper recognizes a Trino host
+while DuckDB declines it.
+
+| Current artifact | SHA-256 |
+| --- | --- |
+| SQL core 0.19.1 | `2aa649146851023523c203753c938fa51f722b5683ea480ab1e8b84e83576bf2` |
+| SQL metadata 0.19.1 | `6f4a506a68d16c79bb7d7de42122aa3d72eb50d3ffcc427f8804287467e29541` |
+| SQL IntelliJ support 0.1.0 | `21798b0c699dda59786d939ca51369c4417d1b724a524d823018fda9eb5ec833` |
+| Kotlin IntelliJ support 0.2.0 | `e6467167d33c11f37a291dc451d30f6f8d8df4d16e8ea2cde5b8c035bd5abb99` |
+
+The helper publication models expose only Kotlin stdlib, which DuckDB excludes.
+No IntelliJ SDK, Kotlin IDE, compiler, native driver, oracle or verifier is
+introduced by either helper. DuckDB does not consume SQL oracle or verify.
+
+Validation and the resolved dependency audit run under
+`/tmp/opencode/duckdb-formal-0191-020`. The existing 0.3.2 and 0.3.4 testing ZIPs
+are protected by checksum, size and modification-time records and are not
+overwritten. The earlier 0.3.4 ZIP remains snapshot-backed until the user asks
+to replace it with a formal-backed build.
+
+An additional snapshot was found in the optional Trino coexistence fixture ZIP:
+`brikk-engine-kotlin-intellij-support-0.2.0-SNAPSHOT.jar`. This is a peer artifact,
+not part of DuckDB's distribution. Its bytes match released 0.2.0, but the peer
+ZIP has not been rebuilt by this work. Doris's fixture ZIP has no snapshot JARs.
+The local SQL Transpiler ZIP also contains Kotlin helper 0.2.0-SNAPSHOT and SQL
+core/metadata 0.19.0-SNAPSHOT. DuckDB's optional coexistence run uses Marketplace
+SQL Transpiler 0.3.0, not that local ZIP. None of these peer JARs is bundled with
+DuckDB, and this work does not modify or rebuild peer distributions.
+The old Quack snapshot reference in the driver XML was only a stale comment and
+now names the actual formal 0.5.0 dependency. Historical reports and IDEAS notes
+are not active dependency declarations.
+
+### Completed formal-backed validation
+
+- Full default 261 suite: 190 tests, 181 passed and nine live/optional skips.
+- Both direct/inherited Trino-host non-ownership regressions passed. All five
+  direct-core lexical-boundary regressions are now in the default suite.
+- DataGrip 262 without Kotlin: 137 tests, 128 passed and nine skips.
+- IDEA 262 and 263 PIPE/Brikk suites: 97 tests passed on each, none skipped.
+- Both genuine compiler-generated-shape tests passed on reviewed IDEA 262 with
+  the actual compiler-plugin fixture.
+- Both real-product-loader coexistence tests passed, including all six action
+  registration orders and all four variants.
+- Plugin Verifier 1.410: Compatible on all five pinned targets. Notices remain
+  unchanged at 15 experimental, two scheduled-for-removal and one deprecated use.
+- Final ZIP has five expected JARs, Java 21-compatible bytecode and current
+  license/notices. All four dependency JARs match direct Central downloads.
+
+The resolved compile, runtime, test-runtime and tools-runtime configurations
+contain zero snapshot modules. The respective module counts were 271, six,
+16 and six. Detailed versions are in
+`/tmp/opencode/duckdb-formal-0191-020/dependency-audit.json`.
+
+Formal-backed 0.3.4 ZIP SHA-256:
+`289bfce05701e34124dc8c40890d500b05cb0b5d93f820190c0efe80cf822951`.
+Its verified frozen copy is
+`/tmp/opencode/duckdb-formal-0191-020/frozen/duckdb-intellij-plugin.zip`.
+A separate installable copy is
+`build/distributions/duckdb-intellij-plugin-0.3.4-formal.zip`.
+The validation rebuild stayed byte-for-byte identical through all runtime lanes.
+Both earlier testing ZIPs are unchanged in contents, size and modification time.
+No plugin release, publication or peer-plugin upgrade is performed.
+
+## Shared column presentation 0.1.1
+
+This adoption follows Trino's `HANDOFF-shared-column-completion-duckdb.md`.
+DuckDB now calls `SqlColumnCompletion.create` from SQL IntelliJ support 0.1.1
+instead of formatting type, nullability, alias, tail and priority locally. The
+scope analysis, managed-relation filter and alias/name deduplication remain in
+the consumer. Kotlin support stays 0.2.0, and core/metadata stay 0.19.1.
+
+The origin labels remain `brikk column` and `relation contract`. The shared
+renderer retains priority 120, explicit unknown facts and distinct lookup
+identities for same-named columns under different aliases. Insertion text is
+still the bare column name. The helper introduces no Kotlin IDE or SQL engine
+dependency for this presentation API.
+
+Four SQL-only renderer tests cover nullable and non-null types, fallback labels,
+unknown type/nullability, blank aliases, priority and stable/distinct identities.
+Two real injected-SQL completion tests check String?/Instant presentation and
+both `id` suggestions in an aliased join. The isolation test also checks that
+DuckDB's real plugin loader owns the 0.1.1 renderer class.
+
+Validation uses `/tmp/opencode/duckdb-shared-column`. All existing testing ZIPs
+are protected by checksum, size and modification-time records. Source and tests
+are ready, and Central 0.1.1 is now available. Its JAR SHA-256 is
+`7ffdbb93990507db3f7ad83bc8e2571a7ef011f6debe0dd6b03d72d1b1ebd64e`.
+The publication metadata exposes only Kotlin stdlib, which DuckDB excludes;
+the new renderer's class is present and all bytecode is Java 21-compatible.
+The release adds only `SqlColumnCompletion` and its lookup-identity class;
+every existing helper class matches 0.1.0 byte for byte.
+Consumer validation is complete; results follow.
+
+### Completed shared-renderer validation
+
+- Default 261 suite: 196 tests, 187 passed and nine live/optional skips.
+- All six new regression cases passed. Nullable String?, non-null Instant,
+  fallback/unknown labels, priority 120 and alias-distinct identities are checked.
+- DataGrip 262 without Kotlin: 141 tests, 132 passed and nine skips, including
+  the four SQL-only presentation tests.
+- IDEA 262 and 263 PIPE/Brikk/presentation suites: 103 passed on each, none skipped.
+- Both genuine compiler-generated-shape tests passed on the reviewed IDEA 262.
+- Both real-plugin-loader isolation tests passed with all six registration orders
+  and four Execute variants. The renderer is loaded from DuckDB's own 0.1.1 JAR.
+- Packaging and direct Central byte comparison passed for all four dependency JARs.
+- Plugin Verifier 1.410 reported Compatible on all five pinned targets. The same
+  15 experimental, two scheduled-for-removal and one deprecated notices remain.
+
+The first empty-prefix unqualified native-SQL join fixture hit a JetBrains
+injected-alias smart-pointer restoration error in its native completion provider,
+before any renderer assertion. The join regression now uses the PIPE join/prefix
+context used by the peer acceptance case. Qualified native-SQL rich presentation
+still has its own passing fixture. No native resolver change, log suppression or
+verifier exclusion was added for that unrelated platform path.
+
+Validation ZIP SHA-256:
+`c7b80abfd3b25bf956ba358693506f28d965b961915232b2536447d0564db267`.
+The frozen artifact is
+`/tmp/opencode/duckdb-shared-column/frozen/duckdb-intellij-plugin.zip`.
+It stayed identical through the runtime checks. All three existing testing ZIPs
+remain unchanged in contents, size and modification time. No version bump,
+commit, push, release or publication is performed by this adoption.
+
+## Dogfood 0.3.5 delivery
+
+At the user's request, the current formal-backed consumer is bumped to 0.3.5.
+The installable ZIP is ready at
+`build/distributions/duckdb-intellij-plugin-0.3.5-local.zip`.
+SHA-256:
+`1fffa66905ff20696b9c9160c8bda9c310ba855419753f829fb711b0caad1956`.
+
+The final 0.3.5 default suite passed 196 tests with nine skips, and packaging
+checks passed. All plugin class files and dependency JARs match the fully
+validated 0.3.4 shared-renderer candidate byte for byte. Only version/descriptor
+metadata differs. The existing testing ZIPs remain untouched.
+
+The user has requested commit/push to main before waiting for final versioned
+verification. That verification uses a frozen copy under
+`/tmp/opencode/duckdb-shared-column/frozen-035`, not the installable dogfood ZIP.
+No release branch, tag, GitHub release or Marketplace publication is requested.

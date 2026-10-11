@@ -1,25 +1,25 @@
 # Third-party notices
 
-## Brikk Kotlin IntelliJ support 0.1.0
+## Brikk Kotlin IntelliJ support 0.2.0
 
-This plugin embeds `dev.brikk.house:brikk-engine-kotlin-intellij-support:0.1.0`
+This plugin embeds `dev.brikk.house:brikk-engine-kotlin-intellij-support:0.2.0`
 from Maven Central. Jayson Minard and Sortdev SRL,
 https://github.com/brikk/brikk-house, Apache License 2.0. The helper contains
 Brikk context/interpolation and copied relation-contract APIs. Kotlin/IntelliJ
 APIs and compiler plugins are not bundled by this dependency.
 
-## Brikk SQL IntelliJ support 0.1.0
+## Brikk SQL IntelliJ support 0.1.1
 
-This plugin embeds `dev.brikk.house:brikk-sql-intellij-support:0.1.0` from
+This plugin embeds `dev.brikk.house:brikk-sql-intellij-support:0.1.1` from
 Maven Central. Jayson Minard and Sortdev SRL, https://github.com/brikk/brikk-sql,
 Apache License 2.0. The helper provides cooperative Execute actions, promotion,
-document snapshots and translated script models. No IntelliJ SDK, SQL engine,
+document snapshots, translated script models and shared column presentation. No IntelliJ SDK, SQL engine,
 native driver or verifier is supplied transitively by this library.
 
-## brikk-sql and metadata 0.19.0
+## brikk-sql and metadata 0.19.1
 
-Bundled translator artifacts: `dev.brikk.house:brikk-sql-jvm:0.19.0` and
-`dev.brikk.house:brikk-sql-metadata-jvm:0.19.0`, by Jayson Minard and Sortdev SRL.
+Bundled translator artifacts: `dev.brikk.house:brikk-sql-jvm:0.19.1` and
+`dev.brikk.house:brikk-sql-metadata-jvm:0.19.1`, by Jayson Minard and Sortdev SRL.
 Project: https://github.com/brikk/brikk-sql. Apache License 2.0, with the
 third-party-derived portions below. No native database engine or verifier is bundled.
 Published sources and license provenance are available from Maven Central.

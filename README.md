@@ -49,7 +49,7 @@ validating SQL with the real engine.
 
 ## PIPE queries
 
-Version 0.3.4 defaults to brikk-sql 0.19.0 and SQL IntelliJ support 0.1.0 for PIPE authoring. SQL Transpiler is
+Version 0.3.5 uses brikk-sql 0.19.1 and SQL IntelliJ support 0.1.1 for PIPE authoring. SQL Transpiler is
 not required. Enable **Settings > Tools > DuckDB PIPE > Enable PIPE syntax in
 this project**; it defaults off and is saved per workspace.
 
@@ -98,6 +98,9 @@ not execute the inspection placeholders. `Rel<T>` input columns now resolve,
 complete and navigate through the shared Brikk Kotlin support library, including
 inherited trait bounds and available compiler-generated shapes. SQL aliases,
 outer-join nullability and supported PIPE stages have statement-local scopes.
+Column lookup presentation comes from the shared SQL IntelliJ renderer. It shows
+the Kotlin type and nullability with `brikk column` or `relation contract` and the
+source alias. Same-named columns from different join aliases stay distinct.
 Partial contracts supply known guarantees, not a closed runtime inventory;
 unavailable shapes do not invent missing-column errors. Exact SQL types and
 generated SQL-column source spans are not supplied by this contract. A DDL
@@ -161,19 +164,17 @@ The SDK supplies optional Kotlin injection APIs; Kotlin is not required to use
 the dialect or PIPE consoles in DataGrip.
 
 The plugin consumes
-`dev.brikk.house:brikk-engine-kotlin-intellij-support:0.1.0` from Maven Central.
+`dev.brikk.house:brikk-engine-kotlin-intellij-support:0.2.0` from Maven Central.
 Cooperative Execute actions and translated script models come from
-`dev.brikk.house:brikk-sql-intellij-support:0.1.0`. DuckDB keeps its own execution
+`dev.brikk.house:brikk-sql-intellij-support:0.1.1`. DuckDB keeps its own execution
 eligibility, optional native validation, notifications and inspection-view guards.
 No Maven Local publication is required. The dependency does not bundle an
 IntelliJ SDK, Kotlin stdlib or compiler plugin.
 
-To validate the pending brikk-sql comment-boundary fix, use
-`-PbrikkSqlVersion=0.19.0-SNAPSHOT --refresh-dependencies`. Only that exact
-core/metadata snapshot may resolve from Maven Local, and only when opted in.
-The default remains the Central release while the fix awaits publication.
-The separate 0.3.4 local testing ZIP was built with that snapshot and needs no
-Maven installation when loaded into an IDE. The existing 0.3.2 ZIP is preserved.
+All dependencies are pinned to formal releases. Maven Local resolution and the
+temporary comment-boundary guard have been removed; core 0.19.1 owns that fix.
+The earlier 0.3.4 local testing ZIP still contains the previously tested snapshot
+until explicitly replaced. Updating source dependencies does not alter an installed ZIP.
 
 **Engine bump checklist** (when moving to a new DuckDB): bump `duckdb_jdbc` in build.gradle.kts
 and the artifact pin in `config/duckdb-brikk-artifacts.xml`, then re-run all three harvests and

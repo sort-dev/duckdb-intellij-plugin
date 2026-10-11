@@ -48,10 +48,19 @@
     ]]></description>
 
     <change-notes><![CDATA[
-        <b>0.3.4</b> - local testing build of the shared SQL backport.
+        <b>0.3.5</b> - dogfood build with formal Brikk releases and shared column completion.
         <ul>
-            <li>The local testing ZIP uses brikk-sql 0.19.0-SNAPSHOT with the upstream unfinished-comment fix.</li>
-            <li>Core and metadata snapshots can be selected explicitly without changing the default Central dependency pins.</li>
+            <li>Uses brikk-sql 0.19.1, SQL IntelliJ support 0.1.1 and Kotlin IntelliJ support 0.2.0 from Maven Central.</li>
+            <li>Shows brikk column types, nullability and source aliases using the shared renderer.</li>
+            <li>Keeps same-named join columns distinct without changing insertion text or SQL scope selection.</li>
+            <li>No Maven Local dependency or native database engine is bundled.</li>
+        </ul>
+        <b>0.3.4</b> - shared SQL support backport.
+        <ul>
+            <li>Source builds now use formal brikk-sql 0.19.1 and Brikk Kotlin IntelliJ support 0.2.0.</li>
+            <li>Brikk SQL IntelliJ support 0.1.1 provides shared column presentation, including distinct suggestions for join aliases.</li>
+            <li>Maven Local and the temporary lexical guard are removed.</li>
+            <li>Earlier local testing ZIPs used brikk-sql 0.19.0-SNAPSHOT to validate the upstream unfinished-comment fix.</li>
             <li>No native engine, verification library or compiler plugin is bundled.</li>
         </ul>
         <b>0.3.3</b> - shared SQL IntelliJ support backport.

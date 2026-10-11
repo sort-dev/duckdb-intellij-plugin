@@ -10,23 +10,17 @@ plugins {
 }
 
 group = "dev.sort.duckdb"
-version = "0.3.4"
+version = "0.3.5"
 
-val brikkSqlVersion = providers.gradleProperty("brikkSqlVersion").getOrElse("0.19.0")
-val brikkSqlIdeSupportVersion = "0.1.0"
-val brikkIdeSupportVersion = providers.gradleProperty("brikkIdeSupportVersion").getOrElse("0.1.0")
+val brikkSqlVersion = "0.19.1"
+val brikkSqlIdeSupportVersion = "0.1.1"
+val brikkIdeSupportVersion = "0.2.0"
 val companionInstalled = providers.gradleProperty("test.sqlTranspiler").orNull == "installed"
 val dorisZip = providers.gradleProperty("test.dorisPluginZip").map(::File).orNull
 val trinoZip = providers.gradleProperty("test.trinoPluginZip").map(::File).orNull
 val kotlinInstalled = providers.gradleProperty("test.kotlin").orNull != "absent"
 
 repositories {
-    if (brikkSqlVersion == "0.19.0-SNAPSHOT") mavenLocal {
-        content {
-            for (module in listOf("brikk-sql", "brikk-sql-jvm", "brikk-sql-metadata", "brikk-sql-metadata-jvm"))
-                includeVersion("dev.brikk.house", module, "0.19.0-SNAPSHOT")
-        }
-    }
     mavenCentral()
     intellijPlatform {
         defaultRepositories()
@@ -127,18 +121,7 @@ intellijPlatform {
 
 tasks {
     processResources {
-        val selectedSqlVersion = brikkSqlVersion
-        inputs.property("brikkSqlVersion", selectedSqlVersion)
-        from(files("LICENSE", "THIRD_PARTY_NOTICES.md")) {
-            into("META-INF")
-            filter { line: String ->
-                line.replace("brikk-sql-jvm:0.19.0", "brikk-sql-jvm:$selectedSqlVersion")
-                    .replace("brikk-sql-metadata-jvm:0.19.0", "brikk-sql-metadata-jvm:$selectedSqlVersion")
-                    .replace("## brikk-sql and metadata 0.19.0", "## brikk-sql and metadata $selectedSqlVersion" +
-                        if (selectedSqlVersion.endsWith("-SNAPSHOT"))
-                            "\n\nDevelopment core/metadata snapshot from Maven Local for validation, not a Central release." else "")
-            }
-        }
+        from(files("LICENSE", "THIRD_PARTY_NOTICES.md")) { into("META-INF") }
     }
     processTestResources {
         // prepareTest places the fixture descriptor here; its optional descriptor must be
@@ -172,8 +155,6 @@ tasks {
             if (trinoZip != null) add("dev.sort.trino-intellij-plugin")
         }.joinToString(","))
         if (!kotlinInstalled) exclude("**/brikk/**")
-        // Direct core regression gate. The released 0.19.0 is known to lack this fix.
-        if (brikkSqlVersion == "0.19.0") exclude("**/BrikkSqlBoundaryFixTest.class")
         providers.gradleProperty("test.brikkCompilerPlugin").orNull?.let {
             require(file(it).isFile) { "Missing compiler fixture JAR: $it" }
             systemProperty("test.brikkCompilerPlugin", file(it).absolutePath)

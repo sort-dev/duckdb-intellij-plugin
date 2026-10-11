@@ -7,7 +7,7 @@ import dev.brikk.house.sql.shape.parseParameterOccurrences
 import org.junit.Assert.*
 import org.junit.Test
 
-/** Calls core directly, so the temporary DuckDB guard cannot hide a missing fix. */
+/** Calls core directly to verify the upstream lexical-boundary fix. */
 class BrikkSqlBoundaryFixTest {
     @Test fun unterminatedOrdinaryAndNestedCommentsAreRefused() {
         for (sql in listOf("FROM t |> LIMIT 1 /* open", "FROM t |> LIMIT 1 /*",

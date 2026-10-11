@@ -1,12 +1,12 @@
 package dev.sort.duckdb.brikk
 
 import com.intellij.codeInsight.completion.*
-import com.intellij.codeInsight.lookup.LookupElementBuilder
 import com.intellij.lang.injection.InjectedLanguageManager
 import com.intellij.patterns.PlatformPatterns
 import com.intellij.util.ProcessingContext
 import dev.brikk.house.intellij.ColumnNullability
 import dev.brikk.house.intellij.NavigationKind
+import dev.brikk.house.sql.intellij.SqlColumnCompletion
 
 class BrikkSqlCompletionContributor : CompletionContributor() {
     init { extend(CompletionType.BASIC, PlatformPatterns.psiElement(), Provider) }
@@ -27,12 +27,19 @@ class BrikkSqlCompletionContributor : CompletionContributor() {
                 .flatMap { relation -> relation.columns.map { relation to it } } else scoped.scope.columns
             for ((relation, column) in candidates.distinctBy { it.first.alias to it.second.name }) {
                 if (!relation.managed) continue
-                val type = column.kotlinClassId?.substringAfterLast('.') ?: "unknown type"
-                val nullable = when (column.nullability) { ColumnNullability.NON_NULL -> ""; ColumnNullability.NULLABLE -> "?"; else -> " (nullability unknown)" }
-                val origin = if (column.navigation?.kind == NavigationKind.RELATION_FALLBACK) "relation contract" else "Kotlin column"
-                result.caseInsensitive().addElement(PrioritizedLookupElement.withPriority(
-                    LookupElementBuilder.create(column.name).withTypeText(type + nullable, true)
-                        .withTailText("  $origin${relation.alias.takeIf { it.isNotBlank() }?.let { " ($it)" }.orEmpty()}", true), 120.0))
+                val nullable = when (column.nullability) {
+                    ColumnNullability.NON_NULL -> false
+                    ColumnNullability.NULLABLE -> true
+                    ColumnNullability.UNKNOWN -> null
+                }
+                val origin = if (column.navigation?.kind == NavigationKind.RELATION_FALLBACK) "relation contract" else "brikk column"
+                result.caseInsensitive().addElement(SqlColumnCompletion.create(
+                    column.name,
+                    column.kotlinClassId?.substringAfterLast('.'),
+                    nullable,
+                    relation.alias,
+                    origin,
+                ))
             }
         }
     }

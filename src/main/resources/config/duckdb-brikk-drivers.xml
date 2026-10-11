@@ -19,7 +19,7 @@
   <!-- Remote DuckDB via GizmoSQL using the quack-jdbc driver (NOT Arrow/ADBC based — it decodes
        the serialized results directly, so no add-opens / Arrow memory flags are needed).
        Driver class + jdbc:quack:// scheme are FACTS extracted from
-       dev.brikk.duckdb:quack-jdbc:0.3.0-brikk-SNAPSHOT by QuackDriverFactsTest (the brikk build
+        dev.brikk.duckdb:quack-jdbc:0.5.0 by QuackDriverFactsTest (the brikk build
        keeps upstream's com.gizmodata package — relabel if/when the fork becomes permanent).
        Downloadable via the "Quack JDBC (Brikk)" artifact (config/duckdb-brikk-artifacts.xml,
        resolved from Maven Central) — no manual jar attach needed. -->

@@ -87,6 +87,35 @@ open class BrikkRelationEditingTest : BrikkDuckdbInjectionTest() {
         assertEquals(ColumnNullability.NULLABLE, ref.scope.candidates("segment", "c").single().second.nullability)
         assertEquals(2, ref.scope.candidates("tenant").size)
     }
+
+    fun testRichColumnPresentationFromTheRealContributor() {
+        val host = configure("$traits\n" +
+            "interface DisplayRow : Shape { val payload: String?; val event_at: Instant }\n" +
+            "@BrikkSql fun query(events: Rel<DisplayRow>) = Sql.duckdb(\"SELECT src.<caret> FROM \$events() AS src\")")
+        injected(host)
+        val items = myFixture.completeBasic().orEmpty()
+        for ((name, type) in listOf("payload" to "String?", "event_at" to "Instant")) {
+            val presentations = items.filter { it.lookupString == name }.map {
+                com.intellij.codeInsight.lookup.LookupElementPresentation().also { shown -> it.renderElement(shown) }
+            }
+            assertTrue("Expected $name / $type / brikk column (src), got $presentations",
+                presentations.any { it.typeText == type && it.tailText == "  brikk column (src)" })
+        }
+    }
+
+    fun testSameNamedColumnsFromJoinAliasesRemainTwoSuggestions() {
+        val host = configure("$traits\n@BrikkSql fun query(events: Rel<CleanEvent>, customers: Rel<CleanEvent>) = " +
+            "Sql.duckdb(\"FROM \$events() AS a |> JOIN \$customers() AS b ON a.id=b.id |> SELECT i<caret>\")")
+        injected(host)
+        val items = myFixture.completeBasic().orEmpty().filter { it.lookupString == "id" }
+        val columns = items.filter {
+            val shown = com.intellij.codeInsight.lookup.LookupElementPresentation().also { p -> it.renderElement(p) }
+            shown.tailText in setOf("  brikk column (a)", "  brikk column (b)")
+        }
+        assertEquals("Join id suggestions: $items", 2, columns.size)
+        assertEquals(2, columns.map { it.`object` }.toSet().size)
+        assertTrue(columns.all { it.lookupString == "id" })
+    }
     fun testMissingFullAndPartialColumnsHaveDifferentDiagnostics() {
         val host = configure("$traits\n@BrikkSql fun query(customers: Rel<CustomerRow>, events: Rel<CleanEvent>) = " +
             "Sql.duckdb(\"SELECT c.missing, e.extra FROM \$customers() c JOIN \$events() e ON c.tenant=e.tenant\")")

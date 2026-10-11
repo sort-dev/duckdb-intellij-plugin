@@ -37,6 +37,7 @@ open class BrikkDuckdbInjectionTest : BasePlatformTestCase() {
             object Sql {
                 fun duckdb(@Language("DuckDBSQL", prefix = "-- dialect: duckdb\n") sql: String): Rel<Nothing> = error("compiler")
                 fun doris(@Language("DorisSQL") sql: String): Rel<Nothing> = error("compiler")
+                fun trino(@Language("TrinoSQL") sql: String): Rel<Nothing> = error("compiler")
             }
         """.trimIndent())
     }
@@ -110,6 +111,17 @@ open class BrikkDuckdbInjectionTest : BasePlatformTestCase() {
             @BrikkSql fun notBrikk(tenant: String) = Sql.duckdb("SELECT ${'$'}tenant")
         """.trimIndent())
         assertNull(BrikkDuckdbKotlinContext.find(fakeAnnotation))
+    }
+
+    fun testHelperRecognizesTrinoWithoutDuckdbClaimingTheHost() {
+        val host = configure("@BrikkSql fun query(tenant: String) = Sql.trino(\"SELECT \$tenant\")")
+        val shared = dev.brikk.house.intellij.BrikkKotlinContext.inspect(host, includeShapes = false)
+        assertTrue(shared.toString(), shared is dev.brikk.house.intellij.ContextResult.Available)
+        assertEquals(dev.brikk.house.intellij.BrikkDialect.TRINO,
+            (shared as dev.brikk.house.intellij.ContextResult.Available).context.dialect)
+        assertNull(BrikkDuckdbKotlinContext.find(host))
+        val injections = InjectedLanguageManager.getInstance(project).getInjectedPsiFiles(host).orEmpty()
+        assertTrue(injections.none { BrikkDuckdbProfile.forFile(it.first.containingFile) != null })
     }
 
     fun testComplexInterpolationAndComputedConstAreRefused() {
