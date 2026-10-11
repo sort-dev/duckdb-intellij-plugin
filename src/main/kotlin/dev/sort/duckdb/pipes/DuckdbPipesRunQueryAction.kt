@@ -90,9 +90,9 @@ internal object PipesExecuteInterceptor {
                 override fun invokeImpl(e: AnActionEvent, console: JdbcConsole?, info: JdbcConsoleProvider.Info) {
                     if (console == null) return
                     if (console !== owner) throw SqlExecutionRefusal("The destination console changed during preparation")
-                    requireCurrentSnapshot(snapshot)
+                    snapshot.requireCurrent()
                     JdbcConsoleProvider.chooseStatements(info, "Nothing to run", true) { selected ->
-                        requireCurrentSnapshot(snapshot)
+                        snapshot.requireCurrent()
                         executePipeModel(console, editor, selected, info.execOption)
                     }
                 }
@@ -108,12 +108,6 @@ internal fun notifyPipeError(console: JdbcConsole, message: String) {
     NotificationGroupManager.getInstance().getNotificationGroup("DuckDB PIPE")
         .createNotification("PIPE translation failed",
             StringUtil.escapeXmlEntities(message).replace("\n", "<br>"), NotificationType.ERROR).notify(console.project)
-}
-
-private fun requireCurrentSnapshot(snapshot: EditorSnapshot) {
-    if (snapshot.document.modificationStamp != snapshot.revision)
-        throw SqlExecutionRefusal("SQL changed during preparation. Run the current statement again.")
-    snapshot.requireCurrent()
 }
 
 internal class PipeTranslationFailure(val error: DuckdbPipesEngine.Transpile.Err) : RuntimeException(error.message)
@@ -165,7 +159,7 @@ internal fun <E> executePipeModel(console: JdbcConsole, editor: Editor, selected
         val snapshot = EditorSnapshot.capture(editor.document)
         val model = TranslatingScriptModel(selected, editor, DuckdbExecutionAdapter(allowFirstFromStage))
         if (!console.beforeExecuteQueries(model)) return
-        requireCurrentSnapshot(snapshot)
+        snapshot.requireCurrent()
         model.finalizeTranslations(console.pStorage)
         val file = com.intellij.psi.PsiManager.getInstance(console.project).findFile(selected.virtualFile)
         val jar = file?.let { DuckdbEngineLocator.engineJarFor(it)?.toString() }
@@ -179,7 +173,7 @@ internal fun <E> executePipeModel(console: JdbcConsole, editor: Editor, selected
             session.connectionPoint.dbms !== DuckdbDbms.DUCKDB_BRIKK)
             throw SqlExecutionRefusal("The destination changed during parameter preparation. Run the query again.")
         if (!DuckdbPipes.isEnabled(console.project)) throw SqlExecutionRefusal("PIPE was disabled during preparation")
-        requireCurrentSnapshot(snapshot)
+        snapshot.requireCurrent()
         if (!model.isActual) throw SqlExecutionRefusal("The statement changed during preparation. Run it again.")
         if (console.session.clientsWithFile.isEmpty()) throw SqlExecutionRefusal("No attached console client")
         console.executeQueries(editor, model, option)

@@ -13,7 +13,7 @@ group = "dev.sort.duckdb"
 version = "0.3.5"
 
 val brikkSqlVersion = "0.19.1"
-val brikkSqlIdeSupportVersion = "0.1.1"
+val brikkSqlIdeSupportVersion = "0.1.2-SNAPSHOT"
 val brikkIdeSupportVersion = "0.2.0"
 val companionInstalled = providers.gradleProperty("test.sqlTranspiler").orNull == "installed"
 val dorisZip = providers.gradleProperty("test.dorisPluginZip").map(::File).orNull
@@ -21,6 +21,12 @@ val trinoZip = providers.gradleProperty("test.trinoPluginZip").map(::File).orNul
 val kotlinInstalled = providers.gradleProperty("test.kotlin").orNull != "absent"
 
 repositories {
+    if (brikkSqlIdeSupportVersion.endsWith("-SNAPSHOT")) mavenLocal {
+        content {
+            includeVersion("dev.brikk.house", "brikk-sql-intellij-support", brikkSqlIdeSupportVersion)
+            includeVersion("dev.brikk.house", "brikk-sql-intellij-test-support", brikkSqlIdeSupportVersion)
+        }
+    }
     mavenCentral()
     intellijPlatform {
         defaultRepositories()
@@ -45,6 +51,9 @@ dependencies {
     compileOnly("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
     testImplementation(kotlin("test"))
     testImplementation("junit:junit:4.13.2")
+    testImplementation("dev.brikk.house:brikk-sql-intellij-test-support:$brikkSqlIdeSupportVersion") {
+        exclude(group = "org.jetbrains.kotlin", module = "kotlin-stdlib")
+    }
 
     // TESTS ONLY: an in-process DuckDB proves the direct-metadata path (duckdb_functions(),
     // duckdb_keywords(), PREPARE-as-validator) headlessly. The PLUGIN does not bundle the engine —
