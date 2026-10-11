@@ -276,16 +276,15 @@ class DuckdbPipesExecutionTest : BasePlatformTestCase() {
         private val vf = myFixture.configureByText("offline-pipe-$id.sql", sql).virtualFile
         val file get() = PsiManager.getInstance(project).findFile(vf)!!
         val editor = myFixture.editor
-        val recording = run {
-            dev.sort.duckdb.setSqlDialectMapping(project, vf, DuckdbSqlDialect.INSTANCE)
-            RecordingConsole(project, vf, "duckdb-brikk-native")
-        }
+        val recording: RecordingConsole
         val requests get() = recording.requests
         val console get() = recording.console
         val previousEvents = mutableListOf<AnActionEvent>()
         val notifications = mutableListOf<Notification>()
         private val notificationConnection = project.messageBus.connect()
         init {
+            dev.sort.duckdb.setSqlDialectMapping(project, vf, DuckdbSqlDialect.INSTANCE)
+            recording = RecordingConsole(project, vf, "duckdb-brikk-native")
             notificationConnection.subscribe(Notifications.TOPIC, object : Notifications {
                 override fun notify(notification: Notification) {
                     if (notification.groupId == "DuckDB PIPE") {

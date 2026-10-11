@@ -15,10 +15,20 @@ version = "0.3.5"
 val brikkSqlVersion = "0.19.1"
 val brikkSqlIdeSupportVersion = "0.1.2-SNAPSHOT"
 val brikkIdeSupportVersion = "0.2.0"
+val runtimeIdeVersions = mapOf("262" to "262.8665.81", "263" to "263.5701.42")
+val corpusDirectory = layout.projectDirectory.dir("src/test/resources/corpus").asFile
 val companionInstalled = providers.gradleProperty("test.sqlTranspiler").orNull == "installed"
 val dorisZip = providers.gradleProperty("test.dorisPluginZip").map(::File).orNull
 val trinoZip = providers.gradleProperty("test.trinoPluginZip").map(::File).orNull
 val kotlinInstalled = providers.gradleProperty("test.kotlin").orNull != "absent"
+
+fun Test.configureSqlRuntime(engineVersion: String, corpus: File, pluginIds: List<String>) {
+    useJUnit()
+    systemProperty("test.brikkSqlVersion", engineVersion)
+    systemProperty("java.awt.headless", "true")
+    systemProperty("corpus.dir", corpus.absolutePath)
+    systemProperty("idea.load.plugins.id", pluginIds.joinToString(","))
+}
 
 repositories {
     if (brikkSqlIdeSupportVersion.endsWith("-SNAPSHOT")) mavenLocal {
@@ -116,11 +126,11 @@ intellijPlatform {
         ))
         ides {
             create("DB", "2026.1.3") {}
-            create("IU", "262.8665.81") {}
+            create("IU", runtimeIdeVersions.getValue("262")) {}
             create("DB", "2026.2.5") {}
             // Exact forward-compatibility targets used by the Doris release verifier.
             create("IU", "263.4732.28") {}
-            create("IU", "263.5701.42") {}
+            create("IU", runtimeIdeVersions.getValue("263")) {}
         }
     }
     publishing {
@@ -159,11 +169,8 @@ tasks {
     }
 
     named<Test>("test") {
-        useJUnit()
-        systemProperty("test.brikkSqlVersion", brikkSqlVersion)
-        systemProperty("java.awt.headless", "true")
         // Load our plugin (and the database plugin it depends on) in the light test fixture.
-        systemProperty("idea.load.plugins.id", buildList {
+        configureSqlRuntime(brikkSqlVersion, corpusDirectory, buildList {
             add("com.intellij.database")
             add("dev.sort.duckdb-intellij-plugin")
             if (kotlinInstalled) {
@@ -173,14 +180,12 @@ tasks {
             if (companionInstalled) add("dev.sort.sql-transpiler-intellij-plugin")
             if (dorisZip != null) add("dev.sort.doris-intellij-plugin")
             if (trinoZip != null) add("dev.sort.trino-intellij-plugin")
-        }.joinToString(","))
+        })
         if (!kotlinInstalled) exclude("**/brikk/**")
         providers.gradleProperty("test.brikkCompilerPlugin").orNull?.let {
             require(file(it).isFile) { "Missing compiler fixture JAR: $it" }
             systemProperty("test.brikkCompilerPlugin", file(it).absolutePath)
         } ?: exclude("**/BrikkCompilerRelationTest.class")
-        // DuckDB syntax corpus for the substrate scoreboard (DuckdbSyntaxProbeTest).
-        systemProperty("corpus.dir", layout.projectDirectory.dir("src/test/resources/corpus").asFile.absolutePath)
 // Live quack-wire suites (QuackLiveTruthTest, DuckdbLiveHarvestOverQuackTest) are gated on
         // this property; forward it from the Gradle invocation (`-Dquack.live.url=...` or
         // `-Pquack.live.url=...`) into the forked test JVM. Absent => those tests JUnit-Assume
@@ -198,7 +203,7 @@ kotlin {
     }
 }
 
-for ((generation, ideVersion) in listOf("262" to "262.8665.81", "263" to "263.5701.42")) {
+for ((generation, ideVersion) in runtimeIdeVersions) {
     for (brikk in listOf(false, true)) {
         intellijPlatformTesting.testIde.register("test${if (brikk) "Brikk" else "Pipes"}$generation") {
             type = org.jetbrains.intellij.platform.gradle.IntelliJPlatformType.IntellijIdea
@@ -209,16 +214,12 @@ for ((generation, ideVersion) in listOf("262" to "262.8665.81", "263" to "263.57
                 if (brikk) bundledPlugin("org.jetbrains.kotlin")
             }
             task {
-                useJUnit()
                 setIncludes(if (brikk) setOf("**/brikk/**") else emptySet())
                 setExcludes(if (brikk) setOf("**/BrikkCompilerRelationTest.class") else setOf("**/brikk/**"))
-                systemProperty("java.awt.headless", "true")
-                systemProperty("test.brikkSqlVersion", brikkSqlVersion)
-                systemProperty("corpus.dir", layout.projectDirectory.dir("src/test/resources/corpus").asFile.absolutePath)
-                systemProperty("idea.load.plugins.id", buildList {
+                configureSqlRuntime(brikkSqlVersion, corpusDirectory, buildList {
                     addAll(listOf("com.intellij.database", "dev.sort.duckdb-intellij-plugin", "com.intellij.java", "Git4Idea"))
                     if (brikk) add("org.jetbrains.kotlin")
-                }.joinToString(","))
+                })
             }
         }
     }

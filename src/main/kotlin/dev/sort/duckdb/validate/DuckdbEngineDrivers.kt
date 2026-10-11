@@ -2,12 +2,10 @@ package dev.sort.duckdb.validate
 
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.Service
-import com.intellij.openapi.progress.ProcessCanceledException
 import dev.brikk.house.sql.intellij.recoverEditorOperation
 import java.io.File
 import java.net.URLClassLoader
 import java.sql.Driver
-import java.util.concurrent.CancellationException
 
 internal class DuckdbEngineDrivers : AutoCloseable {
     private data class Loaded(val loader: URLClassLoader, val driver: Driver?)
@@ -26,14 +24,11 @@ internal class DuckdbEngineDrivers : AutoCloseable {
             recoverEditorOperation {
                 loader.loadClass("org.duckdb.DuckDBDriver").getDeclaredConstructor().newInstance() as Driver
             }.getOrNull()
-        } catch (e: ProcessCanceledException) {
-            loader.close()
-            throw e
-        } catch (e: CancellationException) {
-            loader.close()
-            throw e
         } catch (_: LinkageError) {
             null
+        } catch (e: Throwable) {
+            loader.close()
+            throw e
         }
         if (driver == null) loader.close()
         Loaded(loader, driver)
