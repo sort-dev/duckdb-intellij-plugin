@@ -98,7 +98,8 @@ object BrikkSqlScopes {
             if (node is Subquery) return flatten(query(node.thisArg as? Expression ?: return unknown(alias), ctes, outer), alias)
             if (node is Table) {
                 val function = node.thisArg as? Anonymous
-                if (function != null && function.name in contracts) {
+                if (function != null && function.expressionsArg.isEmpty() && node.db.isBlank() && node.catalog.isBlank() &&
+                    function.name in contracts) {
                     val result = contracts.getValue(function.name)
                     val shape = (result as? ShapeResult.Available)?.shape
                     val relation = if (shape == null) unknown(alias.ifBlank { function.name }, true, function.name)
@@ -131,18 +132,25 @@ object BrikkSqlScopes {
             if (expression is Count) return ColumnContract(name, null, ColumnNullability.NON_NULL, SqlFamily.WIDE_INTEGER)
             return ColumnContract(name, null, ColumnNullability.UNKNOWN, SqlFamily.UNKNOWN)
         }
+        private fun additionAvailable(node: Expression, scope: Scope): Boolean {
+            val expression = if (node is Alias) node.thisArg as? Expression ?: node else node
+            return expression !is Column || scope.candidates(expression.name, expression.table)
+                .singleOrNull()?.first?.available == true
+        }
         private fun project(expressions: List<Expression>, scope: Scope, ctes: Map<String, Relation>, extend: Boolean = false): Scope {
             val result = mutableListOf<ColumnContract>()
             var open = false
             if (extend) {
                 expressions.forEach { mark(it, scope, ctes) }
-                val additions = expressions.map { expressionColumn(it, scope) }.filter { it.name.isNotBlank() }
+                val additions = expressions.map { expressionColumn(it, scope) to additionAvailable(it, scope) }
+                    .filter { it.first.name.isNotBlank() }
                 val retained = scope.relations.map { relation -> relation.copy(columns = relation.columns.filterNot { existing ->
-                    additions.any { it.name.equals(existing.name, true) }
+                    additions.any { it.first.name.equals(existing.name, true) }
                 }) }
-                val knowledge = if (additions.all { it.name.isNotBlank() }) ShapeKnowledge.FULL else ShapeKnowledge.PARTIAL
-                return Scope(retained + Relation("", additions, knowledge, scope.managed,
-                    scope.relations.all { it.available }), scope.outer)
+                val added = additions.groupBy { it.second }.map { (available, columns) ->
+                    Relation("", columns.map { it.first }, ShapeKnowledge.FULL, scope.managed, available)
+                }
+                return Scope(retained + added, scope.outer)
             }
             for (expression in expressions) {
                 mark(expression, scope, ctes)
@@ -151,7 +159,7 @@ object BrikkSqlScopes {
                     val selected = if (expression is Column && expression.table.isNotBlank())
                         listOfNotNull(scope.relation(expression.table)) else scope.relations
                     result.addAll(selected.flatMap { it.columns })
-                    open = open || selected.any { it.knowledge == ShapeKnowledge.PARTIAL || !it.available }
+                    open = open || selected.isEmpty() || selected.any { it.knowledge == ShapeKnowledge.PARTIAL || !it.available }
                 } else {
                     val column = expressionColumn(expression, scope)
                     if (column.name.isNotBlank()) {

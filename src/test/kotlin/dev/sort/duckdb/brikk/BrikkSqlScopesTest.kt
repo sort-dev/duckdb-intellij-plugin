@@ -61,6 +61,39 @@ class BrikkSqlScopesTest {
         assertFalse(ref.scope.managed)
         assertTrue(ref.scope.columns.isEmpty())
     }
+    @Test fun callsWithArgumentsAndQualifiedCallsAreNotSlots() {
+        for (call in listOf("events(1)", "db.events()", "catalog.db.events()")) {
+            val ref = reference("SELECT e.id FROM $call AS e", "e.id")
+            assertFalse(ref.scope.managed)
+            assertTrue(ref.scope.candidates("id", "e").isEmpty())
+        }
+        assertEquals(column("id"), reference("SELECT e.id FROM events() AS e", "e.id")
+            .scope.candidates("id", "e").single().second)
+    }
+
+    @Test fun unknownQualifiedStarLeavesTheProjectedRelationOpen() {
+        val sql = "FROM customers() |> SELECT x.* |> WHERE absent > 0"
+        val ref = reference(sql, "absent")
+        assertFalse(ref.scope.complete)
+        assertTrue(ref.scope.relations.all { it.knowledge == ShapeKnowledge.PARTIAL })
+        assertTrue(ref.scope.candidates("absent").isEmpty())
+    }
+
+    @Test fun extendComputedAdditionsStayAvailableWithoutTheInputButPassthroughDoesNot() {
+        val sql = "FROM events() |> EXTEND id AS copied, id + 1 AS computed, 1 AS constant |> WHERE copied = computed + constant"
+        val unknown = reference(sql, "copied =", mapOf("events" to ShapeResult.Unavailable("pending")))
+        assertFalse(unknown.scope.candidates("copied").single().first.available)
+        assertTrue(unknown.scope.candidates("computed").single().first.available)
+        assertTrue(unknown.scope.candidates("constant").single().first.available)
+        assertNull(unknown.scope.candidates("computed").single().second.kotlinClassId)
+        assertFalse(unknown.scope.complete)
+
+        val available = reference(sql, "copied =")
+        val copied = available.scope.candidates("copied").single()
+        assertTrue(copied.first.available)
+        assertEquals(column("copied"), copied.second)
+        assertEquals(column("id"), available.scope.candidates("id").single().second)
+    }
     @Test fun unknownShapesStayUnknownAndPartialStarsStayOpen() {
         val sql = "FROM events() |> SELECT * |> WHERE extra > 1"
         val partial = reference(sql, "extra")
