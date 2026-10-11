@@ -7,6 +7,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Assert.assertSame
+import org.junit.Assert.assertThrows
 import org.junit.Test
 import org.junit.Assume.assumeFalse
 import java.net.InetSocketAddress
@@ -39,24 +40,21 @@ class DuckdbEngineValidatorSafetyTest {
 
     @Test
     fun `cancellation during parser query propagates`() {
-        DuckdbEngineValidator.connect(DuckDBDriver())!!.use { connection ->
+        requireNotNull(DuckdbEngineValidator.connect(DuckDBDriver())).use { connection ->
             for (cancellation in listOf(ProcessCanceledException(), CancellationException())) {
                 val interrupted = object : Connection by connection {
                     override fun createStatement(): Statement = throw cancellation
                 }
-                try {
+                assertSame(cancellation, assertThrows(cancellation.javaClass) {
                     DuckdbEngineValidator.verdict("SELECT 1", interrupted)
-                    throw AssertionError("cancellation was swallowed")
-                } catch (actual: RuntimeException) {
-                    assertSame(cancellation, actual)
-                }
+                })
             }
         }
     }
 
     @Test
     fun `explain execution forms never advance a sequence`() {
-        DuckdbEngineValidator.connect(DuckDBDriver())!!.use { connection ->
+        requireNotNull(DuckdbEngineValidator.connect(DuckDBDriver())).use { connection ->
             connection.createStatement().use { it.execute("CREATE SEQUENCE s START 1") }
             for (sql in listOf(
                 "EXPLAIN ANALYZE SELECT nextval('s')",
@@ -142,7 +140,7 @@ class DuckdbEngineValidatorSafetyTest {
 
     @Test
     fun `unsupported serialization is unavailable and never creates a table`() {
-        DuckdbEngineValidator.connect(DuckDBDriver())!!.use { connection ->
+        requireNotNull(DuckdbEngineValidator.connect(DuckDBDriver())).use { connection ->
             assertEquals(DuckdbEngineValidator.Verdict.Unavailable,
                 DuckdbEngineValidator.verdict("CREATE TABLE t AS SELECT * FROM read_csv('/not-readable.csv')", connection))
             connection.createStatement().use { statement ->

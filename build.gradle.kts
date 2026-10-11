@@ -230,9 +230,7 @@ val verifyEmbeddedPipes by tasks.registering {
                         resources[entry.name] = jar.readBytes().toString(Charsets.UTF_8)
                 }
             }
-            check(resources.keys.containsAll(requiredResources)) {
-                "Missing descriptor/notices"
-            }
+            check(resources.keys.containsAll(requiredResources)) { "Missing descriptor/notices" }
             check(resources.getValue("META-INF/NOTICE") == notice.asFile.readText()) { "Incorrect packaged NOTICE" }
             check("brikk-sql-jvm:$engineVersion" in resources.getValue("META-INF/THIRD_PARTY_NOTICES.md"))
             check("brikk-engine-kotlin-intellij-support:$supportVersion" in resources.getValue("META-INF/THIRD_PARTY_NOTICES.md"))

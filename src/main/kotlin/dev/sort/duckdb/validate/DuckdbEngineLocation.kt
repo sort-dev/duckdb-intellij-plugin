@@ -33,7 +33,7 @@ internal class DuckdbEngineLocation(private val project: Project) : Disposable {
     }
 
     @Synchronized
-    internal fun engineJar(locate: () -> Path? = { DuckdbEngineLocator.locate(project) }): Path? =
+    fun engineJar(locate: () -> Path? = { DuckdbEngineLocator.locate(project) }): Path? =
         when (val cached = location) {
             Location.Unknown -> locate().also { location = Location.Located(it) }
             is Location.Located -> cached.path
@@ -44,5 +44,5 @@ internal class DuckdbEngineLocation(private val project: Project) : Disposable {
         location = Location.Unknown
     }
 
-    override fun dispose() = invalidate()
+    override fun dispose() = Unit
 }

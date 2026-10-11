@@ -142,13 +142,13 @@ object BrikkSqlScopes {
             var open = false
             if (extend) {
                 expressions.forEach { mark(it, scope, ctes) }
-                val additions = expressions.map { expressionColumn(it, scope) to additionAvailable(it, scope) }
-                    .filter { it.first.name.isNotBlank() }
+                val additions = expressions.map { Addition(expressionColumn(it, scope), additionAvailable(it, scope)) }
+                    .filter { it.column.name.isNotBlank() }
                 val retained = scope.relations.map { relation -> relation.copy(columns = relation.columns.filterNot { existing ->
-                    additions.any { it.first.name.equals(existing.name, true) }
+                    additions.any { it.column.name.equals(existing.name, true) }
                 }) }
-                val added = additions.groupBy { it.second }.map { (available, columns) ->
-                    Relation("", columns.map { it.first }, ShapeKnowledge.FULL, scope.managed, available)
+                val added = additions.groupBy(Addition::available).map { (available, columns) ->
+                    Relation("", columns.map(Addition::column), ShapeKnowledge.FULL, scope.managed, available)
                 }
                 return Scope(retained + added, scope.outer)
             }
@@ -216,6 +216,8 @@ object BrikkSqlScopes {
         }
     }
 }
+
+private data class Addition(val column: ColumnContract, val available: Boolean)
 
 private tailrec fun Expression.projectionValue(): Expression {
     if (this !is Alias && this !is Paren) return this
