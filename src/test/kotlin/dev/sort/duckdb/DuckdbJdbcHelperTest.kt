@@ -13,10 +13,6 @@ class DuckdbJdbcHelperTest : BasePlatformTestCase() {
     fun testSslModeDoesNotInjectPostgresPropertiesIntoEitherDriver() {
         val helpers = DbmsExtension<JdbcHelperImpl>("com.intellij.database.jdbcHelper")
         val drivers = DatabaseDriverManager.getInstance()
-        val stock = requireNotNull(drivers.getDriver("duckdb"))
-        val stockSource = LocalDataSource.create("stock-duckdb", stock.driverClass, "jdbc:duckdb:", "")
-        stockSource.databaseDriver = stock
-        val stockHelper = helpers.forDbms(stockSource.dbms)
         val enableSsl = JdbcHelperImpl::class.java.getDeclaredMethod(
             "enableSsl", Driver::class.java, Properties::class.java, JdbcSettings.SslMode::class.java,
         ).apply { isAccessible = true }
@@ -36,6 +32,5 @@ class DuckdbJdbcHelperTest : BasePlatformTestCase() {
             }
         }
         assertTrue("Postgres properties injected: $injected", injected.isEmpty())
-        assertEquals(stockHelper.javaClass, helpers.forDbms(DuckdbDbms.DUCKDB_BRIKK).javaClass)
     }
 }

@@ -145,8 +145,8 @@ extension→functions map (189 functions across 5 extensions) powering the
 
 ## Requirements
 
-**DataGrip** or **IntelliJ IDEA Ultimate**, **2026.1 or 2026.2** (platform builds 261/262, one
-artifact for both). A native DuckDB engine for validation comes from your data source's
+**DataGrip** or **IntelliJ IDEA Ultimate**, **2026.1 through 2026.3** (platform builds 261 through 263, one
+artifact for the supported range). A native DuckDB engine for validation comes from your data source's
 driver. The built-in PIPE translator is independent of that driver.
 
 ## Building from source
@@ -154,6 +154,7 @@ driver. The built-in PIPE translator is independent of that driver.
 ```bash
 ./gradlew buildPlugin   # → build/distributions/duckdb-intellij-plugin.zip
 ./gradlew test          # census scoreboard + validator grading + boundary contracts
+./gradlew test262 test263 # same 261-compiled plugin on newer SQL and Kotlin APIs
 ./gradlew verifyEmbeddedPipes verifyPlugin # ZIP contents, bytecode, IDE API compatibility
 # optional: live wire suite against a quack server
 ./gradlew test -Dquack.live.url='jdbc:quack://localhost:9494?token=<token>'

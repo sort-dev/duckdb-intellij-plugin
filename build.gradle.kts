@@ -101,7 +101,7 @@ intellijPlatform {
     pluginConfiguration {
         ideaVersion {
             sinceBuild = "261"
-            untilBuild = "262.*"
+            untilBuild = "263.*"
         }
     }
     pluginVerification {
@@ -187,6 +187,37 @@ tasks {
 kotlin {
     compilerOptions {
         jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
+    }
+}
+
+for ((generation, ideVersion) in listOf("262" to "262.8665.81", "263" to "263.5701.42")) {
+    for (brikk in listOf(false, true)) {
+        intellijPlatformTesting.testIde.register("test${if (brikk) "Brikk" else "Pipes"}$generation") {
+            type = org.jetbrains.intellij.platform.gradle.IntelliJPlatformType.IntellijIdea
+            version = ideVersion
+            testFramework(org.jetbrains.intellij.platform.gradle.TestFrameworkType.Platform)
+            plugins {
+                bundledPlugins("com.intellij.database", "com.intellij.java", "com.intellij.modules.json", "Git4Idea")
+                if (brikk) bundledPlugin("org.jetbrains.kotlin")
+            }
+            task {
+                useJUnit()
+                setIncludes(if (brikk) setOf("**/brikk/**") else emptySet())
+                setExcludes(if (brikk) setOf("**/BrikkCompilerRelationTest.class") else setOf("**/brikk/**"))
+                systemProperty("java.awt.headless", "true")
+                systemProperty("test.brikkSqlVersion", brikkSqlVersion)
+                systemProperty("corpus.dir", layout.projectDirectory.dir("src/test/resources/corpus").asFile.absolutePath)
+                systemProperty("idea.load.plugins.id", buildList {
+                    addAll(listOf("com.intellij.database", "dev.sort.duckdb-intellij-plugin", "com.intellij.java", "Git4Idea"))
+                    if (brikk) add("org.jetbrains.kotlin")
+                }.joinToString(","))
+            }
+        }
+    }
+    tasks.register("test$generation") {
+        group = "verification"
+        description = "Runs SQL, console and Brikk contracts on IDE $generation with the 261-compiled plugin."
+        dependsOn("testPipes$generation", "testBrikk$generation")
     }
 }
 
