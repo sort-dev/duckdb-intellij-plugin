@@ -108,9 +108,12 @@ class DuckdbEngineValidatorSafetyTest {
 
     @Test
     fun `ordinary syntax errors reported and missing engine unavailable`() {
-        assertTrue(DuckdbEngineValidator.verdictsWithDriver(listOf("SELECT FROM WHERE"), DuckDBDriver()).single()
+        assertTrue(DuckdbEngineValidator.available)
+        assertTrue(DuckdbEngineValidator.verdicts(listOf("SELECT FROM WHERE")).single()
             is DuckdbEngineValidator.Verdict.Flagged)
         assertEquals(listOf(DuckdbEngineValidator.Verdict.Unavailable),
             DuckdbEngineValidator.verdictsWithDriver(listOf("SELECT 1"), null))
+        assertEquals(listOf(DuckdbEngineValidator.Verdict.Unavailable),
+            DuckdbEngineValidator.verdicts(listOf("SELECT 1"), "/missing/duckdb.jar"))
     }
 }

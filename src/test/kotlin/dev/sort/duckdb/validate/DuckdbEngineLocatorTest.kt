@@ -30,8 +30,9 @@ class DuckdbEngineLocatorTest {
     @Test
     fun `driver loads from explicit jar and validates through it`() {
         val jar = classpathJar("duckdb_jdbc").toString()
-        val driver = DuckdbEngineValidator.driverForJar(jar)
-        assertTrue("driver must load from jar", driver != null)
+        DuckdbEngineDrivers().use { drivers ->
+            assertTrue("driver must load from jar", drivers.driverForJar(jar) != null)
+        }
         val verdicts = DuckdbEngineValidator.verdicts(listOf("SELEC 1"), jar)
         assertTrue(
             "engine from jar must flag a parser error, got: $verdicts",

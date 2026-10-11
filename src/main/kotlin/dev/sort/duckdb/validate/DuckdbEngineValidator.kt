@@ -2,6 +2,7 @@ package dev.sort.duckdb.validate
 
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.components.service
+import com.intellij.openapi.application.ApplicationManager
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.contentOrNull
@@ -30,11 +31,13 @@ object DuckdbEngineValidator {
         val message: String,
     )
 
-    private val driver: Driver? get() = service<DuckdbEngineDrivers>().defaultDriver
+    val available: Boolean get() = withDrivers { it.defaultDriver != null }
 
-    val available: Boolean get() = driver != null
-
-    fun driverForJar(jarPath: String): Driver? = service<DuckdbEngineDrivers>().driverForJar(jarPath)
+    private inline fun <T> withDrivers(operation: (DuckdbEngineDrivers) -> T): T {
+        val application = ApplicationManager.getApplication()
+        return if (application == null) DuckdbEngineDrivers().use(operation)
+        else operation(application.service<DuckdbEngineDriverService>().drivers)
+    }
 
     internal fun connect(driver: Driver): Connection? = driver.connect("jdbc:duckdb:", Properties().apply {
         setProperty("enable_external_access", "false")
@@ -50,8 +53,9 @@ object DuckdbEngineValidator {
             .mapNotNull { (i, v) -> (v as? Verdict.Flagged)?.let { i to it.error } }
             .toMap()
 
-    fun verdicts(statements: List<String>, jarPath: String? = null): List<Verdict> =
-        verdictsWithDriver(statements, if (jarPath == null) driver else driverForJar(jarPath))
+    fun verdicts(statements: List<String>, jarPath: String? = null): List<Verdict> = withDrivers { drivers ->
+        verdictsWithDriver(statements, if (jarPath == null) drivers.defaultDriver else drivers.driverForJar(jarPath))
+    }
 
     internal fun verdictsWithDriver(statements: List<String>, engine: Driver?): List<Verdict> {
         ProgressManager.checkCanceled()

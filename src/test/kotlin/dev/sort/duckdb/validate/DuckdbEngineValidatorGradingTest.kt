@@ -44,7 +44,7 @@ class DuckdbEngineValidatorGradingTest {
         val parserOrigins = cases.filter { it.parserFailure }.map { it.origin }.toSet()
         val exceptions = bindingOnlyErrors + unavailableErrors
         assertEquals("stale parser exceptions", exceptions, parserOrigins.intersect(exceptions))
-        val verdicts = DuckdbEngineValidator.verdictsWithDriver(cases.map { it.sql }, DuckDBDriver())
+        val verdicts = DuckdbEngineValidator.verdicts(cases.map { it.sql })
         requireNotNull(DuckdbEngineValidator.connect(DuckDBDriver())).use { connection ->
             cases.zip(verdicts).forEach { (case, verdict) ->
                 val expected = when {
@@ -64,7 +64,7 @@ class DuckdbEngineValidatorGradingTest {
             .sortedBy { it.name }.flatMap { file ->
                 file.readText().split(Regex("(?m)^-- from .*$")).map { it.trim() }.filter { it.isNotEmpty() }
             }
-        val verdicts = DuckdbEngineValidator.verdictsWithDriver(statements, DuckDBDriver())
+        val verdicts = DuckdbEngineValidator.verdicts(statements)
         requireNotNull(DuckdbEngineValidator.connect(DuckDBDriver())).use { connection ->
             statements.zip(verdicts).forEach { (sql, verdict) ->
                 val expected = nativeExpectation(sql, connection)
