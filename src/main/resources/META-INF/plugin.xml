@@ -179,6 +179,7 @@
              agreement (doris ClassCast lesson) — all three sit on the PG family. -->
         <extensionFallback dbms="DUCKDB_BRIKK" fallbackDbms="POSTGRES"/>
         <modelFacade dbms="DUCKDB_BRIKK" implementationClass="dev.sort.duckdb.DuckdbModelFacade"/>
+        <introspector dbms="DUCKDB_BRIKK" implementationClass="dev.sort.duckdb.DuckdbIntrospectorGate"/>
         <errorHandler dbms="DUCKDB_BRIKK" implementationClass="com.intellij.database.dialects.generic.GenericDatabaseErrorHandler"/>
         <!-- Stage 4b: on-connect duckdb_functions()/duckdb_keywords() harvest -> live
              per-data-source catalog that replaces the bundled snapshot for that source
