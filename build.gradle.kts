@@ -120,6 +120,9 @@ intellijPlatform {
 }
 
 tasks {
+    named<JavaExec>("verifyPlugin") {
+        systemProperty("plugin.verifier.home.dir", layout.buildDirectory.dir("plugin-verifier-cache").get().asFile.absolutePath)
+    }
     processResources {
         from(files("LICENSE", "THIRD_PARTY_NOTICES.md")) { into("META-INF") }
     }
