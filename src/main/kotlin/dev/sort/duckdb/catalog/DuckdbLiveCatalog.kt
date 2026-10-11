@@ -49,11 +49,15 @@ object DuckdbLiveCatalog {
     var baseDirOverride: Path? = null
 
     /** Synchronous and allocation-light after the first call per data source (memory hit). */
-    fun entryFor(dataSourceId: String?): Entry? {
+    fun entryFor(dataSourceId: String?): Entry? = entryFor(dataSourceId, Files::readAllLines)
+
+    internal fun entryFor(dataSourceId: String?, readLines: (Path) -> List<String>): Entry? {
         if (dataSourceId == null) return null
         memory[dataSourceId]?.let { return it }
-        if (!diskProbed.add(dataSourceId)) return null // probed before: nothing on disk either
-        val loaded = recoverEditorOperation { load(fileFor(dataSourceId)) }.getOrNull() ?: return null
+        if (dataSourceId in diskProbed) return null
+        val loaded = recoverEditorOperation { load(fileFor(dataSourceId), readLines) }.getOrNull()
+        diskProbed.add(dataSourceId)
+        if (loaded == null) return null
         // putIfAbsent: a harvest racing this lazy load wins (it is fresher than the file).
         return memory.putIfAbsent(dataSourceId, loaded) ?: loaded
     }
@@ -111,14 +115,14 @@ object DuckdbLiveCatalog {
     }
 
     /** `null` for absent/corrupt files — a bad cache degrades to the bundled snapshot. */
-    private fun load(file: Path): Entry? {
+    private fun load(file: Path, readLines: (Path) -> List<String>): Entry? {
         if (!Files.isRegularFile(file)) return null
         var version: String? = null
         var extensions: List<String> = emptyList()
         var harvestedAt = 0L
         val functions = ArrayList<DuckdbFunctionCatalog.Fn>()
         val keywords = LinkedHashSet<String>()
-        for (line in Files.readAllLines(file)) {
+        for (line in readLines(file)) {
             if (line.isBlank() || line.startsWith("#")) continue
             val parts = line.split('\t')
             when (parts[0]) {

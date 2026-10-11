@@ -4,10 +4,14 @@ import dev.sort.duckdb.sql.DuckdbFunctionCatalog
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertSame
+import org.junit.Assert.assertThrows
+import com.intellij.openapi.progress.ProcessCanceledException
 import org.junit.Before
 import org.junit.Test
 import java.nio.file.Files
 import java.nio.file.Path
+import java.util.concurrent.CancellationException
 import kotlin.io.path.name
 
 /** Pins the one-TSV-per-data-source persistence: round-trip, corrupt-file degrade, id sanitizing. */
@@ -57,6 +61,21 @@ class DuckdbLiveCatalogPersistenceTest {
         Files.writeString(file, "meta\tonly-two-fields\ngarbage line\n")
         DuckdbLiveCatalog.clearForTests()
         assertNull(DuckdbLiveCatalog.entryFor("corrupt-ds"))
+    }
+
+    @Test
+    fun `cancellation during disk reading leaves the catalog readable on retry`() {
+        for (cancellation in listOf(ProcessCanceledException(), CancellationException())) {
+            val expected = entry()
+            DuckdbLiveCatalog.store("cancelled-ds", expected)
+            DuckdbLiveCatalog.clearForTests()
+            assertSame(cancellation, assertThrows(cancellation.javaClass) {
+                DuckdbLiveCatalog.entryFor("cancelled-ds") { file ->
+                    Files.readAllLines(file).also { throw cancellation }
+                }
+            })
+            assertEquals(expected, DuckdbLiveCatalog.entryFor("cancelled-ds"))
+        }
     }
 
     @Test
