@@ -2,7 +2,7 @@ package dev.sort.duckdb.sql
 
 import com.intellij.psi.PsiErrorElement
 import com.intellij.psi.util.PsiTreeUtil
-import com.intellij.sql.dialects.SqlDialectMappings
+import dev.sort.duckdb.setSqlDialectMapping
 import com.intellij.sql.psi.SqlStatement
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import dev.sort.duckdb.DuckdbDbms
@@ -14,7 +14,7 @@ class DuckdbDialectBootTest : BasePlatformTestCase() {
 
     private fun parse(sql: String): com.intellij.psi.PsiFile {
         val psi = myFixture.configureByText("b${counter++}.sql", sql)
-        SqlDialectMappings.getInstance(project).setMapping(psi.virtualFile, DuckdbSqlDialect.INSTANCE)
+        setSqlDialectMapping(project, psi.virtualFile, DuckdbSqlDialect.INSTANCE)
         return com.intellij.psi.PsiManager.getInstance(project).findFile(psi.virtualFile)!!
     }
 

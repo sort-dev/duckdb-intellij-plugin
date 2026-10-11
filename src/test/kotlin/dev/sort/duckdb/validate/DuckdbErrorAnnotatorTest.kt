@@ -2,7 +2,7 @@ package dev.sort.duckdb.validate
 
 import com.intellij.codeInsight.daemon.impl.HighlightInfo
 import com.intellij.lang.annotation.HighlightSeverity
-import com.intellij.sql.dialects.SqlDialectMappings
+import dev.sort.duckdb.setSqlDialectMapping
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import dev.sort.duckdb.sql.DuckdbSqlDialect
 
@@ -13,7 +13,7 @@ class DuckdbErrorAnnotatorTest : BasePlatformTestCase() {
 
     private fun highlight(sql: String): List<HighlightInfo> {
         val psi = myFixture.configureByText("v${counter++}.sql", sql)
-        SqlDialectMappings.getInstance(project).setMapping(psi.virtualFile, DuckdbSqlDialect.INSTANCE)
+        setSqlDialectMapping(project, psi.virtualFile, DuckdbSqlDialect.INSTANCE)
         return myFixture.doHighlighting().filter { it.severity == HighlightSeverity.ERROR }
     }
 
@@ -26,7 +26,7 @@ class DuckdbErrorAnnotatorTest : BasePlatformTestCase() {
         // correctly leaves alone.
         val sql = "SELECT 1;\nSELECT FROM WHERE;"
         val psi = myFixture.configureByText("u.sql", sql)
-        SqlDialectMappings.getInstance(project).setMapping(psi.virtualFile, DuckdbSqlDialect.INSTANCE)
+        setSqlDialectMapping(project, psi.virtualFile, DuckdbSqlDialect.INSTANCE)
         val file = com.intellij.psi.PsiManager.getInstance(project).findFile(psi.virtualFile)!!
         val annotator = DuckdbErrorAnnotator()
         val info = annotator.collectInformation(file)
