@@ -1,6 +1,7 @@
 package dev.sort.duckdb
 
 import com.intellij.database.DbmsExtension
+import com.intellij.database.Dbms
 import com.intellij.database.dataSource.DatabaseDriverManager
 import com.intellij.database.dataSource.LocalDataSource
 import com.intellij.database.remote.jdbc.helpers.JdbcHelperImpl
@@ -13,6 +14,10 @@ class DuckdbJdbcHelperTest : BasePlatformTestCase() {
     fun testSslModeDoesNotInjectPostgresPropertiesIntoEitherDriver() {
         val helpers = DbmsExtension<JdbcHelperImpl>("com.intellij.database.jdbcHelper")
         val drivers = DatabaseDriverManager.getInstance()
+        val stock = requireNotNull(drivers.getDriver("duckdb"))
+        val stockSource = LocalDataSource.create("stock-duckdb", stock.driverClass, "jdbc:duckdb:", "")
+        stockSource.databaseDriver = stock
+        val stockHelper = helpers.forDbms(stockSource.dbms)
         val enableSsl = JdbcHelperImpl::class.java.getDeclaredMethod(
             "enableSsl", Driver::class.java, Properties::class.java, JdbcSettings.SslMode::class.java,
         ).apply { isAccessible = true }
@@ -32,5 +37,15 @@ class DuckdbJdbcHelperTest : BasePlatformTestCase() {
             }
         }
         assertTrue("Postgres properties injected: $injected", injected.isEmpty())
+        val nativeHelper = try {
+            Class.forName("com.intellij.database.remote.jdbc.helpers.DuckJdbcHelper")
+        } catch (_: ClassNotFoundException) {
+            null
+        }
+        val expected = if (nativeHelper == null) stockHelper else {
+            assertTrue(nativeHelper.isInstance(stockHelper))
+            helpers.forDbms(Dbms.UNKNOWN)
+        }
+        assertEquals(expected.javaClass, helpers.forDbms(DuckdbDbms.DUCKDB_BRIKK).javaClass)
     }
 }

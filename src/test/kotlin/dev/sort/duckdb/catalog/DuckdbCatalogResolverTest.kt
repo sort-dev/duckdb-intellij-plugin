@@ -1,5 +1,6 @@
 package dev.sort.duckdb.catalog
 
+import com.intellij.codeInsight.lookup.LookupElementPresentation
 import com.intellij.database.dataSource.DatabaseDriverManager
 import com.intellij.database.dataSource.LocalDataSource
 import com.intellij.database.dataSource.LocalDataSourceManager
@@ -117,6 +118,10 @@ class DuckdbCatalogResolverTest : BasePlatformTestCase() {
         myFixture.completeBasic()
         val offered = myFixture.lookupElementStrings.orEmpty()
         assertTrue("extension offers absent: $offered", offered.containsAll(listOf("ST_Read", "ST_ReadOSM")))
+        val stRead = requireNotNull(myFixture.lookupElements).first { it.lookupString == "ST_Read" }
+        val presentation = LookupElementPresentation()
+        stRead.renderElement(presentation)
+        assertEquals("requires spatial", presentation.typeText)
 
         // Suppression: the bundled catalog already has list_transform, so the offer adds nothing.
         myFixture.configureByText("e2.sql", "SELECT list_tr<caret> FROM t;")
@@ -124,7 +129,7 @@ class DuckdbCatalogResolverTest : BasePlatformTestCase() {
         val strings = myFixture.lookupElementStrings.orEmpty()
         val inserted = myFixture.editor.document.text.contains("list_transform(")
         if (!inserted) {
-            assertTrue("list_transform absent: $strings", strings.contains("list_transform"))
+            assertEquals("exactly one list_transform: $strings", 1, strings.count { it.equals("list_transform", true) })
         }
         assertFalse("mixed-case duplicate must not be offered", strings.contains("List_Transform"))
     }
