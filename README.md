@@ -49,7 +49,7 @@ validating SQL with the real engine.
 
 ## PIPE queries
 
-Version 0.3.0 bundles brikk-sql 0.18.0 for PIPE authoring. SQL Transpiler is
+Version 0.3.4 defaults to brikk-sql 0.19.0 and SQL IntelliJ support 0.1.0 for PIPE authoring. SQL Transpiler is
 not required. Enable **Settings > Tools > DuckDB PIPE > Enable PIPE syntax in
 this project**; it defaults off and is saved per workspace.
 
@@ -66,6 +66,10 @@ caret. Translation errors and unsupported/lossy translations block execution;
 they never fall back to sending raw PIPE syntax. Mixed scripts keep ordinary
 SQL unchanged. Native FROM-first DuckDB queries do not require this setting.
 Stage completion offers operators and known output aliases from previous stages.
+Run-to-stage refuses a caret inside a nested pipeline. Execute discovers parameters
+through the core parser and substitutes values before lowering, including LIMIT
+and configured IDE parameters in literals. It preflights every selected PIPE
+before submitting any statement and refuses stale preparation.
 Server errors remain in the normal output against the generated SQL; exact
 source mapping is not yet enabled for DuckDB server errors.
 
@@ -158,8 +162,18 @@ the dialect or PIPE consoles in DataGrip.
 
 The plugin consumes
 `dev.brikk.house:brikk-engine-kotlin-intellij-support:0.1.0` from Maven Central.
+Cooperative Execute actions and translated script models come from
+`dev.brikk.house:brikk-sql-intellij-support:0.1.0`. DuckDB keeps its own execution
+eligibility, optional native validation, notifications and inspection-view guards.
 No Maven Local publication is required. The dependency does not bundle an
 IntelliJ SDK, Kotlin stdlib or compiler plugin.
+
+To validate the pending brikk-sql comment-boundary fix, use
+`-PbrikkSqlVersion=0.19.0-SNAPSHOT --refresh-dependencies`. Only that exact
+core/metadata snapshot may resolve from Maven Local, and only when opted in.
+The default remains the Central release while the fix awaits publication.
+The separate 0.3.4 local testing ZIP was built with that snapshot and needs no
+Maven installation when loaded into an IDE. The existing 0.3.2 ZIP is preserved.
 
 **Engine bump checklist** (when moving to a new DuckDB): bump `duckdb_jdbc` in build.gradle.kts
 and the artifact pin in `config/duckdb-brikk-artifacts.xml`, then re-run all three harvests and

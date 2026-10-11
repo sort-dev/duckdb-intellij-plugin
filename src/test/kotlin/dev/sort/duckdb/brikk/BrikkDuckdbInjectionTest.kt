@@ -171,7 +171,7 @@ open class BrikkDuckdbInjectionTest : BasePlatformTestCase() {
 
     fun testDdlBackedInspectionsKeepColumnsAndBindsDistinct() {
         val schema = myFixture.addFileToProject("schema.sql", "CREATE TABLE customers (tenant TEXT NOT NULL, id INTEGER);")
-        com.intellij.sql.dialects.SqlDialectMappings.getInstance(project).setMapping(schema.virtualFile, DuckdbSqlDialect.INSTANCE)
+        dev.sort.duckdb.setSqlDialectMapping(project, schema.virtualFile, DuckdbSqlDialect.INSTANCE)
         val manager = com.intellij.sql.database.SqlDataSourceManager.getInstance(project)
         val source = manager.createEmpty().apply {
             name = "Brikk schema test"
@@ -182,14 +182,17 @@ open class BrikkDuckdbInjectionTest : BasePlatformTestCase() {
         try {
             val sync = com.intellij.openapi.application.ApplicationManager.getApplication().executeOnPooledThread {
                 source.sync()
-                source.waitComputed()
+                source.javaClass.methods.firstOrNull { it.name == "waitComputed" && it.parameterCount == 0 }?.invoke(source)
             }
             com.intellij.testFramework.PlatformTestUtil.waitForFuture(sync)
             com.intellij.database.psi.DbPsiFacade.getInstance(project).clearCaches()
             com.intellij.sql.dialects.SqlResolveMappings.getInstance(project).setMapping(null,
                 com.intellij.sql.dialects.SqlResolveMappings.ALL_DATA_SOURCES)
-            myFixture.enableInspections(com.intellij.sql.inspections.SqlConstantExpressionInspection(),
-                com.intellij.sql.inspections.SqlResolveInspection())
+            val inspections = com.intellij.codeInspection.ex.InspectionToolRegistrar.getInstance().createTools()
+                .filter { it.shortName in setOf("SqlConstantExpressionInspection", "SqlResolveInspection") }
+                .mapNotNull { it.tool as? com.intellij.codeInspection.LocalInspectionTool }
+            assertEquals(2, inspections.size)
+            myFixture.enableInspections(*inspections.toTypedArray())
             var host = configure("@BrikkSql fun query(tenant: String) = Sql.duckdb(\"SELECT tenant FROM customers WHERE tenant = \$tenant\")")
             val sql = injected(host)
             assertTrue(com.intellij.sql.dialects.SqlDataSourceMappings.getInstance(project).getDataSources(sql).isNotEmpty())
@@ -276,7 +279,8 @@ open class BrikkDuckdbInjectionTest : BasePlatformTestCase() {
             com.intellij.openapi.actionSystem.Presentation(), com.intellij.openapi.actionSystem.impl.SimpleDataContext.builder()
                 .add(com.intellij.openapi.actionSystem.CommonDataKeys.PROJECT, project)
                 .add(com.intellij.openapi.actionSystem.CommonDataKeys.PSI_FILE, file).build())
-        assertTrue(dev.sort.duckdb.pipes.PipesExecuteInterceptor.handle(event, com.intellij.database.settings.DatabaseSettings.ExecOption()))
+        assertEquals(dev.brikk.house.sql.intellij.ExecutionClaim.HANDLED,
+            dev.sort.duckdb.pipes.PipesExecuteInterceptor.handle(event, com.intellij.database.settings.DatabaseSettings.ExecOption()))
         assertTrue(isBrikkInjectedSql(file))
         assertFalse(dev.sort.duckdb.pipes.RunPipesToStageIntention().isAvailable(project, myFixture.editor, file))
     }

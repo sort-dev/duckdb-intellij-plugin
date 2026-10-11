@@ -2,7 +2,6 @@ package dev.sort.duckdb.pipes
 
 import com.intellij.codeInsight.intention.IntentionAction
 import com.intellij.database.console.JdbcConsoleProvider
-import com.intellij.database.settings.DatabaseSettings
 import com.intellij.openapi.actionSystem.*
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.project.Project
@@ -63,7 +62,7 @@ internal object DuckdbPipesUi {
         val range = TextRange(chunk.startOffset + chunk.text.length - chunk.text.trimStart().length,
             chunk.startOffset + prefix.text.length)
         executePipeModel(console, editor, console.scriptModel.subModel(range),
-            DatabaseSettings.ExecOption().apply { execSelection = 1 }, allowFirstFromStage = prefix.stage == 1)
+            dev.brikk.house.sql.intellij.selectionExecuteOption(), allowFirstFromStage = prefix.stage == 1)
     }
 }
 

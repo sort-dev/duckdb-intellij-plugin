@@ -42,15 +42,16 @@ object BrikkSqlScopes {
         Analyzer(contracts).analyze(parse(sql, contracts.keys))
     }.getOrNull()
 
-    /** 0.18.0 rejects reserved slot names such as rows() in SELECT's FROM clause. Retag
-     * only known, called slot tokens; keep original text/UTF-16 coordinates and literals intact. */
+    /** Core 0.19 owns rows(). Keep the inspection-only fallback for other unproven
+     * reserved slots, preserving original text and UTF-16 coordinates. */
     fun parse(sql: String, slots: Set<String>): Expression = try {
         SqlFragment(sql, "duckdb").ast
     } catch (failure: ParseError) {
         val tokens = Dialects.DUCKDB.tokenize(sql)
         var changed = false
         val adjusted = tokens.mapIndexed { index, token ->
-            if (slots.any { it.equals(token.text, true) } && tokens.getOrNull(index + 1)?.tokenType == TokenType.L_PAREN &&
+            if (!token.text.equals("rows", true) && slots.any { it.equals(token.text, true) } &&
+                tokens.getOrNull(index + 1)?.tokenType == TokenType.L_PAREN &&
                 token.tokenType !in setOf(TokenType.VAR, TokenType.IDENTIFIER, TokenType.STRING) && !token.tokenType.name.endsWith("_STRING")) {
                 changed = true
                 Token(TokenType.VAR, token.text, token.line, token.col, token.start, token.end,
@@ -139,7 +140,7 @@ object BrikkSqlScopes {
                 val retained = scope.relations.map { relation -> relation.copy(columns = relation.columns.filterNot { existing ->
                     additions.any { it.name.equals(existing.name, true) }
                 }) }
-                val knowledge = if (additions.all { it.kotlinClassId != null || it.sqlFamily != SqlFamily.UNKNOWN }) ShapeKnowledge.FULL else ShapeKnowledge.PARTIAL
+                val knowledge = if (additions.all { it.name.isNotBlank() }) ShapeKnowledge.FULL else ShapeKnowledge.PARTIAL
                 return Scope(retained + Relation("", additions, knowledge, scope.managed,
                     scope.relations.all { it.available }), scope.outer)
             }
@@ -153,7 +154,6 @@ object BrikkSqlScopes {
                     open = open || selected.any { it.knowledge == ShapeKnowledge.PARTIAL || !it.available }
                 } else {
                     val column = expressionColumn(expression, scope)
-                    if (column.kotlinClassId == null && column.sqlFamily == SqlFamily.UNKNOWN) open = true
                     if (column.name.isNotBlank()) {
                         result.add(column)
                     } else open = true

@@ -48,6 +48,18 @@
     ]]></description>
 
     <change-notes><![CDATA[
+        <b>0.3.4</b> - local testing build of the shared SQL backport.
+        <ul>
+            <li>The local testing ZIP uses brikk-sql 0.19.0-SNAPSHOT with the upstream unfinished-comment fix.</li>
+            <li>Core and metadata snapshots can be selected explicitly without changing the default Central dependency pins.</li>
+            <li>No native engine, verification library or compiler plugin is bundled.</li>
+        </ul>
+        <b>0.3.3</b> - shared SQL IntelliJ support backport.
+        <ul>
+            <li>Uses Brikk SQL IntelliJ support 0.1.0 for cooperative Execute actions and translated scripts.</li>
+            <li>Uses brikk-sql 0.19.0 for statement boundaries and parser-backed parameter discovery.</li>
+            <li>Substitutes parameters before lowering, rejects stale preparation and keeps DuckDB validation policy.</li>
+        </ul>
         <b>0.3.2</b> - shared Brikk relation-contract support.
         <ul>
             <li>Uses the published Brikk Kotlin IntelliJ support 0.1.0 library from Maven Central.</li>

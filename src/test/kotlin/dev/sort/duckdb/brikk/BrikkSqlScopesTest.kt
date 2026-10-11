@@ -87,5 +87,17 @@ class BrikkSqlScopesTest {
         assertEquals(1, ref.scope.candidates("id", "r").size)
         assertEquals(sql.indexOf("id"), ref.start)
         assertNotNull(BrikkSqlScopes.analyze("SELECT 'rows' AS label FROM events()", contracts))
+        assertNotNull(dev.brikk.house.sql.shape.SqlFragment(sql, "duckdb").ast)
+    }
+
+    @Test fun namedComputedProjectionHasCompleteInventoryWithoutInventedTypes() {
+        val sql = "FROM events() |> SELECT id + 1 AS computed |> WHERE missing > 0"
+        val ref = reference(sql, "missing")
+        assertTrue(ref.scope.complete)
+        val column = ref.scope.columns.single().second
+        assertEquals("computed", column.name)
+        assertNull(column.kotlinClassId)
+        assertEquals(SqlFamily.UNKNOWN, column.sqlFamily)
+        assertTrue(ref.scope.candidates("missing").isEmpty())
     }
 }

@@ -4,7 +4,6 @@ import com.intellij.database.actions.RunQueryAction
 import com.intellij.database.console.JdbcConsole
 import com.intellij.database.console.JdbcConsoleProvider
 import com.intellij.database.script.ScriptModel
-import com.intellij.database.script.ScriptModelUtilCore
 import com.intellij.database.script.translator.TranslateException
 import com.intellij.database.settings.DatabaseSettings
 import com.intellij.notification.NotificationGroupManager
@@ -12,87 +11,96 @@ import com.intellij.notification.NotificationType
 import com.intellij.openapi.actionSystem.*
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.fileEditor.TextEditor
-import com.intellij.openapi.util.Condition
-import com.intellij.openapi.util.Conditions
 import com.intellij.openapi.util.TextRange
 import com.intellij.openapi.util.text.StringUtil
-import com.intellij.util.containers.JBIterable
-import dev.brikk.house.sql.dialects.Dialects
+import dev.brikk.house.sql.intellij.*
+import dev.brikk.house.sql.parser.ParseError
+import dev.brikk.house.sql.parser.TokenError
 import dev.brikk.house.sql.parser.TokenType
+import dev.brikk.house.sql.parser.Tokenizer
+import dev.brikk.house.sql.parser.TokenizerConfigs
+import dev.brikk.house.sql.shape.ParamStyle
+import dev.brikk.house.sql.shape.ShapeError
+import dev.brikk.house.sql.shape.parseParameterOccurrences
 import dev.sort.duckdb.DuckdbDbms
 import dev.sort.duckdb.validate.DuckdbEngineLocator
 import dev.sort.duckdb.validate.DuckdbEngineValidator
 
-internal open class DuckdbPipesRunQueryAction(
-    index: Int,
-    private val previous: AnAction,
-    private val intercept: (AnActionEvent, DatabaseSettings.ExecOption) -> Boolean = PipesExecuteInterceptor::handle,
-) : RunQueryAction(index), ActionWithDelegate<AnAction>, PerformWithDocumentsCommitted {
-    init { copyFrom(previous) }
-    @Volatile internal var isDetached = false
-        private set
-    internal fun detach() { isDetached = true }
-    override fun getDelegate(): AnAction = previous
-    override fun update(e: AnActionEvent) = previous.update(e)
-    override fun getActionUpdateThread(): ActionUpdateThread = previous.actionUpdateThread
-    override fun isDumbAware() = previous.isDumbAware
-    override fun isInInjectedContext() = previous.isInInjectedContext
-    override fun isPerformWithDocumentsCommitted() = PerformWithDocumentsCommitted.isPerformWithDocumentsCommitted(previous)
-    override fun actionPerformed(e: AnActionEvent) {
-        if (isDetached || !intercept(e, getExecOption())) ActionWrapperUtil.actionPerformed(e, this, previous)
-    }
-}
-
-internal class DuckdbPipesRunSelectionAction(
-    previous: AnAction,
-    intercept: (AnActionEvent, DatabaseSettings.ExecOption) -> Boolean = PipesExecuteInterceptor::handle,
-) : DuckdbPipesRunQueryAction(-1, previous, intercept) {
-    private val selectionOption = DatabaseSettings.ExecOption().apply { execSelection = 1 }
-    override fun getExecOption() = selectionOption
-}
-
 internal object PipesExecuteInterceptor {
-    fun handle(e: AnActionEvent, option: DatabaseSettings.ExecOption): Boolean {
+    fun handle(e: AnActionEvent, option: DatabaseSettings.ExecOption): ExecutionClaim {
         val file = e.getData(CommonDataKeys.PSI_FILE)
         if (file != null && dev.sort.duckdb.brikk.isBrikkInjectedSql(file)) {
             NotificationGroupManager.getInstance().getNotificationGroup("DuckDB PIPE")
                 .createNotification("Brikk SQL is an inspection view",
                     "Run the compiled/composed relation with its binding map. SQL inspection placeholders are not runtime values.",
                     NotificationType.WARNING).notify(e.project)
-            return true
+            return ExecutionClaim.HANDLED
         }
-        val console = JdbcConsole.findConsole(e) ?: return false
-        if (console.session.connectionPoint.dbms !== DuckdbDbms.DUCKDB_BRIKK || !DuckdbPipes.isEnabled(console.project)) return false
+        val console = JdbcConsole.findConsole(e) ?: return ExecutionClaim.DECLINED
+        if (console.session.connectionPoint.dbms !== DuckdbDbms.DUCKDB_BRIKK || !DuckdbPipes.isEnabled(console.project))
+            return ExecutionClaim.DECLINED
         val editor = e.getData(CommonDataKeys.EDITOR)
-            ?: (e.getData(PlatformCoreDataKeys.FILE_EDITOR) as? TextEditor)?.editor ?: return false
+            ?: (e.getData(PlatformCoreDataKeys.FILE_EDITOR) as? TextEditor)?.editor ?: return ExecutionClaim.DECLINED
         val text = editor.document.text
         val current = DuckdbPipes.chunkAt(text, editor.caretModel.offset)
-        val candidate = editor.selectionModel.selectedText ?: when (option.execInside) {
-            DatabaseSettings.EXECUTE_INSIDE_WHOLE_SCRIPT -> text
-            DatabaseSettings.EXECUTE_INSIDE_SCRIPT_TAIL -> text.substring(current?.startOffset ?: editor.caretModel.offset)
-            else -> current?.text ?: return false
+        val tokens = current?.takeIf { it.boundaryError == null }?.let {
+            Tokenizer(TokenizerConfigs.forName("duckdb")).tokenizeForEditor(it.text).tokens
+                .filterNot { token -> token.tokenType == TokenType.SEMICOLON }
         }
-        if (!DuckdbPipes.containsPipeOperator(candidate)) return false
+        val outside = current == null || !current.hasSql || tokens != null &&
+            (tokens.isEmpty() || editor.caretModel.offset < current.startOffset + tokens.first().start ||
+                editor.caretModel.offset > current.startOffset + tokens.last().end + 1)
+        val selection = editor.selectionModel.selectedText
+        val candidate = if (selection != null) {
+            if (option.execSelection == DatabaseSettings.EXECUTE_SELECTION_SMART_EXPAND) {
+                val start = editor.selectionModel.selectionStart
+                val end = editor.selectionModel.selectionEnd
+                val selected = DuckdbPipes.chunks(text).filter { it.startOffset < end && it.endOffset > start }
+                if (selected.isEmpty()) selection else text.substring(selected.first().startOffset, selected.last().endOffset)
+            } else selection
+        } else if (outside) when (option.execOutside) {
+            DatabaseSettings.EXECUTE_OUTSIDE_WHOLE_SCRIPT -> text
+            DatabaseSettings.EXECUTE_OUTSIDE_SCRIPT_TAIL -> {
+                val start = if (current != null && tokens?.firstOrNull()?.let {
+                    current.startOffset + it.start >= editor.caretModel.offset
+                } == true) current.startOffset else DuckdbPipes.chunks(text)
+                    .firstOrNull { it.hasSql && it.startOffset >= editor.caretModel.offset }?.startOffset ?: text.length
+                text.substring(start)
+            }
+            else -> return ExecutionClaim.DECLINED
+        } else when (option.execInside) {
+            DatabaseSettings.EXECUTE_INSIDE_WHOLE_SCRIPT,
+            DatabaseSettings.EXECUTE_INSIDE_SHOW_CHOOSER,
+            DatabaseSettings.EXECUTE_INSIDE_BATCH -> text
+            DatabaseSettings.EXECUTE_INSIDE_SCRIPT_TAIL -> text.substring(current.startOffset)
+            else -> current.text
+        }
+        if (!DuckdbPipes.containsPipeOperator(candidate)) return ExecutionClaim.DECLINED
         DuckdbPipes.chunks(candidate).firstOrNull { it.boundaryError != null }?.let {
             notifyPipeError(console, it.boundaryError!!)
-            return true
+            return ExecutionClaim.HANDLED
         }
-        // Invocation-local stock preparation keeps selection, variant, document commit and console.
-        var handled = false
-        object : RunQueryAction(1) {
-            override fun actionPerformed(e: AnActionEvent) = super.actionPerformed(e)
-            override fun getExecOption() = option
-            override fun invokeImpl(e: AnActionEvent, console: JdbcConsole?, info: JdbcConsoleProvider.Info) {
-                if (console == null) return
-                handled = true // A claimed failure must never run raw PIPE through a predecessor.
-                JdbcConsoleProvider.chooseStatements(info, "Nothing to run", true) { selected ->
-                    if (selected.statements().none { DuckdbPipes.containsPipeOperator(it.query()) }) {
-                        if (console.beforeExecuteQueries(selected)) console.executeQueries(editor, selected, info.execOption)
-                    } else executePipeModel(console, editor, selected, info.execOption)
+        // Claim before preparation. Cancellation or a missing Info must not execute raw PIPE.
+        val snapshot = EditorSnapshot.capture(editor.document)
+        val owner = console
+        try {
+            object : RunQueryAction(1) {
+                override fun actionPerformed(e: AnActionEvent) = super.actionPerformed(e)
+                override fun getExecOption() = option
+                override fun invokeImpl(e: AnActionEvent, console: JdbcConsole?, info: JdbcConsoleProvider.Info) {
+                    if (console == null) return
+                    if (console !== owner) throw SqlExecutionRefusal("The destination console changed during preparation")
+                    requireCurrentSnapshot(snapshot)
+                    JdbcConsoleProvider.chooseStatements(info, "Nothing to run", true) { selected ->
+                        requireCurrentSnapshot(snapshot)
+                        executePipeModel(console, editor, selected, info.execOption)
+                    }
                 }
-            }
-        }.actionPerformed(e)
-        return handled
+            }.actionPerformed(e)
+        } catch (failure: SqlExecutionRefusal) {
+            notifyPipeError(console, failure.message ?: "PIPE execution refused")
+        }
+        return ExecutionClaim.HANDLED
     }
 }
 
@@ -100,6 +108,12 @@ internal fun notifyPipeError(console: JdbcConsole, message: String) {
     NotificationGroupManager.getInstance().getNotificationGroup("DuckDB PIPE")
         .createNotification("PIPE translation failed",
             StringUtil.escapeXmlEntities(message).replace("\n", "<br>"), NotificationType.ERROR).notify(console.project)
+}
+
+private fun requireCurrentSnapshot(snapshot: EditorSnapshot) {
+    if (snapshot.document.modificationStamp != snapshot.revision)
+        throw SqlExecutionRefusal("SQL changed during preparation. Run the current statement again.")
+    snapshot.requireCurrent()
 }
 
 internal class PipeTranslationFailure(val error: DuckdbPipesEngine.Transpile.Err) : RuntimeException(error.message)
@@ -115,148 +129,65 @@ internal fun requirePipeTranslation(text: String, allowFirstFromStage: Boolean =
             DuckdbPipesEngine.Transpile.Err(null, null, "PIPE statement was not translated."))
     }
 
+internal class DuckdbExecutionAdapter(private val firstStage: Boolean = false) : SqlExecutionAdapter {
+    override fun claims(text: String) = firstStage || DuckdbPipes.containsPipeOperator(text)
+    override fun parameters(text: String): List<SqlParameterSpan> = try {
+        parseParameterOccurrences(text, "duckdb").filter { it.style == ParamStyle.NAMED_COLON && it.name != null }
+            .map { SqlParameterSpan(it.name!!, it.range.start, it.range.end) }
+    } catch (e: ParseError) {
+        throw SqlExecutionRefusal(e.message ?: "Invalid PIPE SQL")
+    } catch (e: TokenError) {
+        throw SqlExecutionRefusal(e.message ?: "Invalid PIPE token")
+    } catch (e: ShapeError) {
+        throw SqlExecutionRefusal(e.message ?: "Invalid PIPE statement")
+    }
+
+    override fun translate(text: String, beforeSubstitution: Boolean): RenderedSql {
+        val result = requirePipeTranslation(text, firstStage)
+        val leading = text.length - text.trimStart().length
+        return RenderedSql(result.sql, text) map@ { line, column ->
+            if (line < 1 || column < 1) return@map null
+            val outputLine = result.sql.lineSequence().elementAtOrNull(line - 1) ?: return@map null
+            if (column > outputLine.length + 1) return@map null
+            val position = result.result.mapErrorToSource(line, column) ?: return@map null
+            if (position.start < 0 || position.end < position.start || position.end + leading >= text.length) return@map null
+            TextRange(position.start + leading, position.end + leading + 1)
+        }
+    }
+}
+
 internal fun <E> executePipeModel(console: JdbcConsole, editor: Editor, selected: ScriptModel<E>,
                                  option: DatabaseSettings.ExecOption, allowFirstFromStage: Boolean = false) {
     try {
-        val model = PipeScriptModel(selected, editor, allowFirstFromStage)
+        val session = console.session
+        val target = console.dataSource
+        val url = target.url
+        val snapshot = EditorSnapshot.capture(editor.document)
+        val model = TranslatingScriptModel(selected, editor, DuckdbExecutionAdapter(allowFirstFromStage))
         if (!console.beforeExecuteQueries(model)) return
-        // Prompt/substitute and check every PIPE before the first ordinary or PIPE request runs.
+        requireCurrentSnapshot(snapshot)
         model.finalizeTranslations(console.pStorage)
         val file = com.intellij.psi.PsiManager.getInstance(console.project).findFile(selected.virtualFile)
         val jar = file?.let { DuckdbEngineLocator.engineJarFor(it)?.toString() }
-        // Optional native syntax preflight uses the user's local driver only. Remote consoles
-        // without that driver still work; catalog/binder failures are not syntax failures.
+        // Optional local syntax preflight is product policy, not a dependency of the helper.
         val generated = model.statements().filter { DuckdbPipes.containsPipeOperator(it.text()) || allowFirstFromStage }
             .map { it.query() }.toList()
         val errors = DuckdbEngineValidator.validate(generated, jar)
         if (errors.isNotEmpty()) throw PipeTranslationFailure(DuckdbPipesEngine.Transpile.Err(null, null,
             "Generated DuckDB SQL failed syntax validation: ${errors.values.first().message}"))
+        if (!console.isValid || console.session !== session || console.dataSource !== target || target.url != url ||
+            session.connectionPoint.dbms !== DuckdbDbms.DUCKDB_BRIKK)
+            throw SqlExecutionRefusal("The destination changed during parameter preparation. Run the query again.")
+        if (!DuckdbPipes.isEnabled(console.project)) throw SqlExecutionRefusal("PIPE was disabled during preparation")
+        requireCurrentSnapshot(snapshot)
+        if (!model.isActual) throw SqlExecutionRefusal("The statement changed during preparation. Run it again.")
+        if (console.session.clientsWithFile.isEmpty()) throw SqlExecutionRefusal("No attached console client")
         console.executeQueries(editor, model, option)
     } catch (e: PipeTranslationFailure) {
         notifyPipeError(console, e.error.message)
+    } catch (e: SqlExecutionRefusal) {
+        notifyPipeError(console, e.message ?: "PIPE execution refused")
     } catch (e: TranslateException) {
         notifyPipeError(console, e.message ?: "Parameter substitution failed")
     }
 }
-
-/** Adapted from Doris's cooperative ScriptModel. Only claimed statements change query text. */
-internal class PipeScriptModel<E>(
-    private val delegate: ScriptModel<E>,
-    private val editor: Editor,
-    private val allowFirstFromStage: Boolean = false,
-) : ScriptModel<E>() {
-    private data class StatementKey(val range: TextRange, val offset: Long)
-    private fun key(it: ScriptModel.StatementIt<E>) = StatementKey(it.range(), it.rangeOffset())
-    private inner class Plan(val source: ScriptModel.StatementIt<E>, val sourceText: String,
-                             var translation: DuckdbPipesEngine.Transpile.Ok) {
-        val parameters = (snapshotParameters(source.parameters()) + pipeParameters(source, sourceText))
-            .distinctBy { it.name() to it.range() }
-        var finalized = false
-    }
-    private val documentText = editor.document.text
-    private val parameters = snapshotParameters(delegate.parameters())
-    private val plans = delegate.statements().mapNotNull { statement ->
-        val offset = statement.rangeOffset().coerceAtLeast(0).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
-        val range = statement.range().shiftRight(offset)
-        val cached = statement.query()
-        if (range.startOffset < 0 || range.endOffset > documentText.length || range.isEmpty) {
-            if (DuckdbPipes.containsPipeOperator(cached)) throw staleStatement()
-            return@mapNotNull null
-        }
-        val text = documentText.substring(range.startOffset, range.endOffset)
-        val claimed = DuckdbPipes.containsPipeOperator(text) || allowFirstFromStage
-        if (!claimed) {
-            if (DuckdbPipes.containsPipeOperator(cached)) throw staleStatement()
-            return@mapNotNull null
-        }
-        key(statement) to Plan(statement, text, requirePipeTranslation(text, allowFirstFromStage))
-    }.toList().toMap()
-
-    fun finalizeTranslations(storage: ScriptModel.PStorage) {
-        if (editor.document.text != documentText) throw staleStatement()
-        for (plan in plans.values) {
-            PipeStatement(plan).consoleQuery(storage, Conditions.alwaysFalse())
-            plan.finalized = true
-        }
-    }
-    override fun isActual() = delegate.isActual
-    override fun subModel(range: TextRange?): ScriptModel<E> = PipeScriptModel(delegate.subModel(range), editor, allowFirstFromStage)
-    override fun everything(): JBIterable<E> = delegate.everything()
-    override fun statements(): JBIterable<out ScriptModel.StatementIt<E>> = delegate.statements().transform { statement ->
-        plans[key(statement)]?.let { PipeStatement(it) } ?: statement
-    }
-    override fun parameters(): JBIterable<out ScriptModel.ParamIt<E>> =
-        JBIterable.from((parameters + plans.values.flatMap { it.parameters }).distinctBy { it.name() to it.range() })
-    override fun externals(): JBIterable<out ScriptModel.ExternalIt<E>> = delegate.externals()
-    override fun getVirtualFile() = delegate.virtualFile
-    override fun getTextRange() = delegate.textRange
-    override fun getLanguage() = delegate.language
-    override fun <EE : Any?> rawTransform(
-        transform: com.intellij.util.Function<in com.intellij.psi.SyntaxTraverser<E>, out com.intellij.psi.SyntaxTraverser<EE>>,
-    ): ScriptModel<EE> = PipeScriptModel(delegate.rawTransform(transform), editor, allowFirstFromStage)
-
-    private inner class PipeStatement(private val plan: Plan) : ScriptModel.StatementIt<E> by plan.source {
-        override fun query() = plan.translation.sql
-        override fun text() = plan.sourceText
-        override fun parameters(): JBIterable<out ScriptModel.ParamIt<E>> = JBIterable.from(plan.parameters)
-        override fun consoleQuery(storage: ScriptModel.PStorage, condition: Condition<in ScriptModel.ParamIt<E>>): String {
-            if (!plan.finalized) {
-                plan.translation = requirePipeTranslation(ScriptModelUtilCore.statementText(this, storage, condition), allowFirstFromStage)
-            }
-            return plan.translation.sql
-        }
-    }
-}
-
-private fun staleStatement() = PipeTranslationFailure(DuckdbPipesEngine.Transpile.Err(null, null,
-    "The statement changed during preparation. Run it again; cached SQL was not executed."))
-
-private fun <E> snapshotParameters(parameters: Iterable<ScriptModel.ParamIt<E>>): List<ScriptModel.ParamIt<E>> =
-    parameters.map { parameter ->
-        val name = parameter.name()
-        val description = parameter.description().toList()
-        val text = parameter.text()
-        val range = parameter.range()
-        val type = parameter.type()
-        val api = parameter.api()
-        val offset = parameter.rangeOffset()
-        val value = parameter.`object`()
-        object : ScriptModel.ParamIt<E> {
-            override fun name() = name
-            override fun description(): Iterable<String> = description
-            override fun text() = text
-            override fun range() = range
-            override fun type() = type
-            override fun api() = api
-            override fun rangeOffset() = offset
-            override fun `object`() = value
-        }
-    }
-
-internal fun namedParameterRanges(text: String): List<IntRange> {
-    val tokens = Dialects.DUCKDB.tokenize(text)
-    return tokens.mapIndexedNotNull { index, colon ->
-        if (colon.tokenType != TokenType.COLON) return@mapIndexedNotNull null
-        val name = tokens.getOrNull(index + 1) ?: return@mapIndexedNotNull null
-        if (name.start != colon.end + 1 || !name.text.matches(Regex("[A-Za-z_][A-Za-z_0-9]*"))) return@mapIndexedNotNull null
-        // DuckDB's prefix aliases and struct/map keys also use colons, never parameters.
-        val previous = tokens.getOrNull(index - 1)
-        if (previous?.tokenType in setOf(TokenType.VAR, TokenType.IDENTIFIER, TokenType.STRING)) return@mapIndexedNotNull null
-        colon.start..name.end
-    }
-}
-
-private fun <E> pipeParameters(statement: ScriptModel.StatementIt<E>, text: String): List<ScriptModel.ParamIt<E>> =
-    namedParameterRanges(text).map { range ->
-        val name = text.substring(range.first + 1, range.last + 1)
-        object : ScriptModel.ParamIt<E> {
-            override fun name() = name
-            override fun description(): Iterable<String> = emptyList()
-            override fun text() = text.substring(range.first, range.last + 1)
-            override fun range() = TextRange(statement.range().startOffset + range.first, statement.range().startOffset + range.last + 1)
-            override fun type() = statement.type()
-            override fun api() = statement.api()
-            override fun rangeOffset() = statement.rangeOffset()
-            override fun `object`() = statement.`object`()
-        }
-    }

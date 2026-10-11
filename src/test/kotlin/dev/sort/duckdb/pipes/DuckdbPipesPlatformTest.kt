@@ -6,11 +6,13 @@ import com.intellij.openapi.progress.ProcessCanceledException
 import com.intellij.psi.PsiFileFactory
 import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.sql.psi.SqlStatement
-import com.intellij.sql.dialects.SqlDialectMappings
 import com.intellij.testFramework.PlatformTestUtil
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import dev.sort.duckdb.sql.DuckdbSqlDialect
 import dev.sort.duckdb.validate.DuckdbErrorAnnotator
+import dev.brikk.house.sql.intellij.CooperativeExecuteAction
+import dev.brikk.house.sql.intellij.ExecuteInterceptor
+import dev.brikk.house.sql.intellij.ExecutionClaim
 
 class DuckdbPipesPlatformTest : BasePlatformTestCase() {
     override fun tearDown() {
@@ -53,13 +55,13 @@ class DuckdbPipesPlatformTest : BasePlatformTestCase() {
         val previous = object : AnAction() { override fun actionPerformed(e: AnActionEvent) { calls++ } }
         val event = AnActionEvent.createFromDataContext("PIPE test", Presentation(), DataContext.EMPTY_CONTEXT)
         for (variant in 1..4) {
-            val action = if (variant == 4) DuckdbPipesRunSelectionAction(previous) { _, _ -> false }
-                else DuckdbPipesRunQueryAction(variant, previous) { _, _ -> false }
+            val action = CooperativeExecuteAction(if (variant == 4) -1 else variant, previous,
+                ExecuteInterceptor { _, _ -> ExecutionClaim.DECLINED }, variant == 4)
             action.actionPerformed(event)
             assertSame(previous, action.delegate)
         }
         assertEquals(4, calls)
-        val claimed = DuckdbPipesRunQueryAction(1, previous) { _, _ -> throw ProcessCanceledException() }
+        val claimed = CooperativeExecuteAction(1, previous, ExecuteInterceptor { _, _ -> throw ProcessCanceledException() })
         try { claimed.actionPerformed(event); fail("cancellation must propagate") } catch (_: ProcessCanceledException) { }
         assertEquals(4, calls)
         claimed.detach()
@@ -74,14 +76,36 @@ class DuckdbPipesPlatformTest : BasePlatformTestCase() {
             configuration.registerActions(manager)
             configuration.registerActions(manager)
             DuckdbPipesActionConfiguration.EXECUTE_IDS.forEachIndexed { index, id ->
-                assertSame(before[index], (manager.getAction(id) as DuckdbPipesRunQueryAction).delegate)
+                assertSame(before[index], (manager.getAction(id) as CooperativeExecuteAction).delegate)
             }
         } finally { configuration.unregisterActions(manager) }
         assertEquals(before, DuckdbPipesActionConfiguration.EXECUTE_IDS.map { manager.getAction(it) })
     }
+
+    fun testVariantsReadLiveSettingsAndSelectionUsesFixedDefaults() {
+        val settings = com.intellij.database.settings.DatabaseSettings.getSettings()
+        val saved = settings.execOptions.toList()
+        val previous = object : AnAction() { override fun actionPerformed(e: AnActionEvent) {} }
+        val event = AnActionEvent.createFromDataContext("Execute options", Presentation(), DataContext.EMPTY_CONTEXT)
+        var observed: com.intellij.database.settings.DatabaseSettings.ExecOption? = null
+        val interceptor = ExecuteInterceptor { _, option -> observed = option; ExecutionClaim.HANDLED }
+        try {
+            val actions = (1..3).map { CooperativeExecuteAction(it, previous, interceptor) }
+            val selection = CooperativeExecuteAction(-1, previous, interceptor, true)
+            for (i in 0..2) {
+                val option = com.intellij.database.settings.DatabaseSettings.ExecOption().apply { newTab = true }
+                settings.execOptions[i] = option
+                actions[i].actionPerformed(event)
+                assertSame(option, observed)
+            }
+            selection.actionPerformed(event)
+            assertFalse(observed!!.newTab)
+            assertEquals(1, observed!!.execSelection)
+        } finally { saved.forEachIndexed { index, option -> settings.execOptions[index] = option } }
+    }
     fun testStageKeywordsAndInputAliasesCompleteWithoutACatalog() {
         project.service<DuckdbPipesSettings>().enabled = true
-        SqlDialectMappings.getInstance(project).setMapping(null, DuckdbSqlDialect.INSTANCE)
+        dev.sort.duckdb.setSqlDialectMapping(project, null, DuckdbSqlDialect.INSTANCE)
         myFixture.configureByText("keywords.sql", "FROM range(3) |> <caret>")
         myFixture.completeBasic()
         assertTrue("Lookups: ${myFixture.lookupElementStrings}",
@@ -98,8 +122,8 @@ class DuckdbPipesPlatformTest : BasePlatformTestCase() {
             var calls = 0
             var visits = 0
             val terminal = object : AnAction() { override fun actionPerformed(e: AnActionEvent) { calls++ } }
-            fun duckdb(previous: AnAction) = if (variant == 4) DuckdbPipesRunSelectionAction(previous) { _, _ -> visits++; false }
-                else DuckdbPipesRunQueryAction(variant, previous) { _, _ -> visits++; false }
+            fun duckdb(previous: AnAction) = CooperativeExecuteAction(if (variant == 4) -1 else variant, previous,
+                ExecuteInterceptor { _, _ -> visits++; ExecutionClaim.DECLINED }, variant == 4)
             fun peer(previous: AnAction) = object : AnAction(), ActionWithDelegate<AnAction> {
                 override fun getDelegate() = previous
                 override fun actionPerformed(e: AnActionEvent) = ActionWrapperUtil.actionPerformed(e, this, previous)

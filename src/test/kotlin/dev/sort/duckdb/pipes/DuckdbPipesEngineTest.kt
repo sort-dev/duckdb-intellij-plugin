@@ -85,7 +85,28 @@ class DuckdbPipesEngineTest {
     }
     @Test fun parametersExcludeDuckdbColons() {
         val text = "FROM t |> WHERE id = :id |> SELECT :value AS v, {'k':x}, label:amount, x::INT"
-        assertEquals(listOf(":id", ":value"), namedParameterRanges(text).map { text.substring(it) })
+        assertEquals(listOf(":id", ":value"), DuckdbExecutionAdapter().parameters(text).map { text.substring(it.start, it.end) })
+    }
+
+    @Test fun coreParameterDiscoveryKeepsExactRepeatedOccurrencesAndIgnoresLiterals() {
+        val text = "  FROM t |> WHERE id = :id OR other = :id |> SELECT ':literal', \$\$ :dollar \$\$, :value AS v, {key: x}, alias: amount, x::INT -- :comment\n;"
+        val parameters = DuckdbExecutionAdapter().parameters(text)
+        assertEquals(listOf("id", "id", "value"), parameters.map { it.name })
+        assertEquals(listOf(":id", ":id", ":value"), parameters.map { text.substring(it.start, it.end) })
+    }
+
+    @Test fun incompleteDelimitersNeverExposeAnExecutableSuffix() {
+        val text = "FROM t |> SELECT (id; SELECT 2;"
+        val chunks = DuckdbPipes.chunks(text)
+        assertEquals(1, chunks.size)
+        assertNotNull(chunks.single().boundaryError)
+        assertTrue(DuckdbPipesEngine.transpile(text) is DuckdbPipesEngine.Transpile.Err)
+    }
+
+    @Test fun runToStageRefusesCaretInsideNestedPipeline() {
+        val text = "FROM (FROM t |> WHERE id > 0 |> LIMIT 2) AS x |> SELECT id"
+        assertNull(DuckdbPipesEngine.stagePrefixAt(text, text.indexOf("WHERE")))
+        assertNotNull(DuckdbPipesEngine.stagePrefixAt(text, text.lastIndexOf("SELECT")))
     }
     @Test fun optionalRecoveryDoesNotSwallowCancellationOrErrors() {
         for (failure in listOf(com.intellij.openapi.progress.ProcessCanceledException(),

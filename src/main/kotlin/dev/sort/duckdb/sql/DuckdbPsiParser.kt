@@ -161,7 +161,11 @@ class DuckdbPsiParser : PgParser(false) {
     }
 
     private fun consumeToSemicolon(builder: PsiBuilder) {
-        while (!builder.eof() && builder.tokenText != ";") builder.advanceLexer()
+        while (!builder.eof() && builder.tokenText != ";") {
+            // Preserve platform-configured parameters even in an otherwise lenient PIPE.
+            if (!com.intellij.sql.dialects.base.SqlGeneratedParserUtil.parseUserParameter(builder, false, true))
+                builder.advanceLexer()
+        }
     }
 
     /** The uppercased Nth letter-leading token from the current position, or null. Non-consuming. */

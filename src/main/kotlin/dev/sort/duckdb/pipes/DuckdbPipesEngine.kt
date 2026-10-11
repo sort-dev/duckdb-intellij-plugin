@@ -7,6 +7,7 @@ import dev.brikk.house.sql.generator.UnsupportedError
 import dev.brikk.house.sql.parser.ParseError
 import dev.brikk.house.sql.parser.PipeStageSplitter
 import dev.brikk.house.sql.parser.TokenError
+import dev.brikk.house.sql.parser.TokenType
 import dev.brikk.house.sql.shape.ShapeError
 import dev.brikk.house.sql.shape.SqlFragment
 import dev.brikk.house.sql.shape.TranspileResult
@@ -54,7 +55,20 @@ object DuckdbPipesEngine {
 
     data class StagePrefix(val text: String, val stage: Int, val total: Int)
     fun stagePrefixAt(text: String, offset: Int): StagePrefix? = runPipeCatching {
-        val stages = PipeStageSplitter.split(text, "duckdb").stages
+        val split = PipeStageSplitter.split(text, "duckdb")
+        // This command owns top-level stages, not a prefix inside an inner pipeline.
+        data class Frame(val start: Int, var pipe: Boolean = false)
+        val stack = mutableListOf<Frame>()
+        for (token in split.tokens) when (token.tokenType) {
+            TokenType.L_PAREN, TokenType.L_BRACKET, TokenType.L_BRACE -> stack.add(Frame(token.start))
+            TokenType.PIPE_GT -> stack.lastOrNull()?.pipe = true
+            TokenType.R_PAREN, TokenType.R_BRACKET, TokenType.R_BRACE -> if (stack.isNotEmpty()) {
+                val frame = stack.removeAt(stack.lastIndex)
+                if (frame.pipe && offset in frame.start..token.end) return null
+            }
+            else -> {}
+        }
+        val stages = split.stages
         val index = stages.indexOfLast { offset >= it.start }
         if (index < 0 || stages.size < 2) return null
         StagePrefix(text.substring(0, stages[index].endInclusive + 1), index + 1, stages.size)

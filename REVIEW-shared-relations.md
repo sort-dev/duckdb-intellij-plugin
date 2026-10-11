@@ -152,3 +152,21 @@ testing. This version bump and Central dependency transition are committed
 without waiting for the remaining verification lane; no push or publication
 is performed. The snapshot validation results above are historical, not a
 claim that the final 0.3.2 artifact has completed verification.
+
+### Completed 0.3.2 validation
+
+Validation ran in `/tmp/opencode/duckdb-032-validation`, with a separate build
+directory, sandboxes and reports. The user's installable ZIP was not rebuilt,
+overwritten or touched. A validation copy passed the exact dependency/notices/
+Java 21 checks, and the isolated rebuild is byte-for-byte identical to that ZIP.
+
+- 167 default tests: 158 passed, nine live/optional skips.
+- Plugin Verifier 1.410: Compatible on all five pinned Doris targets, including
+  both 263 EAPs. API-use notices remain unchanged.
+- Both genuine generated-shape tests passed with the reviewed 262 compiler.
+- Product-classloader isolation passed alongside Doris and SQL Transpiler.
+- DataGrip 2026.2.5 native suites passed with Kotlin absent.
+
+Protected user ZIP SHA-256:
+`66e46258024ae84715517ae9d45641a477758e754540a3d92daa07a6baa68b52`.
+Its checksum and modification time were verified unchanged after validation.

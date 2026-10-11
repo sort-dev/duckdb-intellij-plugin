@@ -91,7 +91,7 @@ open class BrikkRelationEditingTest : BrikkDuckdbInjectionTest() {
         val host = configure("$traits\n@BrikkSql fun query(customers: Rel<CustomerRow>, events: Rel<CleanEvent>) = " +
             "Sql.duckdb(\"SELECT c.missing, e.extra FROM \$customers() c JOIN \$events() e ON c.tenant=e.tenant\")")
         injected(host)
-        myFixture.enableInspections(com.intellij.sql.inspections.SqlResolveInspection())
+        myFixture.enableInspections(dev.sort.duckdb.registeredSqlInspection("SqlResolveInspection"))
         val messages = myFixture.doHighlighting().mapNotNull { it.description }
         assertTrue(messages.toString(), messages.any { it.contains("missing") && it.contains("full relation contract") })
         assertTrue(messages.toString(), messages.any { it.contains("extra") && it.contains("not guaranteed") })
@@ -100,7 +100,7 @@ open class BrikkRelationEditingTest : BrikkDuckdbInjectionTest() {
         val host = configure("$traits\n@BrikkSql fun query(left: Rel<CleanEvent>, right: Rel<CleanEvent>) = " +
             "Sql.duckdb(\"SELECT a.id FROM \$left() a JOIN \$right() b ON a.id=b.id\")")
         injected(host)
-        myFixture.enableInspections(com.intellij.sql.inspections.SqlConstantExpressionInspection())
+        myFixture.enableInspections(dev.sort.duckdb.registeredSqlInspection("SqlConstantExpressionInspection"))
         val messages = myFixture.doHighlighting().mapNotNull { it.description }
         assertFalse(messages.toString(), messages.any { it.contains("always", true) && it.contains("true", true) })
     }
