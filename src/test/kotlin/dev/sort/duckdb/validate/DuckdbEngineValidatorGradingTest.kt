@@ -3,6 +3,7 @@ package dev.sort.duckdb.validate
 import com.google.gson.JsonParser
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.duckdb.DuckDBDriver
 import java.io.File
 
 /**
@@ -35,8 +36,20 @@ class DuckdbEngineValidatorGradingTest {
         }
 
         val parserVerdicts = DuckdbEngineValidator.verdicts(parserNegatives)
-        // Contract: upstream parser errors must be Flagged or HeadRejected — silently Clean is a
-        // MECHANICAL fault (statement reuse, EXPLAIN-prefix artifacts) — EXCEPT two honest classes:
+        // query() can raise Parser Error while binding its string argument. Parse-only validation
+        // accepts the outer SELECT without inspecting or executing that string.
+        val parseAccepted = DuckdbEngineValidator.connect(DuckDBDriver())!!.use { connection ->
+            parserNegatives.filter { sql ->
+                connection.createStatement().use { statement ->
+                    statement.executeQuery("SELECT json_serialize_sql('${sql.replace("'", "''")}')").use { result ->
+                        assertTrue(result.next())
+                        !JsonParser.parseString(result.getString(1)).asJsonObject.get("error").asBoolean
+                    }
+                }
+            }.toSet()
+        }
+        // Contract: upstream parser errors must be Flagged or HeadRejected unless parse-only accepts
+        // the statement or its error requires execution-time validation:
         //  (a) SET/PRAGMA-headed statements: upstream's "Parser Error: unrecognized option/value"
         //      is execution-time VALUE validation; the syntax parses, and this validator never
         //      executes — invisible by design.
@@ -45,6 +58,7 @@ class DuckdbEngineValidatorGradingTest {
         val exemptOrigins = setOf("setops/test_pg_union.test:456")
         val silentlyClean = parserNegatives.indices.filter { i ->
             parserVerdicts[i] is DuckdbEngineValidator.Verdict.Clean &&
+                parserNegatives[i] !in parseAccepted &&
                 parserNegatives[i].trimStart().uppercase().let { u ->
                     !u.startsWith("SET") && !u.startsWith("PRAGMA")
                 } &&

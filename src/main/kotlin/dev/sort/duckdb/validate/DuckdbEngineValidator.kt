@@ -1,32 +1,27 @@
 package dev.sort.duckdb.validate
 
+import com.intellij.openapi.progress.ProgressManager
+import dev.brikk.house.sql.parser.TokenType
+import dev.brikk.house.sql.parser.Tokenizer
+import dev.brikk.house.sql.parser.TokenizerConfigs
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import java.sql.Connection
+import java.sql.Driver
 import java.sql.SQLException
+import java.util.Properties
 
-/**
- * Stage 3 — the engine as the syntax authority (PLAN.md).
- *
- * Validates DuckDB SQL by asking a real DuckDB: each statement is wrapped in `EXPLAIN` and run
- * against a throwaway in-memory instance — EXPLAIN parses and binds but never executes, so there
- * are no side effects (no files written, nothing attached, nothing mutated). Only errors the
- * engine labels **`Parser Error`** are surfaced: `Binder Error` / `Catalog Error` need schema
- * knowledge the validator deliberately doesn't have (the editor's das layer owns resolution), and
- * statement forms EXPLAIN itself rejects simply go unvalidated. This is the fe-sql-parser role
- * from doris-intellij — except the "grammar" is the user's actual engine version, forever exact.
- *
- * Engine acquisition (in order):
- *  1. `-Dduckdb.validator.jar=<path>` — explicit jar (isolated classloader).
- *  2. `org.duckdb.DuckDBDriver` on the current classpath (tests; environments that ship it).
- *  3. (Stage-3 follow-up) the file's data-source driver classpath.
- * No engine → [available] is false and callers stay silent; the plugin never bundles DuckDB.
- */
+/** Parse-only validation first, then restricted EXPLAIN binding of structurally safe statements. */
 object DuckdbEngineValidator {
 
     sealed interface Verdict {
-        /** Engine parsed it fine (or only binder/catalog complaints — not ours to judge). */
-        object Clean : Verdict
-        /** EXPLAIN can't see this statement type; the engine's real opinion is unknowable here. */
-        object HeadRejected : Verdict
+        data object Clean : Verdict
+        data object HeadRejected : Verdict
+        data object Unavailable : Verdict
+        data object Unverified : Verdict
         data class Flagged(val error: EngineError) : Verdict
     }
 
@@ -72,65 +67,80 @@ object DuckdbEngineValidator {
             )
         }.orElse(null)
 
-    /** A fresh in-memory engine per pass: statements can't pollute each other across validations. */
-    private fun connect(d: java.sql.Driver?): Connection? =
-        runCatching { d?.connect("jdbc:duckdb:", java.util.Properties()) }.getOrNull()
+    internal fun connect(driver: Driver): Connection? = driver.connect("jdbc:duckdb:", Properties().apply {
+        setProperty("enable_external_access", "false")
+        setProperty("autoinstall_known_extensions", "false")
+        setProperty("autoload_known_extensions", "false")
+        setProperty("threads", "1")
+        setProperty("memory_limit", "256MB")
+    })
 
-    /**
-     * Validate [statements] (raw text, in order). Returns engine-confirmed PARSER errors per
-     * statement index. One connection per call; DDL executed by EXPLAIN-binding stays inside the
-     * throwaway instance.
-     */
+    /** Returns only engine-confirmed parser errors, aligned with the input statements. */
     fun validate(statements: List<String>, jarPath: String? = null): Map<Int, EngineError> =
         verdicts(statements, jarPath).withIndex()
             .mapNotNull { (i, v) -> (v as? Verdict.Flagged)?.let { i to it.error } }
             .toMap()
 
-    /** Full three-way verdicts, aligned with [statements] by index. */
-    fun verdicts(statements: List<String>, jarPath: String? = null): List<Verdict> {
-        val engine = jarPath?.let { driverForJar(it) } ?: driver
-        val conn = connect(engine) ?: return statements.map { Verdict.Clean }
-        val out = ArrayList<Verdict>(statements.size)
-        conn.use { c ->
-            for (raw in statements) {
-                val sql = raw.trim().removeSuffix(";")
-                if (sql.isBlank() || sql.length > MAX_STATEMENT) {
-                    out.add(Verdict.Clean)
-                    continue
+    fun verdicts(statements: List<String>, jarPath: String? = null): List<Verdict> =
+        verdictsWithDriver(statements, if (jarPath == null) driver else driverForJar(jarPath))
+
+    internal fun verdictsWithDriver(statements: List<String>, engine: Driver?): List<Verdict> {
+        ProgressManager.checkCanceled()
+        if (engine == null) return statements.map { Verdict.Unavailable }
+        val connection = try {
+            connect(engine)
+        } catch (_: SQLException) {
+            null
+        } ?: return statements.map { Verdict.Unavailable }
+        return connection.use { statements.map { sql -> verdict(sql, it) } }
+    }
+
+    internal fun verdict(sql: String, connection: Connection): Verdict {
+        ProgressManager.checkCanceled()
+        if (sql.isBlank()) return Verdict.Clean
+        if (sql.length > MAX_STATEMENT) return Verdict.Unavailable
+        val parsed = try {
+            val literal = "'" + sql.replace("'", "''") + "'"
+            connection.createStatement().use { statement ->
+                statement.executeQuery("SELECT json_serialize_sql($literal)").use { result ->
+                    if (!result.next()) return Verdict.Unavailable
+                    Json.parseToJsonElement(result.getString(1)).jsonObject
                 }
-                val words = sql.trimStart().split(Regex("\\s+"), limit = 5)
-                val head = words.getOrNull(0)?.uppercase()
-                val second = words.getOrNull(1)?.uppercase()
-                if (head == "EXPLAIN" && second == "ANALYZE") {
-                    // EXPLAIN ANALYZE EXECUTES the statement — never run it from a validator.
-                    out.add(Verdict.HeadRejected)
-                    continue
-                }
-                val wrapped = head != "EXPLAIN"
-                val toRun = if (wrapped) "EXPLAIN $sql" else sql
-                out.add(
-                    try {
-                        // fresh Statement per SQL: duckdb's JDBC invalidates a Statement after an
-                        // error, and later failures surface as non-parser "closed" messages.
-                        c.createStatement().use { st -> st.execute(toRun) }
-                        Verdict.Clean
-                    } catch (e: SQLException) {
-                        classify(
-                            e,
-                            if (wrapped) EXPLAIN_PREFIX_LEN else 0,
-                            // payload leading words (statement-form region): EXPLAIN's partial
-                            // grammars can reject at any of them (CREATE [PERSISTENT] SECRET ...)
-                            (if (wrapped) words else words.drop(1)).take(3).map { it.uppercase() },
-                        )
-                    },
-                )
             }
+        } catch (_: SQLException) {
+            return Verdict.Unavailable
         }
-        return out
+        ProgressManager.checkCanceled()
+        if (parsed["error"]?.jsonPrimitive?.booleanOrNull == false) return Verdict.Clean
+        if (parsed["error_type"]?.jsonPrimitive?.contentOrNull == "parser") {
+            val message = parsed["error_message"]?.jsonPrimitive?.contentOrNull ?: return Verdict.Unavailable
+            val position = parsed["position"]?.jsonPrimitive?.contentOrNull?.toIntOrNull() ?: 0
+            val bytes = sql.toByteArray(Charsets.UTF_8)
+            val line = bytes.take(position.coerceIn(0, bytes.size)).count { it == '\n'.code.toByte() } + 1
+            return Verdict.Flagged(EngineError(line, NEAR_TOKEN.find(message)?.groupValues?.get(1), "Parser Error: $message"))
+        }
+
+        val tokenized = Tokenizer(TokenizerConfigs.forName("duckdb")).tokenizeForEditor(sql)
+        if (tokenized.error != null) return Verdict.Unavailable
+        val tokens = tokenized.tokens.dropLastWhile { it.tokenType == TokenType.SEMICOLON }
+        if (tokens.any { it.tokenType == TokenType.SEMICOLON }) return Verdict.HeadRejected
+        val payload = if (tokens.firstOrNull()?.text.equals("EXPLAIN", true)) tokens.drop(1) else tokens
+        val head = payload.firstOrNull() ?: return Verdict.HeadRejected
+        // Only plain EXPLAIN is accepted. ANALYZE and all option-list spellings are refused.
+        if (head.text.uppercase() !in BINDABLE_HEADS)
+            return Verdict.HeadRejected
+        val text = sql.substring(head.start, payload.last().end + 1)
+        return try {
+            connection.createStatement().use { it.execute("EXPLAIN $text") }
+            ProgressManager.checkCanceled()
+            Verdict.Clean
+        } catch (e: SQLException) {
+            classify(e, EXPLAIN_PREFIX_LEN, payload.take(3).map { it.text.uppercase() })
+        }
     }
 
     /**
-     * Classify an engine exception. Binder/catalog → [Verdict.Clean] (not ours to judge). A
+     * Classify an engine exception. Binder/catalog errors are unverified. A
      * parser error whose caret points at the PAYLOAD'S FIRST CHARACTER (right after the
      * "EXPLAIN " prefix) is EXPLAIN's own statement-type rejection — some VALID heads (COMMENT,
      * PREPARE, ...) aren't explainable — so the engine's real opinion is unknowable:
@@ -138,9 +148,9 @@ object DuckdbEngineValidator {
      * errors, even when the near-token happens to equal the first word (e.g. a nested SELECT).
      */
     private fun classify(e: SQLException, prefixLen: Int, payloadLeadWords: List<String>): Verdict {
-        val msg = e.message ?: return Verdict.Clean
+        val msg = e.message ?: return Verdict.Unverified
         val idx = msg.indexOf(PARSER_MARKER)
-        if (idx < 0) return Verdict.Clean
+        if (idx < 0) return Verdict.Unverified
         val fromMarker = msg.substring(idx)
         val firstLine = fromMarker.lineSequence().first().trim()
         val near = NEAR_TOKEN.find(fromMarker)?.groupValues?.get(1)
@@ -193,6 +203,7 @@ object DuckdbEngineValidator {
     private const val PARSER_MARKER = "Parser Error"
     private const val EXPLAIN_PREFIX_LEN = "EXPLAIN ".length
     private val EXPLAINABLE_HEADS = setOf("SELECT", "WITH", "VALUES", "FROM", "INSERT", "UPDATE", "DELETE")
+    private val BINDABLE_HEADS = EXPLAINABLE_HEADS + setOf("CREATE", "ALTER", "DROP", "COPY")
     private val KNOWN_STATEMENT_HEADS = EXPLAINABLE_HEADS + setOf(
         "COMMENT", "PREPARE", "EXECUTE", "DEALLOCATE", "EXPORT", "IMPORT", "ANALYZE", "VACUUM",
         "CHECKPOINT", "CALL", "INSTALL", "LOAD", "FORCE", "ATTACH", "DETACH", "USE", "BEGIN",
