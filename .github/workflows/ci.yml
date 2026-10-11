@@ -26,6 +26,12 @@ jobs:
       - name: Test
         run: ./gradlew test
 
+      - name: Test PIPE contracts on newer runtimes
+        run: ./gradlew test262 test263 -Ptest.kotlin=absent
+
+      - name: Test Brikk on newer Kotlin runtimes
+        run: ./gradlew test262 --tests 'dev.sort.duckdb.brikk.*' test263 --tests 'dev.sort.duckdb.brikk.*' -Ptest.kotlin=present
+
       - name: Build plugin
         run: ./gradlew buildPlugin
 

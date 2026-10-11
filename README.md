@@ -155,7 +155,7 @@ driver. The built-in PIPE translator is independent of that driver.
 ./gradlew buildPlugin   # → build/distributions/duckdb-intellij-plugin.zip
 ./gradlew test          # census scoreboard + validator grading + boundary contracts
 ./gradlew test262 test263 # same 261-compiled plugin on newer SQL and Kotlin APIs
-./gradlew verifyEmbeddedPipes verifyPlugin # ZIP contents, bytecode, IDE API compatibility
+./gradlew verifyDistribution verifyPlugin # ZIP contents, bytecode, IDE API compatibility
 # optional: live wire suite against a quack server
 ./gradlew test -Dquack.live.url='jdbc:quack://localhost:9494?token=<token>'
 ```
@@ -178,7 +178,7 @@ remain released versions. Core 0.19.1 owns the comment-boundary fix.
 The earlier 0.3.4 local testing ZIP still contains the previously tested snapshot
 until explicitly replaced. Updating source dependencies does not alter an installed ZIP.
 
-**Engine bump checklist** (when moving to a new DuckDB): bump `duckdb_jdbc` in build.gradle.kts
+**Engine bump checklist** (when moving to a new DuckDB): bump `duckdb-jdbc` in settings.gradle.kts
 and the artifact pin in `config/duckdb-brikk-artifacts.xml`, then re-run all three harvests and
 commit their output: `./gradlew harvestCensus harvestFunctionCatalog harvestExtensionCatalog`
 (the last needs network for extension INSTALLs).
