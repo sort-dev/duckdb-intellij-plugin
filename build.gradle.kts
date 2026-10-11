@@ -124,7 +124,7 @@ tasks {
         systemProperty("plugin.verifier.home.dir", layout.buildDirectory.dir("plugin-verifier-cache").get().asFile.absolutePath)
     }
     processResources {
-        from(files("LICENSE", "THIRD_PARTY_NOTICES.md")) { into("META-INF") }
+        from(files("LICENSE", "NOTICE", "THIRD_PARTY_NOTICES.md")) { into("META-INF") }
     }
     processTestResources {
         // prepareTest places the fixture descriptor here; its optional descriptor must be
@@ -189,8 +189,10 @@ val verifyEmbeddedPipes by tasks.registering {
     description = "Checks bundled PIPE libraries, Java 21 bytecode, notices, and independence."
     val archive = tasks.named<Zip>("buildPlugin").flatMap { it.archiveFile }
     val ownJar = tasks.named<org.gradle.jvm.tasks.Jar>("composedJar").flatMap { it.archiveFileName }
+    val notice = layout.projectDirectory.file("NOTICE")
     dependsOn("buildPlugin")
     inputs.file(archive)
+    inputs.file(notice)
     doLast {
         ZipFile(archive.get().asFile).use { zip ->
             val jars = zip.entries().asSequence().filter { it.name.endsWith(".jar") }.toList()
@@ -211,14 +213,18 @@ val verifyEmbeddedPipes by tasks.registering {
                 }
             }
             val resources = mutableMapOf<String, String>()
+            val requiredResources = setOf("META-INF/plugin.xml", "META-INF/THIRD_PARTY_NOTICES.md", "META-INF/LICENSE", "META-INF/NOTICE")
             JarInputStream(zip.getInputStream(jars.single { it.name.substringAfterLast('/') == ownJar.get() })).use { jar ->
                 while (true) {
                     val entry = jar.nextJarEntry ?: break
-                    if (entry.name in setOf("META-INF/plugin.xml", "META-INF/THIRD_PARTY_NOTICES.md", "META-INF/LICENSE"))
+                    if (entry.name in requiredResources)
                         resources[entry.name] = jar.readBytes().toString(Charsets.UTF_8)
                 }
             }
-            check(resources.size == 3) { "Missing descriptor/notices" }
+            check(resources.keys.containsAll(requiredResources)) {
+                "Missing descriptor/notices"
+            }
+            check(resources.getValue("META-INF/NOTICE") == notice.asFile.readText()) { "Incorrect packaged NOTICE" }
             check("brikk-sql-jvm:$engineVersion" in resources.getValue("META-INF/THIRD_PARTY_NOTICES.md"))
             check("brikk-engine-kotlin-intellij-support:$supportVersion" in resources.getValue("META-INF/THIRD_PARTY_NOTICES.md"))
             check("brikk-sql-intellij-support:$sqlSupportVersion" in resources.getValue("META-INF/THIRD_PARTY_NOTICES.md"))
