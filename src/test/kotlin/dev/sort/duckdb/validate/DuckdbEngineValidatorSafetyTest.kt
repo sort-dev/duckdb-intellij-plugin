@@ -10,11 +10,27 @@ import org.junit.Test
 import java.net.InetSocketAddress
 import java.nio.file.Files
 import java.sql.Connection
+import java.sql.Driver
 import java.sql.Statement
+import java.util.Properties
 import java.util.concurrent.CancellationException
 import java.util.concurrent.atomic.AtomicInteger
 
 class DuckdbEngineValidatorSafetyTest {
+    @Test
+    fun `native linkage failures make the engine unavailable on every pass`() {
+        for (failure in listOf(ExceptionInInitializerError(UnsatisfiedLinkError("unsupported platform")),
+            NoClassDefFoundError("org.duckdb.DuckDBNative"))) {
+            val driver = object : Driver by DuckDBDriver() {
+                override fun connect(url: String?, info: Properties?): Connection? = throw failure
+            }
+            repeat(2) {
+                assertEquals(listOf(DuckdbEngineValidator.Verdict.Unavailable),
+                    DuckdbEngineValidator.verdictsWithDriver(listOf("SELECT 1"), driver))
+            }
+        }
+    }
+
     @Test
     fun `cancellation during parser query propagates`() {
         DuckdbEngineValidator.connect(DuckDBDriver())!!.use { connection ->

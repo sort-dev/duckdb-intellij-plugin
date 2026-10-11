@@ -64,6 +64,8 @@ object DuckdbEngineValidator {
             connect(engine)
         } catch (_: SQLException) {
             null
+        } catch (_: LinkageError) {
+            null
         } ?: return statements.map { Verdict.Unavailable }
         return connection.use { statements.map { sql -> verdict(sql, it) } }
     }
