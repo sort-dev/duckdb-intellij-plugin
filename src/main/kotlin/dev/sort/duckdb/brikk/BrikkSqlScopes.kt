@@ -123,8 +123,8 @@ object BrikkSqlScopes {
             return if (node.text("kind").uppercase() in setOf("SEMI", "ANTI")) scope else joined
         }
         private fun expressionColumn(node: Expression, scope: Scope): ColumnContract {
-            val expression = if (node is Alias) node.thisArg as? Expression ?: node else node
-            val name = node.aliasOrName
+            val expression = node.projectionValue()
+            val name = node.aliasOrName.ifBlank { expression.aliasOrName }
             if (expression is Column) {
                 val candidates = scope.candidates(expression.name, expression.table)
                 if (candidates.size == 1) return candidates.single().second.copy(name = name)
@@ -133,7 +133,7 @@ object BrikkSqlScopes {
             return ColumnContract(name, null, ColumnNullability.UNKNOWN, SqlFamily.UNKNOWN)
         }
         private fun additionAvailable(node: Expression, scope: Scope): Boolean {
-            val expression = if (node is Alias) node.thisArg as? Expression ?: node else node
+            val expression = node.projectionValue()
             return expression !is Column || scope.candidates(expression.name, expression.table)
                 .singleOrNull()?.first?.available == true
         }
@@ -215,4 +215,10 @@ object BrikkSqlScopes {
             } finally { active.remove(node) }
         }
     }
+}
+
+private tailrec fun Expression.projectionValue(): Expression {
+    if (this !is Alias && this !is Paren) return this
+    val inner = thisArg as? Expression ?: return this
+    return inner.projectionValue()
 }

@@ -80,19 +80,22 @@ class BrikkSqlScopesTest {
     }
 
     @Test fun extendComputedAdditionsStayAvailableWithoutTheInputButPassthroughDoesNot() {
-        val sql = "FROM events() |> EXTEND id AS copied, id + 1 AS computed, 1 AS constant |> WHERE copied = computed + constant"
-        val unknown = reference(sql, "copied =", mapOf("events" to ShapeResult.Unavailable("pending")))
-        assertFalse(unknown.scope.candidates("copied").single().first.available)
-        assertTrue(unknown.scope.candidates("computed").single().first.available)
-        assertTrue(unknown.scope.candidates("constant").single().first.available)
-        assertNull(unknown.scope.candidates("computed").single().second.kotlinClassId)
-        assertFalse(unknown.scope.complete)
+        for (source in listOf("id", "(id)", "((id))")) {
+            val sql = "FROM events() |> EXTEND $source AS copied, ($source + 1) AS computed, 1 AS constant |> WHERE copied = computed + constant"
+            val unknown = reference(sql, "copied =", mapOf("events" to ShapeResult.Unavailable("pending")))
+            assertFalse(unknown.scope.candidates("copied").single().first.available)
+            assertNull(unknown.scope.candidates("copied").single().second.kotlinClassId)
+            assertTrue(unknown.scope.candidates("computed").single().first.available)
+            assertTrue(unknown.scope.candidates("constant").single().first.available)
+            assertNull(unknown.scope.candidates("computed").single().second.kotlinClassId)
+            assertFalse(unknown.scope.complete)
 
-        val available = reference(sql, "copied =")
-        val copied = available.scope.candidates("copied").single()
-        assertTrue(copied.first.available)
-        assertEquals(column("copied"), copied.second)
-        assertEquals(column("id"), available.scope.candidates("id").single().second)
+            val available = reference(sql, "copied =")
+            val copied = available.scope.candidates("copied").single()
+            assertTrue(copied.first.available)
+            assertEquals(column("copied"), copied.second)
+            assertEquals(column("id"), available.scope.candidates("id").single().second)
+        }
     }
     @Test fun unknownShapesStayUnknownAndPartialStarsStayOpen() {
         val sql = "FROM events() |> SELECT * |> WHERE extra > 1"
