@@ -128,6 +128,14 @@ intellijPlatform {
     }
 }
 
+val verifyReleaseDependencies by tasks.registering {
+    val supportVersion = brikkSqlIdeSupportVersion
+    doLast {
+        check(!supportVersion.endsWith("-SNAPSHOT")) { "Cannot publish with brikk-sql-intellij-support:$supportVersion" }
+    }
+}
+tasks.named("publishPlugin") { dependsOn(verifyReleaseDependencies) }
+
 tasks {
     named<JavaExec>("verifyPlugin") {
         systemProperty("plugin.verifier.home.dir", layout.buildDirectory.dir("plugin-verifier-cache").get().asFile.absolutePath)
