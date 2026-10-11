@@ -1,109 +1,98 @@
 package dev.sort.duckdb.validate
 
 import com.google.gson.JsonParser
+import org.duckdb.DuckDBDriver
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import org.duckdb.DuckDBDriver
 import java.io.File
+import java.sql.Connection
 
-/**
- * Grades the Stage-3 validator against upstream DuckDB's own expectations:
- *
- *  1. Every census-negatives record whose upstream `expectedError` names a Parser Error must be
- *     flagged (the authority catches what the engine's own tests call parser errors).
- *  2. Records expecting binder/catalog/other errors must NOT be flagged as parser errors
- *     (schema questions are the das layer's job — the validator stays silent).
- *  3. Every statement in the 100%-green census corpus must pass silently (no EXPLAIN-prefix
- *     artifacts, no false reds on valid DuckDB).
- */
 class DuckdbEngineValidatorGradingTest {
+    private enum class Expected { CLEAN, FLAGGED, UNAVAILABLE }
+    private data class Case(val origin: String, val sql: String, val parserFailure: Boolean)
 
-    private fun corpusDir() = File(System.getProperty("corpus.dir"))
+    private val corpusDir get() = File(System.getProperty("corpus.dir"))
+
+    // These errors require binding the embedded query, not parsing the outer SELECT.
+    private val bindingOnlyErrors = setOf(
+        "catalog/function/query_function.test:80",
+        "catalog/function/query_function.test:85",
+        "catalog/function/query_function.test:90",
+        "catalog/function/query_function.test:95",
+        "catalog/function/query_function.test:101",
+        "catalog/function/query_function.test:112",
+        "catalog/function/query_function.test:124",
+        "catalog/function/query_function.test:191",
+    )
+
+    // Duplicate PKs, temp-schema table creation and PRAGMA value checks are not serializable SELECTs.
+    private val unavailableErrors = setOf(
+        "catalog/test_incorrect_table_creation.test:16",
+        "catalog/test_incorrect_table_creation.test:21",
+        "catalog/test_temporary.test:34",
+        "order/test_nulls_first.test:124",
+    )
 
     @Test
-    fun `parser negatives flagged, binder negatives silent, census clean`() {
-        assertTrue("validator engine must be available in tests", DuckdbEngineValidator.available)
-
-        val negatives = File(corpusDir(), "census-negatives.jsonl").readLines()
-            .filter { it.isNotBlank() }
-            .map { JsonParser.parseString(it).asJsonObject }
-        val parserNegatives = ArrayList<String>()
-        val otherNegatives = ArrayList<String>()
-        for (n in negatives) {
-            val sql = n.get("sql").asString
-            val expected = n.get("expectedError")?.takeIf { !it.isJsonNull }?.asString ?: ""
-            if (expected.contains("Parser Error")) parserNegatives.add(sql) else otherNegatives.add(sql)
+    fun `every negative has an explicit permitted verdict`() {
+        val cases = File(corpusDir, "census-negatives.jsonl").readLines().filter { it.isNotBlank() }.map {
+            val record = JsonParser.parseString(it).asJsonObject
+            Case(record.get("origin").asString, record.get("sql").asString,
+                record.get("expectedError")?.takeUnless { it.isJsonNull }?.asString?.contains("Parser Error") == true)
         }
-
-        val parserVerdicts = DuckdbEngineValidator.verdicts(parserNegatives)
-        // query() can raise Parser Error while binding its string argument. Parse-only validation
-        // accepts the outer SELECT without inspecting or executing that string.
-        val parseAccepted = DuckdbEngineValidator.connect(DuckDBDriver())!!.use { connection ->
-            parserNegatives.filter { sql ->
-                connection.createStatement().use { statement ->
-                    statement.executeQuery("SELECT json_serialize_sql('${sql.replace("'", "''")}')").use { result ->
-                        assertTrue(result.next())
-                        !JsonParser.parseString(result.getString(1)).asJsonObject.get("error").asBoolean
-                    }
+        val parserOrigins = cases.filter { it.parserFailure }.map { it.origin }.toSet()
+        val exceptions = bindingOnlyErrors + unavailableErrors
+        assertEquals("stale parser exceptions", exceptions, parserOrigins.intersect(exceptions))
+        val verdicts = DuckdbEngineValidator.verdictsWithDriver(cases.map { it.sql }, DuckDBDriver())
+        requireNotNull(DuckdbEngineValidator.connect(DuckDBDriver())).use { connection ->
+            cases.zip(verdicts).forEach { (case, verdict) ->
+                val expected = when {
+                    !case.parserFailure -> nativeExpectation(case.sql, connection)
+                    case.origin in bindingOnlyErrors -> Expected.CLEAN
+                    case.origin in unavailableErrors -> Expected.UNAVAILABLE
+                    else -> Expected.FLAGGED
                 }
-            }.toSet()
-        }
-        // Contract: upstream parser errors must be Flagged or HeadRejected unless parse-only accepts
-        // the statement or its error requires execution-time validation:
-        //  (a) SET/PRAGMA-headed statements: upstream's "Parser Error: unrecognized option/value"
-        //      is execution-time VALUE validation; the syntax parses, and this validator never
-        //      executes — invisible by design.
-        //  (b) pinned engine-disagreements: the same-version engine demonstrably parses the text
-        //      (upstream's expectation hinges on session flags we don't replicate).
-        val exemptOrigins = setOf("setops/test_pg_union.test:456")
-        val silentlyClean = parserNegatives.indices.filter { i ->
-            parserVerdicts[i] is DuckdbEngineValidator.Verdict.Clean &&
-                parserNegatives[i] !in parseAccepted &&
-                parserNegatives[i].trimStart().uppercase().let { u ->
-                    !u.startsWith("SET") && !u.startsWith("PRAGMA")
-                } &&
-                negatives.none { n ->
-                    n.get("sql").asString == parserNegatives[i] &&
-                        n.get("origin").asString in exemptOrigins
-                }
-        }
-        assertTrue(
-            "upstream parser errors must be Flagged or HeadRejected, never silently Clean — " +
-                "${silentlyClean.size}/${parserNegatives.size} unexempted Clean, e.g.: " +
-                silentlyClean.take(3).map { parserNegatives[it].take(80) },
-            silentlyClean.isEmpty(),
-        )
-        val flaggedCount = parserVerdicts.count { it is DuckdbEngineValidator.Verdict.Flagged }
-        val unavailable = parserVerdicts.count { it is DuckdbEngineValidator.Verdict.Unavailable }
-
-        // Upstream classified these as binder/catalog errors, but the ENGINE is the authority:
-        // when its parser also rejects one (classification drift between upstream test labels and
-        // the shipped parser), flagging is CORRECT. The bound is a drift indicator, not a
-        // correctness gate — the census-clean assertion below is the real false-positive tripwire.
-        val flaggedOther = DuckdbEngineValidator.validate(otherNegatives)
-        assertTrue(
-            "unexpectedly large engine-vs-upstream classification drift (${flaggedOther.size}): " +
-                flaggedOther.entries.take(5).map { (i, err) -> otherNegatives[i].take(60) + " -> " + err.message },
-            flaggedOther.size <= 12,
-        )
-
-        val censusStatements = File(corpusDir(), "census").listFiles { f -> f.extension == "sql" }!!
-            .sortedBy { it.name }
-            .flatMap { f ->
-                f.readText().split(Regex("(?m)^-- from .*$")).map { it.trim() }.filter { it.isNotEmpty() }
+                assertVerdict(case.origin, expected, verdict)
             }
-        val falseReds = DuckdbEngineValidator.validate(censusStatements)
-        assertTrue(
-            "validator false-flagged ${falseReds.size}/${censusStatements.size} valid census statements, e.g.: " +
-                falseReds.entries.take(3).map { (i, err) -> censusStatements[i].take(60) + " -> " + err.message },
-            falseReds.isEmpty(),
-        )
+        }
+    }
 
-        println(
-            "validator grading: ${parserNegatives.size} parser negatives -> " +
-                "$flaggedCount flagged + $unavailable unavailable (0 silently clean); " +
-                "${otherNegatives.size} binder/catalog negatives (${flaggedOther.size} engine-drift flags); " +
-                "${censusStatements.size} census statements all clean",
-        )
+    @Test
+    fun `valid census matches native parse-only coverage`() {
+        val statements = requireNotNull(File(corpusDir, "census").listFiles { file -> file.extension == "sql" })
+            .sortedBy { it.name }.flatMap { file ->
+                file.readText().split(Regex("(?m)^-- from .*$")).map { it.trim() }.filter { it.isNotEmpty() }
+            }
+        val verdicts = DuckdbEngineValidator.verdictsWithDriver(statements, DuckDBDriver())
+        requireNotNull(DuckdbEngineValidator.connect(DuckDBDriver())).use { connection ->
+            statements.zip(verdicts).forEach { (sql, verdict) ->
+                val expected = nativeExpectation(sql, connection)
+                assertTrue("valid corpus rejected by the native parser: $sql", expected != Expected.FLAGGED)
+                assertVerdict(sql, expected, verdict)
+            }
+        }
+    }
+
+    private fun nativeExpectation(sql: String, connection: Connection): Expected =
+        connection.createStatement().use { statement ->
+            statement.executeQuery("SELECT json_serialize_sql('${sql.replace("'", "''")}')").use { result ->
+                assertTrue(result.next())
+                val document = JsonParser.parseString(result.getString(1)).asJsonObject
+                when {
+                    !document.get("error").asBoolean -> Expected.CLEAN
+                    document.get("error_type").asString == "parser" -> Expected.FLAGGED
+                    else -> Expected.UNAVAILABLE
+                }
+            }
+        }
+
+    private fun assertVerdict(source: String, expected: Expected, actual: DuckdbEngineValidator.Verdict) {
+        when (expected) {
+            Expected.CLEAN -> assertEquals(source, DuckdbEngineValidator.Verdict.Clean, actual)
+            Expected.FLAGGED -> assertTrue("$source must report a parser failure, got $actual",
+                actual is DuckdbEngineValidator.Verdict.Flagged)
+            Expected.UNAVAILABLE -> assertEquals(source, DuckdbEngineValidator.Verdict.Unavailable, actual)
+        }
     }
 }
