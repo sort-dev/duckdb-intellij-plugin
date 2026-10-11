@@ -180,6 +180,7 @@
         <extensionFallback dbms="DUCKDB_BRIKK" fallbackDbms="POSTGRES"/>
         <modelFacade dbms="DUCKDB_BRIKK" implementationClass="dev.sort.duckdb.DuckdbModelFacade"/>
         <introspector dbms="DUCKDB_BRIKK" implementationClass="dev.sort.duckdb.DuckdbIntrospectorGate"/>
+        <jdbcHelper dbms="DUCKDB_BRIKK" implementationClass="com.intellij.database.remote.jdbc.helpers.GenericJdbcHelper"/>
         <errorHandler dbms="DUCKDB_BRIKK" implementationClass="com.intellij.database.dialects.generic.GenericDatabaseErrorHandler"/>
         <!-- Stage 4b: on-connect duckdb_functions()/duckdb_keywords() harvest -> live
              per-data-source catalog that replaces the bundled snapshot for that source
