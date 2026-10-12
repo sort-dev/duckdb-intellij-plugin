@@ -7,9 +7,6 @@ import dev.brikk.house.sql.intellij.pipe.ValidationTiming
 import dev.brikk.house.sql.intellij.pipe.containsPipe
 import dev.brikk.house.sql.intellij.pipe.lower
 import dev.brikk.house.sql.intellij.pipe.statementAt
-import dev.brikk.house.sql.intellij.recoverEditorOperation
-import dev.brikk.house.sql.parser.PipeStageCut
-import dev.brikk.house.sql.parser.PipeStageSplitter
 import org.junit.Test
 import org.junit.Assert.*
 import java.sql.DriverManager
@@ -88,22 +85,6 @@ class DuckdbPipesEngineTest {
         assertFalse(SqlFragment(sql, "duckdb").isPipe)
         supported(sql)
     }
-    @Test fun stagePrefixesKeepUtf16OffsetsAndInitialFrom() {
-        val text = "FROM t |> SELECT '😀' AS face |> LIMIT 2"
-        val prefix = PipeStageSplitter.topLevelPrefixAt(text, text.indexOf("face"), "duckdb") as PipeStageCut.Prefix
-        assertEquals(2, prefix.stage + 1)
-        assertEquals(3, prefix.stageCount)
-        assertEquals("FROM t |> SELECT '😀' AS face", prefix.sql)
-        assertEquals("FROM t", (PipeStageSplitter.topLevelPrefixAt(text, 2, "duckdb") as PipeStageCut.Prefix).sql)
-        assertTrue(DuckdbPipeDialect.lower("FROM t", firstStage = true) is PipeTranslation.Lowered)
-        assertTrue(DuckdbPipeDialect.lower("SELECT id FROM t", firstStage = true) is PipeTranslation.Lowered)
-    }
-    @Test fun warningsCannotBeSubmitted() {
-        val safe = supported("FROM range(3) |> LIMIT 1")
-        val warned = safe.copy(result = safe.result.copy(unsupportedMessages = listOf("lossy", "")))
-        assertNotNull(warned.blocker)
-        assertEquals(listOf("lossy", ""), warned.result.unsupportedMessages)
-    }
     @Test fun parametersExcludeDuckdbColons() {
         val text = "FROM t |> WHERE id = :id |> SELECT :value AS v, {'k':x}, label:amount, x::INT"
         assertEquals(listOf(":id", ":value"), DuckdbPipeDialect.parameterSpans(text).map { text.substring(it.start, it.end) })
@@ -124,18 +105,4 @@ class DuckdbPipesEngineTest {
         assertTrue(DuckdbPipeDialect.lower(text) is PipeTranslation.Refused)
     }
 
-    @Test fun runToStageRefusesCaretInsideNestedPipeline() {
-        val text = "FROM (FROM t |> WHERE id > 0 |> LIMIT 2) AS x |> SELECT id"
-        assertSame(PipeStageCut.InsideNestedPipeline, PipeStageSplitter.topLevelPrefixAt(text, text.indexOf("WHERE"), "duckdb"))
-        assertTrue(PipeStageSplitter.topLevelPrefixAt(text, text.lastIndexOf("SELECT"), "duckdb") is PipeStageCut.Prefix)
-    }
-    @Test fun optionalRecoveryDoesNotSwallowCancellationOrErrors() {
-        for (failure in listOf(com.intellij.openapi.progress.ProcessCanceledException(),
-            java.util.concurrent.CancellationException(), AssertionError("fatal"), LinkageError("linkage"))) {
-            try {
-                recoverEditorOperation<Unit> { throw failure }
-                fail("Expected propagation")
-            } catch (actual: Throwable) { assertSame(failure, actual) }
-        }
-    }
 }

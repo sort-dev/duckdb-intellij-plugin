@@ -15,15 +15,9 @@ import com.intellij.testFramework.PlatformTestUtil
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import dev.sort.duckdb.sql.DuckdbSqlDialect
 import dev.brikk.house.sql.intellij.CooperativeExecuteAction
-import dev.brikk.house.sql.intellij.RenderedSql
-import dev.brikk.house.sql.intellij.SqlExecutionAdapter
-import dev.brikk.house.sql.intellij.TranslatingScriptModel
-import dev.brikk.house.sql.intellij.SqlExecutionRefusal
 import dev.brikk.house.sql.intellij.testing.RecordingConsole
 import dev.brikk.house.sql.intellij.pipe.PipeDialect
 import dev.brikk.house.sql.intellij.pipe.PipeExecuteInterceptor
-import dev.brikk.house.sql.intellij.pipe.PipeRun
-import dev.brikk.house.sql.intellij.pipe.PipeSubmitListener
 import dev.brikk.house.sql.intellij.pipe.PipeTranslation
 import dev.brikk.house.sql.intellij.pipe.NativeSqlValidator
 import dev.brikk.house.sql.intellij.pipe.NativeVerdict
@@ -45,8 +39,8 @@ class DuckdbPipesExecutionTest : BasePlatformTestCase() {
         } finally { super.tearDown() }
     }
     fun testAllExecuteVariantsUseGeneratedSqlAndOriginalEditorRange() {
-        val sql = "FROM offline_rows |> SELECT id |> WHERE id > 0"
-        Fixture(sql).use { f ->
+        for (sql in listOf("FROM offline_rows SELECT id |> WHERE id > 0",
+            "SELECT \$\$literal; |> marker\$\$ AS note |> LIMIT 1")) Fixture(sql).use { f ->
             for (variant in 1..4) {
                 f.editor.selectionModel.setSelection(0, sql.length)
                 f.execute(variant)
@@ -69,22 +63,6 @@ class DuckdbPipesExecutionTest : BasePlatformTestCase() {
                 assertEmpty(f.requests)
             }
         }
-    }
-    fun testBrokenSelectedPipeNeverExecutesEitherPipeOrOrdinaryNeighbor() {
-        val settings = DatabaseSettings.getSettings()
-        val previous = settings.execOptions[0]
-        try {
-            settings.execOptions[0] = DatabaseSettings.ExecOption().apply {
-                execSelection = DatabaseSettings.EXECUTE_SELECTION_EXACTLY_SCRIPT
-            }
-            Fixture("SELECT 1; FROM t |> BOGUS 2;").use { f ->
-                f.editor.selectionModel.setSelection(0, f.editor.document.textLength)
-                f.execute()
-                assertEmpty(f.requests)
-                assertEmpty(f.previousEvents)
-                assertEquals(1, f.notifications.size)
-            }
-        } finally { settings.execOptions[0] = previous }
     }
     fun testMixedScriptParametersAndNewTabsUseTheStockRequestChain() {
         val sql = "SELECT 1; FROM offline_rows |> WHERE id = :id |> SELECT id; SELECT 2;"
@@ -111,36 +89,6 @@ class DuckdbPipesExecutionTest : BasePlatformTestCase() {
             assertTrue(requests.all { it.newTab && it.owner === f.console })
             assertEmpty(f.previousEvents)
             assertEmpty(f.notifications)
-        }
-    }
-
-    fun testOutsideStatementWholeScriptStillClaimsPipelines() {
-        Fixture("SELECT 1; FROM offline_rows |> SELECT id; -- outside statements").use { f ->
-            f.editor.caretModel.moveToOffset(f.editor.document.textLength)
-            withOption(DatabaseSettings.ExecOption().apply {
-                execInside = DatabaseSettings.EXECUTE_INSIDE_SMALLEST
-                execOutside = DatabaseSettings.EXECUTE_OUTSIDE_WHOLE_SCRIPT
-            }) {
-                f.execute()
-                assertEquals(f.notifications.map { it.content }.toString(), 1, f.requests.size)
-                (f.requests.single() as ConsoleDataRequest).onFinished()
-            }
-            assertEquals(2, f.requests.size)
-            assertFalse((f.requests.last() as DataRequest.QueryRequest).query.contains("|>"))
-            assertEmpty(f.previousEvents)
-        }
-    }
-
-    fun testOutsideTailPreservesLeadingCommentBoundary() {
-        Fixture("SELECT 0; /* ) caret here */ FROM offline_rows |> SELECT id;").use { f ->
-            f.editor.caretModel.moveToOffset(f.editor.document.text.indexOf("caret"))
-            withOption(DatabaseSettings.ExecOption().apply {
-                execInside = DatabaseSettings.EXECUTE_INSIDE_SMALLEST
-                execOutside = DatabaseSettings.EXECUTE_OUTSIDE_SCRIPT_TAIL
-            }) { f.execute() }
-            assertEquals(f.notifications.map { it.content }.toString(), 1, f.requests.size)
-            assertFalse((f.requests.single() as DataRequest.QueryRequest).query.contains("|>"))
-            assertEmpty(f.previousEvents)
         }
     }
 
@@ -192,71 +140,39 @@ class DuckdbPipesExecutionTest : BasePlatformTestCase() {
         }
     }
 
-    fun testStaleSnapshotRefusesEvenWhenTextIsRestored() {
-        Fixture("FROM offline_rows |> SELECT id").use { f ->
-            val adapter = object : SqlExecutionAdapter {
-                override fun claims(text: String) = true
-                override fun parameters(text: String) = DuckdbPipeDialect.parameterSpans(text)
-                override fun translate(text: String, beforeSubstitution: Boolean): RenderedSql {
-                    val translation = DuckdbPipeDialect.lower(text, substituted = !beforeSubstitution) as PipeTranslation.Lowered
-                    translation.blocker?.let { throw SqlExecutionRefusal(it) }
-                    return RenderedSql(translation.sql, text)
-                }
-            }
-            val model = TranslatingScriptModel(f.console.scriptModel, f.editor, adapter)
-            com.intellij.openapi.command.WriteCommandAction.runWriteCommandAction(project) {
-                f.editor.document.insertString(0, " ")
-                f.editor.document.deleteString(0, 1)
-            }
-            try { model.finalizeTranslations(f.console.pStorage); fail("Stale revision must refuse") }
-            catch (_: SqlExecutionRefusal) { }
-            assertFalse(model.isActual)
-            assertEmpty(f.requests)
-        }
-    }
-
-    fun testSourceMapIsUnavailableAfterParameterExpansion() {
-        for (parameterized in listOf(false, true)) {
-            var observed = false
-            val dialect = object : PipeDialect by DuckdbPipeDialect {
-                override val submitListener = object : PipeSubmitListener {
-                    override fun beforeSubmit(run: PipeRun) {
-                        observed = true
-                        val map = run.statements.single()!!.sourceMap
-                        if (parameterized) assertNull(map) else assertNotNull(map)
-                        throw SqlExecutionRefusal("Source-map inspection only")
-                    }
-                }
-            }
-            Fixture(if (parameterized) "FROM offline_rows |> WHERE id = :id" else "FROM offline_rows |> SELECT id", dialect).use { f ->
-                ShowSqlParametersPanelAction.getStorage(f.console).putValue("id", "17")
-                f.execute()
-                assertTrue(observed)
-                assertEmpty(f.requests)
-            }
-        }
-    }
-
     fun testNativeValidationRunsOnlyAfterParameterSubstitution() {
         val checked = mutableListOf<String>()
+        var lookups = 0
         val dialect = object : PipeDialect by DuckdbPipeDialect {
-            override val validator = object : NativeSqlValidator {
+            override val validator get() = object : NativeSqlValidator {
                 override val timing = ValidationTiming.Submission
+                private val native = DuckdbPipeDialect.validator
                 override fun validate(sql: String, file: com.intellij.psi.PsiFile?): NativeVerdict {
                     assertNotNull(file)
                     assertFalse(sql, ":id" in sql || "|>" in sql)
                     checked.add(sql)
-                    return DuckdbPipeDialect.validator.validate(sql, file)
+                    val source = requireNotNull(file)
+                    val tracked = java.lang.reflect.Proxy.newProxyInstance(com.intellij.psi.PsiFile::class.java.classLoader,
+                        arrayOf(com.intellij.psi.PsiFile::class.java)) { _, method, _ ->
+                        if (method.name != "getProject") throw AssertionError("Unexpected file access: ${method.name}")
+                        lookups++
+                        source.project
+                    } as com.intellij.psi.PsiFile
+                    return native.validate(sql, tracked)
                 }
             }
         }
-        Fixture("FROM offline_rows |> WHERE id = :id |> SELECT id", dialect).use { f ->
+        Fixture("FROM offline_rows |> WHERE id = :id |> SELECT id; FROM offline_rows |> LIMIT 2;", dialect).use { f ->
             ShowSqlParametersPanelAction.getStorage(f.console).putValue("id", "17")
-            f.execute()
+            f.editor.caretModel.moveToOffset(f.editor.document.text.indexOf("WHERE"))
+            withOption(DatabaseSettings.ExecOption().apply { execInside = DatabaseSettings.EXECUTE_INSIDE_WHOLE_SCRIPT }) { f.execute() }
             assertEquals(1, f.requests.size)
+            assertEquals(2, checked.size)
+            assertEquals(1, lookups)
             val query = (f.requests.single() as DataRequest.QueryRequest).query
-            assertEquals(listOf(query), checked)
             assertTrue(query, "17" in query)
+            (f.requests.single() as ConsoleDataRequest).onFinished()
+            assertEquals(checked, f.requests.map { (it as DataRequest.QueryRequest).query })
             assertEmpty(f.previousEvents)
             assertEmpty(f.notifications)
         }

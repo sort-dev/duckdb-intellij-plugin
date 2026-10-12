@@ -324,7 +324,7 @@ open class BrikkDuckdbInjectionTest : BasePlatformTestCase() {
         assertTrue(file.text, file.text.contains("SELECT id"))
     }
     fun testMalformedAndMultipleSqlStatementsReportInsteadOfCrashing() {
-        for (text in listOf("SELECT '", "SELECT 1; SELECT 2;")) {
+        for (text in listOf("SELECT '", "SELECT 1; SELECT 2;", "SELECT 1 FROM")) {
             val host = configure("@BrikkSql fun query() = Sql.duckdb(\"$text\")")
             val file = injected(host)
             val annotator = dev.sort.duckdb.validate.DuckdbErrorAnnotator()
@@ -337,8 +337,45 @@ open class BrikkDuckdbInjectionTest : BasePlatformTestCase() {
             })
             annotations.assertAllAnnotationsCreated()
             val error = annotations.single { it.severity == com.intellij.lang.annotation.HighlightSeverity.ERROR }
-            assertEquals(1, error.endOffset - error.startOffset)
-            assertEquals(file.text.indexOf("SELECT"), error.startOffset)
+            if (text == "SELECT 1 FROM") {
+                assertEquals(file.text.indexOf("FROM"), error.startOffset)
+                assertEquals(file.text.indexOf("FROM") + 4, error.endOffset)
+                assertNotNull(result.pipeErrors.single().second.range)
+            } else {
+                assertEquals(1, error.endOffset - error.startOffset)
+                assertEquals(file.text.indexOf("SELECT"), error.startOffset)
+            }
+        }
+    }
+
+    fun testNativeInjectedPipeDiagnosticsUseUnescapedCoordinates() {
+        val settings = project.service<DuckdbPipesSettings>()
+        val previous = settings.enabled
+        settings.enabled = true
+        try {
+            val host = configure("fun query() = Sql.duckdb(\"FROM t |> SELECT \\\"face\\\" AS face\\n |> BOGUS 2\")")
+            val file = injected(host)
+            assertNull(BrikkDuckdbProfile.forFile(file))
+            val source = dev.brikk.house.sql.intellij.pipe.PipeText.of(file)
+            assertTrue("Expected an escaped injection: ${file.text}", file.text.length > source.text.length)
+            val annotator = dev.sort.duckdb.validate.DuckdbErrorAnnotator()
+            val info = annotator.collectInformation(file)!!
+            assertEquals(source.text, info.pipes.single().second)
+            assertEmpty(info.statements)
+            val result = annotator.doAnnotate(info)!!
+            assertEquals(1, result.pipeErrors.size)
+            val annotations = com.intellij.codeInsight.daemon.impl.AnnotationHolderImpl(
+                com.intellij.lang.annotation.AnnotationSession(file), false)
+            annotations.runAnnotatorWithContext(file, com.intellij.lang.annotation.Annotator { _, holder ->
+                annotator.apply(file, result, holder)
+            })
+            annotations.assertAllAnnotationsCreated()
+            val error = annotations.single { it.severity == com.intellij.lang.annotation.HighlightSeverity.ERROR }
+            assertEquals(file.text.indexOf("BOGUS"), error.startOffset)
+            assertEquals(file.text.indexOf("BOGUS") + 5, error.endOffset)
+        } finally {
+            settings.enabled = previous
+            com.intellij.testFramework.PlatformTestUtil.dispatchAllInvocationEventsInIdeEventQueue()
         }
     }
 }

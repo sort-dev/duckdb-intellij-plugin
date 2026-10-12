@@ -2,13 +2,13 @@ package dev.sort.duckdb.brikk
 
 import dev.brikk.house.intellij.*
 import dev.brikk.house.sql.ast.*
-import dev.brikk.house.sql.generator.SourceMap
 import dev.brikk.house.sql.dialects.Dialects
+import dev.brikk.house.sql.generator.SourceMap
+import dev.brikk.house.sql.intellij.recoverEditorOperation
 import dev.brikk.house.sql.parser.ParseError
 import dev.brikk.house.sql.parser.Token
 import dev.brikk.house.sql.parser.TokenType
 import dev.brikk.house.sql.shape.SqlFragment
-import dev.brikk.house.sql.intellij.recoverEditorOperation
 import java.util.IdentityHashMap
 
 /** Statement-local SQL scopes over copied Kotlin input contracts, never upstream SQL or caller unions. */

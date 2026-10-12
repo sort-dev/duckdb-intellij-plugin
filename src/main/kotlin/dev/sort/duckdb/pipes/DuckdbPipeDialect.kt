@@ -26,10 +26,15 @@ object DuckdbPipeDialect : PipeDialect {
     override fun enablesEditing(file: PsiFile) = BrikkDuckdbProfile.forFile(file) != null
     override fun isInspectionHost(file: PsiFile) = isBrikkInjectedSql(file)
     override fun ownsSession(session: DatabaseSession) = session.connectionPoint.dbms === DuckdbDbms.DUCKDB_BRIKK
-    override val validator = object : NativeSqlValidator {
+    override val validator get() = object : NativeSqlValidator {
         override val timing = ValidationTiming.Submission
+        private var located = false
+        private var jar: String? = null
         override fun validate(sql: String, file: PsiFile?): NativeVerdict {
-            val jar = file?.let { DuckdbEngineLocator.engineJarFor(it)?.toString() }
+            if (!located) {
+                jar = file?.let { DuckdbEngineLocator.engineJarFor(it)?.toString() }
+                located = true
+            }
             return when (val verdict = DuckdbEngineValidator.verdicts(listOf(sql), jar).single()) {
                 DuckdbEngineValidator.Verdict.Clean -> NativeVerdict.Accepted
                 DuckdbEngineValidator.Verdict.Unavailable -> NativeVerdict.Unavailable

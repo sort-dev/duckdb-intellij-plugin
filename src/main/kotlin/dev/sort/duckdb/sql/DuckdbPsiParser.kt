@@ -9,13 +9,13 @@
 package dev.sort.duckdb.sql
 
 import com.intellij.lang.PsiBuilder
+import com.intellij.psi.impl.source.resolve.FileContextUtil
 import com.intellij.sql.dialects.postgres.PgParser
 import com.intellij.sql.psi.SqlCompositeElementTypes.SQL_STATEMENT
-import com.intellij.psi.impl.source.resolve.FileContextUtil
-import dev.sort.duckdb.brikk.BrikkDuckdbProfile
 import dev.brikk.house.sql.intellij.pipe.isEditingEnabled
 import dev.brikk.house.sql.intellij.pipe.isEnabled
 import dev.brikk.house.sql.parser.SqlStatementRange
+import dev.sort.duckdb.brikk.BrikkDuckdbProfile
 import dev.sort.duckdb.pipes.DuckdbPipeDialect
 
 /**
@@ -42,8 +42,10 @@ class DuckdbPsiParser : PgParser(false) {
         // Raw lexical ranges avoid PSI masking and the bounded PG lookahead. Bare FROM
         // remains ordinary DuckDB SQL, independently of the PIPE setting.
         val file = builder.getUserData(FileContextUtil.CONTAINING_FILE_KEY)
-        if (file?.let { DuckdbPipeDialect.isEditingEnabled(it) }
-                ?: builder.project?.let { DuckdbPipeDialect.isEnabled(it) } == true) {
+        val pipesEnabled = file?.let { DuckdbPipeDialect.isEditingEnabled(it) }
+            ?: builder.project?.let { DuckdbPipeDialect.isEnabled(it) }
+            ?: false
+        if (pipesEnabled) {
             if (pipeText !== builder.originalText) {
                 pipeText = builder.originalText
                 val text = builder.originalText.toString()

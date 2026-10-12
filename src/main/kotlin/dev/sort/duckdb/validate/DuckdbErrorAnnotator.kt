@@ -9,21 +9,19 @@ import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.PsiFile
 import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.sql.psi.SqlStatement
-import dev.sort.duckdb.sql.DuckdbSqlDialect
-import dev.sort.duckdb.pipes.DuckdbPipeDialect
-import dev.brikk.house.sql.intellij.recoverEditorOperation
 import dev.brikk.house.sql.intellij.pipe.PipeText
 import dev.brikk.house.sql.intellij.pipe.PipeTranslation
 import dev.brikk.house.sql.intellij.pipe.isEditingEnabled
 import dev.brikk.house.sql.intellij.pipe.lower
-import dev.sort.duckdb.brikk.BrikkDuckdbProfile
-import dev.brikk.house.sql.parser.ColumnUnit
+import dev.brikk.house.sql.intellij.recoverEditorOperation
 import dev.brikk.house.sql.parser.ParseError
 import dev.brikk.house.sql.parser.SqlStatementRange
 import dev.brikk.house.sql.parser.SyntacticRange
 import dev.brikk.house.sql.parser.TokenError
-import dev.brikk.house.sql.parser.sourceOffset
 import dev.brikk.house.sql.shape.ShapeError
+import dev.sort.duckdb.brikk.BrikkDuckdbProfile
+import dev.sort.duckdb.pipes.DuckdbPipeDialect
+import dev.sort.duckdb.sql.DuckdbSqlDialect
 
 /**
  * Editor surface for [DuckdbEngineValidator]: statement text goes to a real in-memory DuckDB,
@@ -56,14 +54,15 @@ class DuckdbErrorAnnotator : ExternalAnnotator<DuckdbErrorAnnotator.Info, Duckdb
         // engine sources: driver-classpath / downloaded drivers (locator) or sysprop/test classpath
         val engineJar = DuckdbEngineLocator.engineJarFor(file)?.toString()
         val enabled = DuckdbPipeDialect.isEditingEnabled(file)
-        val text = file.text.orEmpty()
+        val source = PipeText.of(file)
+        val text = source.text
         val pipes = if (enabled) DuckdbPipeDialect.scriptRanges(text).filter { it.hasPipe }
             .map { it to text.substring(it.start, it.end) } else emptyList()
         if (engineJar == null && !DuckdbEngineValidator.available && pipes.isEmpty()) return null
         val statements = PsiTreeUtil.findChildrenOfType(file, SqlStatement::class.java)
             .filterNot { it.parent is SqlStatement }
             .map { it.textRange to it.text }
-            .filterNot { (range, _) -> pipes.any { (statement, _) -> range.startOffset >= statement.start && range.startOffset < statement.end } }
+            .filterNot { (range, _) -> pipes.any { (statement, _) -> source.textOffset(range.startOffset) in statement.start until statement.end } }
         return if (statements.isEmpty() && pipes.isEmpty()) null else Info(statements, engineJar, enabled, pipes)
     }
 
@@ -78,10 +77,8 @@ class DuckdbErrorAnnotator : ExternalAnnotator<DuckdbErrorAnnotator.Info, Duckdb
             if (info.brikk.issues.isEmpty()) {
                 try { dev.sort.duckdb.brikk.BrikkSqlScopes.parse(text, info.brikkSlots) } catch (e: ParseError) {
                     val first = e.errors.firstOrNull()
-                    val position = first?.let { error ->
-                        error.line?.let { line -> error.col?.let { column -> sourceOffset(text, line, column, ColumnUnit.UTF16) } }
-                    }
-                    errors.add(range to PipeTranslation.Refused(position?.let { SyntacticRange(it, it + 1) },
+                    val position = first?.start?.let { SyntacticRange(it, first.end ?: it + 1) }
+                    errors.add(range to PipeTranslation.Refused(position,
                         first?.description ?: "Invalid Brikk SQL"))
                 } catch (e: TokenError) {
                     errors.add(range to PipeTranslation.Refused(null, e.message ?: "Invalid SQL token"))
