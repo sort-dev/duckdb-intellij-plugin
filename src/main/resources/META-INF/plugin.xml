@@ -177,7 +177,7 @@
         <introspector dbms="DUCKDB_BRIKK" implementationClass="dev.sort.duckdb.DuckdbIntrospectorGate"/>
         <jdbcHelper dbms="DUCKDB_BRIKK" implementationClass="com.intellij.database.remote.jdbc.helpers.GenericJdbcHelper"/>
         <errorHandler dbms="DUCKDB_BRIKK" implementationClass="com.intellij.database.dialects.generic.GenericDatabaseErrorHandler"/>
-        <database.connectionInterceptor implementation="dev.sort.duckdb.catalog.DuckdbHarvestConnectionInterceptor"/>
+        <connectionInterceptor implementation="dev.sort.duckdb.catalog.DuckdbHarvestConnectionInterceptor"/>
         <driversConfig config="config/duckdb-brikk-drivers.xml"/>
         <artifactsConfig config="config/duckdb-brikk-artifacts.xml"/>
     </extensions>

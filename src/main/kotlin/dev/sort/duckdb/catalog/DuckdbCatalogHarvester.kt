@@ -45,7 +45,8 @@ object DuckdbCatalogHarvester : LiveCatalogHarvester {
             .filter { it.extension in loaded }.mapTo(HashSet()) { it.name.lowercase() }
         val (sessionBuiltins, builtins) = snapshot.functions.functions.map(::LiveFunction)
             .partition { it.def.name.lowercase() in extensionNames }
-        val (temporary, persistent) = dump.userFunctions().partition { it.database == "temp" }
+        val (temporary, persistent) = dump.userFunctions()
+            .partition { it.database == "temp" || it.def.name.lowercase() in extensionNames }
         val shared = builtins + persistent.map { LiveFunction(it.def, listOf(it.database, it.schema)) }
         if (shared.isEmpty()) return null
         return Harvest(

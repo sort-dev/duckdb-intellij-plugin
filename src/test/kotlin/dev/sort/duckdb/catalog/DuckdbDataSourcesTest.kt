@@ -67,7 +67,7 @@ class DuckdbDataSourcesTest : BasePlatformTestCase() {
                 assertFalse(active.live)
                 assertSame(DUCKDB_METADATA.default, active.snapshot)
                 val event = refreshEvent(myFixture.file)
-                DuckdbRefreshCatalogAction().update(event)
+                DuckdbRefreshLiveCatalogAction().update(event)
                 assertFalse(event.presentation.isEnabled)
             }
         }
@@ -106,7 +106,7 @@ class DuckdbDataSourcesTest : BasePlatformTestCase() {
         assertEquals(source.uniqueId, DuckdbCatalogResolver.activeCatalogFor(myFixture.file).dataSourceId)
         for (file in listOf(null, myFixture.file)) {
             val event = refreshEvent(file)
-            DuckdbRefreshCatalogAction().update(event)
+            DuckdbRefreshLiveCatalogAction().update(event)
             assertTrue(event.presentation.isEnabled)
         }
     }

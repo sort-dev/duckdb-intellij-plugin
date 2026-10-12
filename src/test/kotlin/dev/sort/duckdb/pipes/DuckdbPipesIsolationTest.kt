@@ -35,12 +35,22 @@ class DuckdbPipesIsolationTest : BasePlatformTestCase() {
             "editor.SqlDialectQuoteHandler", "editor.KeywordOverlayHighlighterFactory",
             "dialect.PgFamilyDialect", "dialect.SqlDialectRegistry",
             "catalog.PgFamilyModelFacade", "catalog.GenericJdbcIntrospectorGate", "catalog.DialectDataSourceResolver",
+            "catalog.LiveCatalogService", "catalog.LiveCatalogHarvester", "catalog.LiveCatalogStore",
+            "catalog.ExecutionObserver", "catalog.HarvestConnectionInterceptor", "catalog.RefreshLiveCatalogAction",
         )) assertSame(name, loader, loader.loadClass("dev.brikk.house.sql.intellij.$name").classLoader)
         for ((base, consumer) in listOf(
             "PgFamilyModelFacade" to "DuckdbModelFacade",
             "GenericJdbcIntrospectorGate" to "DuckdbIntrospectorGate",
         )) assertTrue(consumer, loader.loadClass("dev.brikk.house.sql.intellij.catalog.$base")
             .isAssignableFrom(loader.loadClass("dev.sort.duckdb.$consumer")))
+        for ((base, consumer) in listOf(
+            "LiveCatalogService" to "DuckdbLiveCatalogService",
+            "LiveCatalogHarvester" to "DuckdbCatalogHarvester",
+            "HarvestConnectionInterceptor" to "DuckdbHarvestConnectionInterceptor",
+            "ExecutionObserver" to "DuckdbExecutionObserver",
+            "RefreshLiveCatalogAction" to "DuckdbRefreshLiveCatalogAction",
+        )) assertTrue(consumer, loader.loadClass("dev.brikk.house.sql.intellij.catalog.$base")
+            .isAssignableFrom(loader.loadClass("dev.sort.duckdb.catalog.$consumer")))
         for ((base, consumer) in listOf(
             "lexer.MaskingSqlLexer" to "DuckdbLexer",
             "editor.MaskedSpanRecolorAnnotator" to "DuckdbMaskedSpanRecolorAnnotator",

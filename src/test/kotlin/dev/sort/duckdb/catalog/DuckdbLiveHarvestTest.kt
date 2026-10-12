@@ -1,141 +1,86 @@
 package dev.sort.duckdb.catalog
 
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
-import org.junit.Assert.fail
+import com.intellij.openapi.progress.ProcessCanceledException
+import dev.brikk.house.sql.intellij.catalog.CatalogRowSource
+import dev.brikk.house.sql.intellij.testing.JdbcCatalogRows
+import dev.brikk.house.sql.metadata.DUCKDB_FUNCTIONS
+import dev.brikk.house.sql.metadata.DUCKDB_KEYWORDS
+import dev.brikk.house.sql.metadata.FunctionKind
+import org.junit.Assert.*
 import org.junit.Test
 import java.sql.DriverManager
-
-/**
- * Proves the harvest logic against the REAL in-process engine (the same code path the IDE-side
- * RemoteRowSource drives — [CatalogRowSource] is the seam) plus the parse/deadline behavior over
- * canned rows. Answers PLAN.md Stage 4b's keywords-column question with the engine itself.
- */
-/** The test-side [CatalogRowSource]: a plain java.sql.ResultSet drives the shared harvest code. */
-internal class JdbcRowSource(private val connection: java.sql.Connection) : CatalogRowSource {
-    override fun forEachRow(sql: String, onRow: (col: (Int) -> String?) -> Unit) {
-        connection.createStatement().use { statement ->
-            statement.executeQuery(sql).use { rs ->
-                while (rs.next()) onRow { i -> rs.getString(i) }
-            }
-        }
-    }
-}
+import java.util.concurrent.CancellationException
 
 class DuckdbLiveHarvestTest {
-
-    private fun withDuck(block: (java.sql.Connection) -> Unit) =
-        DriverManager.getConnection("jdbc:duckdb:").use(block)
-
-    /** Canned rows keyed by SQL, recording execution order (deadline tests read it). */
-    private class FakeRows(private val data: Map<String, List<List<String?>>>) : CatalogRowSource {
-        val executed = ArrayList<String>()
-        override fun forEachRow(sql: String, onRow: (col: (Int) -> String?) -> Unit) {
-            executed.add(sql)
-            for (row in data[sql].orEmpty()) onRow { i -> row.getOrNull(i - 1) }
+    @Test
+    fun `real harvest captures the engine signatures and keyword categories`() {
+        DriverManager.getConnection("jdbc:duckdb:").use { connection ->
+            val harvest = requireNotNull(DuckdbCatalogHarvester.harvest(JdbcCatalogRows(connection)))
+            val shared = harvest.shared
+            val expected = connection.createStatement().use { statement ->
+                statement.executeQuery("SELECT version()").use { it.next(); it.getString(1) }
+            }
+            assertEquals(expected, shared.serverVersion)
+            assertTrue(shared.signatures)
+            assertTrue(shared.extensions.containsAll(listOf("core_functions", "json", "parquet")))
+            assertTrue(shared.functions.size > 500)
+            for ((name, kind) in listOf("read_parquet" to FunctionKind.TABLE_VALUED,
+                "list_transform" to FunctionKind.SCALAR, "sum" to FunctionKind.AGGREGATE)) {
+                assertTrue(shared.functions.any { it.def.name == name && it.def.kind == kind && it.def.overloads.isNotEmpty() })
+            }
+            assertTrue(shared.functions.all { Regex("[A-Za-z_][A-Za-z0-9_]*").matches(it.def.name) })
+            assertTrue(shared.keywords.orEmpty().any { it.word.equals("SELECT", true) })
+            assertTrue(shared.keywords.orEmpty().size > 300)
         }
     }
 
     @Test
-    fun `real harvest against the in-process engine`() = withDuck { c ->
-        val entry = DuckdbCatalogHarvester.harvest(JdbcRowSource(c))
-        assertNotNull("harvest against a live engine must succeed", entry)
-        entry!!
-        // Version-exact against the engine's own answer (survives duckdb_jdbc bumps).
-        val expected = c.createStatement().executeQuery("SELECT version()").use { it.next(); it.getString(1) }
-        assertEquals(expected, entry.engineVersion)
-        // 1.5.5 jdbc statically links these; the list is our sorted-set cache identity.
-        assertTrue("loaded: ${entry.loadedExtensions}", entry.loadedExtensions.containsAll(listOf("core_functions", "json", "parquet")))
-        assertEquals(entry.loadedExtensions.sorted(), entry.loadedExtensions)
-        val kinds = entry.functions.associate { it.name to it.kind }
-        assertEquals(DuckdbLiveCatalog.Kind.TABLE, kinds["read_parquet"])
-        assertEquals(DuckdbLiveCatalog.Kind.SCALAR, kinds["list_transform"])
-        assertEquals(DuckdbLiveCatalog.Kind.AGGREGATE, kinds["sum"])
-        assertTrue("functions: ${entry.functions.size}", entry.functions.size > 500)
-        assertTrue("operator names must be filtered", entry.functions.all { DuckdbCatalogHarvester.isCompletableName(it.name) })
-        assertTrue(entry.keywords.contains("SELECT"))
-        assertTrue("keywords: ${entry.keywords.size}", entry.keywords.size > 300)
-    }
-
-    @Test
-    fun `duckdb_keywords columns are keyword_name and keyword_category`() = withDuck { c ->
-        // The column-name question, answered by the engine: both exist, and SQL_KEYWORDS reads
-        // keyword_name (a wrong name would throw a Binder Error right here).
-        c.createStatement().executeQuery(
-            "SELECT keyword_name, keyword_category FROM duckdb_keywords() LIMIT 3",
-        ).use { rs ->
-            assertTrue(rs.next())
-            assertNotNull(rs.getString(1))
-            assertNotNull(rs.getString(2))
+    fun `temporary macros are session facts and persistent macros are shared`() {
+        DriverManager.getConnection("jdbc:duckdb:").use { connection ->
+            connection.createStatement().use {
+                it.execute("CREATE TEMP MACRO temporary_only(x) AS x + 1")
+                it.execute("CREATE MACRO persistent_fn(x) AS x + 2")
+            }
+            val harvest = requireNotNull(DuckdbCatalogHarvester.harvest(JdbcCatalogRows(connection)))
+            assertTrue(harvest.session.functions.any { it.def.name == "temporary_only" && it.namespace == listOf("temp", "main") })
+            assertFalse(harvest.shared.functions.any { it.def.name == "temporary_only" })
+            assertTrue(harvest.shared.functions.any { it.def.name == "persistent_fn" })
         }
-        assertTrue(DuckdbCatalogHarvester.SQL_KEYWORDS.contains("keyword_name"))
     }
 
     @Test
-    fun `canned rows retain distinct kinds and filter operators with uppercased keywords`() {
-        val rows = FakeRows(
-            mapOf(
-                DuckdbCatalogHarvester.SQL_VERSION to listOf(listOf("v1.3.0")),
-                DuckdbCatalogHarvester.SQL_LOADED_EXTENSIONS to listOf(listOf("json")),
-                DuckdbCatalogHarvester.SQL_FUNCTIONS to listOf(
-                    listOf("!~~", "scalar"), // operator -> not completable, filtered
-                    listOf("dup_fn", "aggregate"),
-                    listOf("dup_fn", "aggregate"),
-                    listOf("dup_fn", "scalar"),
-                    listOf("read_csv", "table"),
-                    listOf("odd", "somenewtype"), // unknown function_type -> OTHER
-                    listOf("row_number", "window"),
-                ),
-                DuckdbCatalogHarvester.SQL_KEYWORDS to listOf(listOf("select"), listOf("pivot")),
-            ),
-        )
-        val entry = DuckdbCatalogHarvester.harvest(rows)
-        assertNotNull(entry)
-        entry!!
-        assertEquals("v1.3.0", entry.engineVersion)
-        assertEquals(listOf("json"), entry.loadedExtensions)
-        assertEquals(
-            listOf(
-                DuckdbLiveCatalog.Fn("dup_fn", DuckdbLiveCatalog.Kind.AGGREGATE),
-                DuckdbLiveCatalog.Fn("dup_fn", DuckdbLiveCatalog.Kind.SCALAR),
-                DuckdbLiveCatalog.Fn("read_csv", DuckdbLiveCatalog.Kind.TABLE),
-                DuckdbLiveCatalog.Fn("odd", DuckdbLiveCatalog.Kind.OTHER),
-                DuckdbLiveCatalog.Fn("row_number", DuckdbLiveCatalog.Kind.WINDOW),
-            ),
-            entry.functions,
-        )
-        assertEquals(setOf("SELECT", "PIVOT"), entry.keywords)
+    fun `capture retains kinds and uppercases keywords through completion`() {
+        val rows = CatalogRowSource { sql, onRow ->
+            val data = when (sql) {
+                DuckdbCatalogHarvester.SQL_VERSION -> listOf(listOf("v2.0.0"))
+                DUCKDB_FUNCTIONS.sql -> listOf("aggregate", "scalar", "window", "table").map { kind ->
+                    listOf("dup_fn", kind, "BIGINT", "[\"BIGINT\"]", "[\"x\"]", null, "system", "main", "true", null, null, null, null)
+                }
+                DUCKDB_KEYWORDS.sql -> listOf(listOf("select", "reserved"))
+                else -> emptyList()
+            }
+            data.forEach { values -> onRow { values[it - 1] } }
+        }
+        val harvest = requireNotNull(DuckdbCatalogHarvester.harvest(rows))
+        assertEquals(setOf(FunctionKind.SCALAR, FunctionKind.AGGREGATE, FunctionKind.WINDOW, FunctionKind.TABLE_VALUED), harvest.shared.functions.map { it.def.kind }.toSet())
+        assertEquals("select", harvest.shared.keywords!!.single().word)
     }
 
     @Test
-    fun `empty function inventory means a broken read - harvest abandons`() {
-        val rows = FakeRows(
-            mapOf(
-                DuckdbCatalogHarvester.SQL_VERSION to listOf(listOf("v1.3.0")),
-                DuckdbCatalogHarvester.SQL_KEYWORDS to listOf(listOf("select")),
-            ),
-        )
-        assertNull(DuckdbCatalogHarvester.harvest(rows))
+    fun `an incomplete capture does not produce an inventory`() {
+        assertNull(DuckdbCatalogHarvester.harvest(CatalogRowSource { _, _ -> }))
+        val versionOnly = CatalogRowSource { sql, row ->
+            if (sql == DuckdbCatalogHarvester.SQL_VERSION) row { "v1.5.5" }
+        }
+        assertNull(DuckdbCatalogHarvester.harvest(versionOnly))
     }
 
     @Test
-    fun `blown deadline abandons before any query runs`() {
-        val ticks = longArrayOf(0, 10_000) // start, then the first over-budget check
-        var i = 0
-        val clock = { ticks[minOf(i, ticks.size - 1)].also { i++ } }
-        val rows = CatalogRowSource { sql, _ -> fail("no query may run after the deadline: $sql") }
-        assertNull(DuckdbCatalogHarvester.harvest(rows, deadlineMillis = 5_000, clock = clock))
-    }
-
-    @Test
-    fun `mid-harvest deadline keeps whatever ran but yields null`() {
-        val ticks = longArrayOf(0, 100, 10_000) // start, pre-version check ok, then blown
-        var i = 0
-        val clock = { ticks[minOf(i, ticks.size - 1)].also { i++ } }
-        val rows = FakeRows(mapOf(DuckdbCatalogHarvester.SQL_VERSION to listOf(listOf("v1.3.0"))))
-        assertNull(DuckdbCatalogHarvester.harvest(rows, deadlineMillis = 5_000, clock = clock))
-        assertEquals(listOf(DuckdbCatalogHarvester.SQL_VERSION), rows.executed)
+    fun `cancellation and linkage errors propagate from the harvester`() {
+        for (failure in listOf(ProcessCanceledException(), CancellationException(), LinkageError())) {
+            assertSame(failure, assertThrows(failure.javaClass) {
+                DuckdbCatalogHarvester.harvest(CatalogRowSource { _, _ -> throw failure })
+            })
+        }
     }
 }

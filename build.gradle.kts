@@ -34,6 +34,9 @@ dependencies {
 }
 
 tasks.withType<Test>().configureEach {
+    val testTmp = layout.buildDirectory.dir("test-tmp").get().asFile
+    systemProperty("java.io.tmpdir", testTmp.absolutePath)
+    doFirst { check(testTmp.isDirectory || testTmp.mkdirs()) }
     systemProperty("test.brikkSqlVersion", libs.versions.brikk.sql.core.get())
     systemProperty("corpus.dir", layout.projectDirectory.dir("src/test/resources/corpus").asFile.absolutePath)
     if (name == "test") {

@@ -68,7 +68,11 @@ class DuckdbLegacyCatalogFiles(
         val sessionExtensionNames = snapshot.extensionFunctions.orEmpty()
             .filter { fn -> fn.extension in extensions && snapshot.extensions.orEmpty().none { it.name == fn.extension && it.staticallyLinked } }
             .mapTo(HashSet()) { it.name.lowercase() }
-        val shared = functions.filter { it.def.name.lowercase() !in sessionExtensionNames }
+        val shared = functions.filter { function ->
+            val def = function.def
+            def.name.lowercase() !in sessionExtensionNames &&
+                (def.nativeKind == null || snapshot.functions.getAll(def.name).any { it.nativeKind == def.nativeKind })
+        }
         if (shared.isEmpty() || keywords.isEmpty()) return null
         return LiveInventory(engineVersion, shared, signatures = false, keywords)
     }

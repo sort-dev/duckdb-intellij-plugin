@@ -7,6 +7,9 @@ import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeTrue
 import org.junit.Test
 import java.sql.DriverManager
+import dev.brikk.house.sql.intellij.catalog.CatalogRowSource
+import dev.brikk.house.sql.intellij.testing.JdbcCatalogRows
+import dev.brikk.house.sql.metadata.FunctionKind
 
 /**
  * The harvest over a REAL quack wire (GizmoSQL server, remote transport — the other of the two
@@ -27,32 +30,32 @@ class DuckdbLiveHarvestOverQuackTest {
         // quack-jdbc 0.4.0 is a test-scope dependency; make sure DriverManager sees it.
         Class.forName("com.gizmodata.quack.jdbc.sql.QuackDriver")
         DriverManager.getConnection(url).use { connection ->
-            val entry = DuckdbCatalogHarvester.harvest(JdbcRowSource(connection))
-            assertNotNull("harvest over the quack wire must succeed", entry)
-            entry!!
+            val harvest = DuckdbCatalogHarvester.harvest(JdbcCatalogRows(connection))
+            assertNotNull("harvest over the quack wire must succeed", harvest)
+            val entry = harvest!!.shared
             // Version-exact from the wire: the lab server runs 1.5.3 — the bundled 1.5.5 snapshot
             // must be nowhere in this entry.
-            assertTrue("server version, got ${entry.engineVersion}", entry.engineVersion.contains("1.5.3"))
-            assertFalse("bundled version must not leak in", entry.engineVersion.contains("1.5.5"))
-            val kinds = entry.functions.mapTo(HashSet()) { it.kind }
+            assertTrue("server version, got ${entry.serverVersion}", entry.serverVersion.orEmpty().contains("1.5.3"))
+            assertFalse("bundled version must not leak in", entry.serverVersion.orEmpty().contains("1.5.5"))
+            val kinds = entry.functions.mapTo(HashSet()) { it.def.kind }
             assertTrue(
                 "expected scalar/aggregate/table kinds at minimum, got $kinds",
                 kinds.containsAll(
                     listOf(
-                        DuckdbLiveCatalog.Kind.SCALAR,
-                        DuckdbLiveCatalog.Kind.AGGREGATE,
-                        DuckdbLiveCatalog.Kind.TABLE,
+                        FunctionKind.SCALAR,
+                        FunctionKind.AGGREGATE,
+                        FunctionKind.TABLE_VALUED,
                     ),
                 ),
             )
             assertTrue("functions: ${entry.functions.size}", entry.functions.isNotEmpty())
-            assertTrue("keywords must land over the wire", entry.keywords.isNotEmpty())
+            assertTrue("keywords must land over the wire", entry.keywords.orEmpty().isNotEmpty())
             // Server-side loaded set (the server links httpfs/icu; our in-process 1.5.5 has no httpfs).
             assertTrue(
-                "loaded: ${entry.loadedExtensions}",
-                entry.loadedExtensions.containsAll(listOf("httpfs", "icu")),
+                "loaded: ${entry.extensions + harvest.session.extensions}",
+                (entry.extensions + harvest.session.extensions).containsAll(listOf("httpfs", "icu")),
             )
-            assertEquals(entry.loadedExtensions.sorted(), entry.loadedExtensions)
+            assertEquals(entry.extensions.sorted(), entry.extensions)
         }
     }
 }
