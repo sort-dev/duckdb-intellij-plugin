@@ -9,6 +9,7 @@ import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import dev.brikk.house.sql.intellij.completion.completableFunctions
 import dev.brikk.house.sql.metadata.DUCKDB_METADATA
 import dev.brikk.house.sql.metadata.FunctionPresentation
+import dev.brikk.house.sql.metadata.InvocationSyntax
 import dev.sort.duckdb.DuckdbDbms
 import dev.sort.duckdb.setSqlDialectMapping
 import dev.sort.duckdb.sql.DuckdbCompletionProfile
@@ -169,6 +170,42 @@ class DuckdbCatalogResolverTest : BasePlatformTestCase() {
             assertEquals(1, entries.size)
             assertEquals("st_area", entries.single().name)
             assertNull(entries.single().extension)
+        } finally {
+            manager.removeDataSource(source)
+        }
+    }
+
+    fun testLiveInventoryKeepsGrammarFormsAndTheirInvocationSyntax() {
+        val source = LocalDataSource.create("grammar-duck", "org.duckdb.DuckDBDriver", "jdbc:duckdb:", "")
+        source.databaseDriver = DatabaseDriverManager.getInstance().getDriver("duckdb-brikk-native")
+        val manager = LocalDataSourceManager.getInstance(project)
+        manager.addDataSource(source)
+        try {
+            DuckdbLiveCatalog.store(source.uniqueId, DuckdbLiveCatalog.Entry("v1.5.5", emptyList(), listOf(
+                DuckdbLiveCatalog.Fn("only_live_fn", DuckdbLiveCatalog.Kind.SCALAR),
+                DuckdbLiveCatalog.Fn("current_date", DuckdbLiveCatalog.Kind.SCALAR),
+            ), setOf("SELECT"), 1L))
+            setSqlDialectMapping(project, null, DuckdbSqlDialect.INSTANCE)
+            val file = myFixture.configureByText("grammar.sql", "SELECT ca<caret>")
+            val active = DuckdbCatalogResolver.activeCatalogFor(file)
+            assertFalse(active.functions.any { it.name == "read_parquet" })
+            assertTrue(active.functions.any { it.name == "ST_Read" && it.extension == "spatial" })
+            assertTrue(active.functions.map { it.name.uppercase() }.containsAll(listOf("CAST", "TRY_CAST", "COALESCE", "CURRENT_TIMESTAMP")))
+            assertEquals(setOf(InvocationSyntax.BARE, InvocationSyntax.CALL),
+                active.functions.single { it.name == "current_date" }.syntaxes)
+            val item = myFixture.completeBasic().orEmpty().single {
+                it.lookupString == "CAST" && it.`object` is FunctionPresentation
+            }
+            myFixture.lookup.currentItem = item
+            myFixture.finishLookup('\n')
+            myFixture.checkResult("SELECT CAST<caret>")
+            myFixture.configureByText("bare.sql", "SELECT current_da<caret>")
+            val bare = myFixture.completeBasic().orEmpty().single {
+                it.lookupString == "current_date" && it.`object` is FunctionPresentation
+            }
+            myFixture.lookup.currentItem = bare
+            myFixture.finishLookup('\n')
+            myFixture.checkResult("SELECT current_date<caret>")
         } finally {
             manager.removeDataSource(source)
         }

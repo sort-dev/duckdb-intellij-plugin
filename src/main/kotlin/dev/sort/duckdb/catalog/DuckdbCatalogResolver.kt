@@ -17,8 +17,8 @@ import dev.sort.duckdb.DuckdbDbms
 
 /**
  * Decides which catalog serves an editor: the data source's LIVE harvest when one exists, else
- * the bundled snapshot. Live REPLACES bundled entirely — never a merge: a connected 1.3 engine
- * must not be offered 1.5.5-only names from our snapshot, and version-exactness cuts both ways.
+ * the bundled snapshot. Live replaces the bundled registry; grammar forms and unloaded
+ * extension offers remain available independently.
  *
  * Data-source resolution, public seams only:
  *  1. a database console resolves through [JdbcConsoleProvider.getValidConsole] (its own source);
@@ -30,7 +30,7 @@ object DuckdbCatalogResolver {
     data class ActiveCatalog(
         val functions: List<FunctionPresentation>,
         val keywords: Set<String>,
-        /** true = a live harvest is serving this editor (bundled fully replaced). */
+        /** true = a live harvest is serving this editor's registry. */
         val live: Boolean,
         val dataSourceId: String?,
         val snapshot: MetadataSnapshot,
@@ -42,10 +42,20 @@ object DuckdbCatalogResolver {
         val live = DuckdbLiveCatalog.entryFor(dataSourceId)
         val snapshot = DUCKDB_METADATA.forServerVersion(live?.engineVersion ?: dataSource?.databaseVersion?.version).snapshot
         return if (live != null) {
-            val functions = live.functions.mapNotNull { it.presentation() }
+            val forms = snapshot.grammarForms.orEmpty().associateBy { it.name.lowercase() to it.kind }
+            val functions = live.functions.mapNotNull { it.presentation() }.map { entry ->
+                val form = forms[entry.name.lowercase() to entry.kind]
+                if (form == null) entry else entry.copy(syntaxes = form.syntaxes, template = form.template)
+            }
+            val keys = functions.mapTo(HashSet()) { it.name.lowercase() to it.kind }
+            val bundled = snapshot.completableFunctions()
+            val grammar = bundled.filter { entry ->
+                val key = entry.name.lowercase() to entry.kind
+                entry.extension == null && key in forms && key !in keys
+            }
             val names = functions.mapTo(HashSet()) { it.name.lowercase() }
-            val extensions = snapshot.completableFunctions().filter { it.extension != null && it.name.lowercase() !in names }
-            ActiveCatalog(functions + extensions, live.keywords, live = true, dataSourceId = dataSourceId, snapshot = snapshot)
+            val extensions = bundled.filter { it.extension != null && it.name.lowercase() !in names }
+            ActiveCatalog(functions + grammar + extensions, live.keywords, live = true, dataSourceId = dataSourceId, snapshot = snapshot)
         } else {
             ActiveCatalog(snapshot.completableFunctions(), snapshot.keywords?.keywords.orEmpty().mapTo(LinkedHashSet()) { it.word }, live = false,
                 dataSourceId = dataSourceId, snapshot = snapshot)
