@@ -4,10 +4,14 @@ import com.intellij.codeInsight.lookup.LookupElementPresentation
 import com.intellij.database.dataSource.DatabaseDriverManager
 import com.intellij.database.dataSource.LocalDataSource
 import com.intellij.database.dataSource.LocalDataSourceManager
+import com.intellij.database.util.Version
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
+import dev.brikk.house.sql.intellij.completion.completableFunctions
+import dev.brikk.house.sql.metadata.DUCKDB_METADATA
+import dev.brikk.house.sql.metadata.FunctionPresentation
 import dev.sort.duckdb.DuckdbDbms
 import dev.sort.duckdb.setSqlDialectMapping
-import dev.sort.duckdb.sql.DuckdbFunctionCatalog
+import dev.sort.duckdb.sql.DuckdbCompletionProfile
 import dev.sort.duckdb.sql.DuckdbSqlDialect
 import java.nio.file.Files
 import java.nio.file.Path
@@ -32,7 +36,6 @@ class DuckdbCatalogResolverTest : BasePlatformTestCase() {
         try {
             DuckdbLiveCatalog.baseDirOverride = null
             DuckdbLiveCatalog.clearForTests()
-            DuckdbExtensionOffers.setOffersForTests(null)
             tempDir.toFile().deleteRecursively()
         } finally {
             super.tearDown()
@@ -44,9 +47,9 @@ class DuckdbCatalogResolverTest : BasePlatformTestCase() {
         val active = DuckdbCatalogResolver.activeCatalogFor(file)
         assertFalse(active.live)
         assertNull(active.dataSourceId)
-        // Same instances, not copies: the bundled snapshot IS the fallback catalog.
-        assertSame(DuckdbFunctionCatalog.functions, active.functions)
-        assertSame(DuckdbFunctionCatalog.keywords, active.keywords)
+        assertSame(DUCKDB_METADATA.default, active.snapshot)
+        assertSame(DUCKDB_METADATA.default.completableFunctions(), active.functions)
+        assertEquals(DUCKDB_METADATA.default.keywords!!.keywords.map { it.word }.toSet(), active.keywords)
     }
 
     fun testLiveCatalogReplacesBundledForTheProjectsSingleDataSource() {
@@ -65,8 +68,8 @@ class DuckdbCatalogResolverTest : BasePlatformTestCase() {
                     engineVersion = "v1.3.0",
                     loadedExtensions = listOf("json"),
                     functions = listOf(
-                        DuckdbFunctionCatalog.Fn("only_live_fn", DuckdbFunctionCatalog.Kind.SCALAR),
-                        DuckdbFunctionCatalog.Fn("list_transform", DuckdbFunctionCatalog.Kind.SCALAR),
+                        DuckdbLiveCatalog.Fn("only_live_fn", DuckdbLiveCatalog.Kind.SCALAR),
+                        DuckdbLiveCatalog.Fn("list_transform", DuckdbLiveCatalog.Kind.SCALAR),
                     ),
                     keywords = setOf("SELECT"),
                     harvestedAtMillis = 1L,
@@ -104,15 +107,6 @@ class DuckdbCatalogResolverTest : BasePlatformTestCase() {
     }
 
     fun testExtensionOffersPreserveNamesAndFoldCaseForSuppression() {
-        DuckdbExtensionOffers.setOffersForTests(
-            listOf(
-                // Mixed case exactly as duckdb_functions() reports extension names (contract).
-                DuckdbExtensionOffers.Offer("ST_Read", DuckdbFunctionCatalog.Kind.TABLE, "spatial"),
-                DuckdbExtensionOffers.Offer("ST_ReadOSM", DuckdbFunctionCatalog.Kind.TABLE, "spatial"),
-                // Case-variant of a bundled name: must be suppressed by the case-folded match.
-                DuckdbExtensionOffers.Offer("List_Transform", DuckdbFunctionCatalog.Kind.SCALAR, "spatial"),
-            ),
-        )
         setSqlDialectMapping(project, null, DuckdbSqlDialect.INSTANCE)
         myFixture.configureByText("e1.sql", "SELECT * FROM st_re<caret>;")
         myFixture.completeBasic()
@@ -134,22 +128,50 @@ class DuckdbCatalogResolverTest : BasePlatformTestCase() {
         assertFalse("mixed-case duplicate must not be offered", strings.contains("List_Transform"))
     }
 
-    fun testParseToleratesCommentsAndJunkRows() {
-        val text = listOf(
-            "# harvested by the extension-map lane",
-            "ST_Area\tscalar\tspatial",
-            "create_fts_index\tpragma\tfts",
-            "!~~\tscalar\tspatial", // operator name -> dropped
-            "broken-line-no-tabs",
-            "name\tkind-only",
-            "",
-        ).joinToString("\n")
-        assertEquals(
-            listOf(
-                DuckdbExtensionOffers.Offer("ST_Area", DuckdbFunctionCatalog.Kind.SCALAR, "spatial"),
-                DuckdbExtensionOffers.Offer("create_fts_index", DuckdbFunctionCatalog.Kind.PRAGMA, "fts"),
-            ),
-            DuckdbExtensionOffers.parse(text),
-        )
+    fun testOfflineSnapshotUsesTheKnownServerVersion() {
+        val source = LocalDataSource.create("versioned-duck", "org.duckdb.DuckDBDriver", "jdbc:duckdb:", "")
+        source.databaseDriver = DatabaseDriverManager.getInstance().getDriver("duckdb-brikk-native")
+        source.info.setDatabaseVersion(Version.of("2.0.0"))
+        val manager = LocalDataSourceManager.getInstance(project)
+        manager.addDataSource(source)
+        try {
+            val file = myFixture.configureByText("version.sql", "SELECT 1")
+            val active = DuckdbCatalogResolver.activeCatalogFor(file)
+            assertFalse(active.live)
+            assertSame(DUCKDB_METADATA.forServerVersion(source.databaseVersion.version).snapshot, active.snapshot)
+            assertSame(active.snapshot, DuckdbCompletionProfile.snapshot(file))
+            assertEquals(active.functions, DuckdbCompletionProfile.functions(file))
+        } finally {
+            manager.removeDataSource(source)
+        }
     }
+
+    fun testLiveFunctionsSuppressExtensionOffersIgnoringCase() {
+        val source = LocalDataSource.create("spatial-duck", "org.duckdb.DuckDBDriver", "jdbc:duckdb:", "")
+        source.databaseDriver = DatabaseDriverManager.getInstance().getDriver("duckdb-brikk-native")
+        val manager = LocalDataSourceManager.getInstance(project)
+        manager.addDataSource(source)
+        try {
+            DuckdbLiveCatalog.store(source.uniqueId, DuckdbLiveCatalog.Entry("v1.5.5", listOf("spatial"), listOf(
+                DuckdbLiveCatalog.Fn("st_area", DuckdbLiveCatalog.Kind.SCALAR),
+                DuckdbLiveCatalog.Fn("session_macro", DuckdbLiveCatalog.Kind.MACRO),
+                DuckdbLiveCatalog.Fn("show_tables", DuckdbLiveCatalog.Kind.PRAGMA),
+            ), setOf("SELECT"), 1L))
+            setSqlDialectMapping(project, null, DuckdbSqlDialect.INSTANCE)
+            val file = myFixture.configureByText("spatial.sql", "SELECT st_ar<caret>")
+            val active = DuckdbCatalogResolver.activeCatalogFor(file)
+            assertEquals("macro", active.functions.single { it.name == "session_macro" }.nativeKind)
+            assertFalse(active.functions.any { it.name == "show_tables" })
+            assertSame(DUCKDB_METADATA.forServerVersion("v1.5.5").snapshot, active.snapshot)
+            val entries = myFixture.completeBasic().orEmpty().mapNotNull {
+                it.`object` as? FunctionPresentation
+            }.filter { it.name.equals("st_area", true) }
+            assertEquals(1, entries.size)
+            assertEquals("st_area", entries.single().name)
+            assertNull(entries.single().extension)
+        } finally {
+            manager.removeDataSource(source)
+        }
+    }
+
 }

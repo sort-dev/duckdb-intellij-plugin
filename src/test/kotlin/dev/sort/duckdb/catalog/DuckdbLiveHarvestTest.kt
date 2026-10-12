@@ -1,6 +1,5 @@
 package dev.sort.duckdb.catalog
 
-import dev.sort.duckdb.sql.DuckdbFunctionCatalog
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
@@ -51,11 +50,11 @@ class DuckdbLiveHarvestTest {
         assertTrue("loaded: ${entry.loadedExtensions}", entry.loadedExtensions.containsAll(listOf("core_functions", "json", "parquet")))
         assertEquals(entry.loadedExtensions.sorted(), entry.loadedExtensions)
         val kinds = entry.functions.associate { it.name to it.kind }
-        assertEquals(DuckdbFunctionCatalog.Kind.TABLE, kinds["read_parquet"])
-        assertEquals(DuckdbFunctionCatalog.Kind.SCALAR, kinds["list_transform"])
-        assertEquals(DuckdbFunctionCatalog.Kind.AGGREGATE, kinds["sum"])
+        assertEquals(DuckdbLiveCatalog.Kind.TABLE, kinds["read_parquet"])
+        assertEquals(DuckdbLiveCatalog.Kind.SCALAR, kinds["list_transform"])
+        assertEquals(DuckdbLiveCatalog.Kind.AGGREGATE, kinds["sum"])
         assertTrue("functions: ${entry.functions.size}", entry.functions.size > 500)
-        assertTrue("operator names must be filtered", entry.functions.all { DuckdbFunctionCatalog.isCompletableName(it.name) })
+        assertTrue("operator names must be filtered", entry.functions.all { DuckdbCatalogHarvester.isCompletableName(it.name) })
         assertTrue(entry.keywords.contains("SELECT"))
         assertTrue("keywords: ${entry.keywords.size}", entry.keywords.size > 300)
     }
@@ -97,9 +96,9 @@ class DuckdbLiveHarvestTest {
         assertEquals(listOf("json"), entry.loadedExtensions)
         assertEquals(
             mapOf(
-                "dup_fn" to DuckdbFunctionCatalog.Kind.AGGREGATE,
-                "read_csv" to DuckdbFunctionCatalog.Kind.TABLE,
-                "odd" to DuckdbFunctionCatalog.Kind.OTHER,
+                "dup_fn" to DuckdbLiveCatalog.Kind.AGGREGATE,
+                "read_csv" to DuckdbLiveCatalog.Kind.TABLE,
+                "odd" to DuckdbLiveCatalog.Kind.OTHER,
             ),
             entry.functions.associate { it.name to it.kind },
         )

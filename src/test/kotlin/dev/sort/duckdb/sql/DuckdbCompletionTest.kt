@@ -1,19 +1,9 @@
 package dev.sort.duckdb.sql
 
-import dev.sort.duckdb.setSqlDialectMapping
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
+import dev.sort.duckdb.setSqlDialectMapping
 
-/** Pins the bundled-catalog completion: duckdb-only functions offered with kinds; catalog sane. */
 class DuckdbCompletionTest : BasePlatformTestCase() {
-
-    fun testCatalogLoadsRichInventories() {
-        assertTrue("functions: ${DuckdbFunctionCatalog.functions.size}", DuckdbFunctionCatalog.functions.size > 500)
-        assertTrue("keywords: ${DuckdbFunctionCatalog.keywords.size}", DuckdbFunctionCatalog.keywords.size > 300)
-        val kinds = DuckdbFunctionCatalog.functions.associate { it.name to it.kind }
-        assertEquals(DuckdbFunctionCatalog.Kind.TABLE, kinds["read_parquet"])
-        assertEquals(DuckdbFunctionCatalog.Kind.SCALAR, kinds["list_transform"])
-        assertTrue("no operator names in the completable list", kinds.keys.none { it.startsWith("!") })
-    }
 
     fun testDuckdbFunctionsOfferedInExpression() {
         // mapping must precede file creation — a post-configure setMapping leaves the completion

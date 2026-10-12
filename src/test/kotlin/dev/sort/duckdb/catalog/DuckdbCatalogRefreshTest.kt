@@ -1,6 +1,5 @@
 package dev.sort.duckdb.catalog
 
-import dev.sort.duckdb.sql.DuckdbFunctionCatalog
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -65,7 +64,7 @@ class DuckdbCatalogRefreshTest {
             DuckdbLiveCatalog.Entry(
                 engineVersion = "v0.0.1-stale",
                 loadedExtensions = listOf("ghost"),
-                functions = listOf(DuckdbFunctionCatalog.Fn("stale_fn", DuckdbFunctionCatalog.Kind.SCALAR)),
+                functions = listOf(DuckdbLiveCatalog.Fn("stale_fn", DuckdbLiveCatalog.Kind.SCALAR)),
                 keywords = setOf("SELECT"),
                 harvestedAtMillis = 1L,
             ),
@@ -84,7 +83,7 @@ class DuckdbCatalogRefreshTest {
         val previous = DuckdbLiveCatalog.Entry(
             engineVersion = "v1.2.3",
             loadedExtensions = emptyList(),
-            functions = listOf(DuckdbFunctionCatalog.Fn("keep_me", DuckdbFunctionCatalog.Kind.SCALAR)),
+            functions = listOf(DuckdbLiveCatalog.Fn("keep_me", DuckdbLiveCatalog.Kind.SCALAR)),
             keywords = setOf("SELECT"),
             harvestedAtMillis = 1L,
         )
@@ -130,8 +129,8 @@ class DuckdbCatalogRefreshTest {
             engineVersion = "v1.5.5",
             loadedExtensions = listOf("core_functions", "json", "spatial"),
             functions = listOf(
-                DuckdbFunctionCatalog.Fn("st_area", DuckdbFunctionCatalog.Kind.SCALAR),
-                DuckdbFunctionCatalog.Fn("read_csv", DuckdbFunctionCatalog.Kind.TABLE),
+                DuckdbLiveCatalog.Fn("st_area", DuckdbLiveCatalog.Kind.SCALAR),
+                DuckdbLiveCatalog.Fn("read_csv", DuckdbLiveCatalog.Kind.TABLE),
             ),
             keywords = setOf("SELECT"),
             harvestedAtMillis = 1L,
@@ -150,7 +149,7 @@ class DuckdbCatalogRefreshTest {
         val entry = DuckdbLiveCatalog.Entry(
             engineVersion = "v1.5.5",
             loadedExtensions = emptyList(),
-            functions = listOf(DuckdbFunctionCatalog.Fn("abs", DuckdbFunctionCatalog.Kind.SCALAR)),
+            functions = listOf(DuckdbLiveCatalog.Fn("abs", DuckdbLiveCatalog.Kind.SCALAR)),
             keywords = setOf("SELECT"),
             harvestedAtMillis = 1L,
         )

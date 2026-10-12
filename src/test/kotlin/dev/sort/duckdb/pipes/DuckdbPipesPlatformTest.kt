@@ -111,6 +111,7 @@ class DuckdbPipesPlatformTest : BasePlatformTestCase() {
         myFixture.completeBasic()
         assertTrue("Lookups: ${myFixture.lookupElementStrings}",
             myFixture.lookupElementStrings.orEmpty().any { it.equals("WHERE", true) })
+        assertFalse(myFixture.lookupElementStrings.orEmpty().contains("ABORT"))
         com.intellij.codeInsight.lookup.LookupManager.getInstance(project).hideActiveLookup()
         myFixture.configureByText("columns.sql", "FROM range(3) |> SELECT range AS my_output |> WHERE my_ou<caret>")
         myFixture.completeBasic()

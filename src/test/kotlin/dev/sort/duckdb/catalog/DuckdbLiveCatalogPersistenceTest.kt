@@ -1,6 +1,5 @@
 package dev.sort.duckdb.catalog
 
-import dev.sort.duckdb.sql.DuckdbFunctionCatalog
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -37,9 +36,9 @@ class DuckdbLiveCatalogPersistenceTest {
         engineVersion = "v1.5.5",
         loadedExtensions = listOf("json", "parquet"),
         functions = listOf(
-            DuckdbFunctionCatalog.Fn("only_live_fn", DuckdbFunctionCatalog.Kind.SCALAR),
-            DuckdbFunctionCatalog.Fn("ST_Area", DuckdbFunctionCatalog.Kind.SCALAR), // mixed case must survive
-            DuckdbFunctionCatalog.Fn("read_csv", DuckdbFunctionCatalog.Kind.TABLE),
+            DuckdbLiveCatalog.Fn("only_live_fn", DuckdbLiveCatalog.Kind.SCALAR),
+            DuckdbLiveCatalog.Fn("ST_Area", DuckdbLiveCatalog.Kind.SCALAR), // mixed case must survive
+            DuckdbLiveCatalog.Fn("read_csv", DuckdbLiveCatalog.Kind.TABLE),
         ),
         keywords = setOf("SELECT", "PIVOT"),
         harvestedAtMillis = 1_753_000_000_000L,

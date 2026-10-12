@@ -5,7 +5,6 @@ import com.intellij.database.dataSource.LocalDataSource
 import com.intellij.database.dataSource.LocalDataSourceManager
 import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiFile
-import dev.sort.duckdb.DuckdbDbms
 import dev.brikk.house.sql.intellij.completion.completableFunctions
 import dev.brikk.house.sql.intellij.recoverEditorOperation
 import dev.brikk.house.sql.metadata.DUCKDB_METADATA
@@ -14,6 +13,7 @@ import dev.brikk.house.sql.metadata.FunctionKind
 import dev.brikk.house.sql.metadata.FunctionPresentation
 import dev.brikk.house.sql.metadata.MetadataSnapshot
 import dev.brikk.house.sql.metadata.presentation
+import dev.sort.duckdb.DuckdbDbms
 
 /**
  * Decides which catalog serves an editor: the data source's LIVE harvest when one exists, else
@@ -40,7 +40,7 @@ object DuckdbCatalogResolver {
         val dataSource = dataSourceFor(file)
         val dataSourceId = dataSource?.uniqueId
         val live = DuckdbLiveCatalog.entryFor(dataSourceId)
-        val snapshot = DUCKDB_METADATA.forServerVersion(live?.engineVersion ?: dataSource?.version?.toString()).snapshot
+        val snapshot = DUCKDB_METADATA.forServerVersion(live?.engineVersion ?: dataSource?.databaseVersion?.version).snapshot
         return if (live != null) {
             val functions = live.functions.mapNotNull { it.presentation() }
             val names = functions.mapTo(HashSet()) { it.name.lowercase() }

@@ -1,6 +1,5 @@
 package dev.sort.duckdb.catalog
 
-import dev.sort.duckdb.sql.DuckdbFunctionCatalog
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -40,9 +39,9 @@ class DuckdbLiveHarvestOverQuackTest {
                 "expected scalar/aggregate/table kinds at minimum, got $kinds",
                 kinds.containsAll(
                     listOf(
-                        DuckdbFunctionCatalog.Kind.SCALAR,
-                        DuckdbFunctionCatalog.Kind.AGGREGATE,
-                        DuckdbFunctionCatalog.Kind.TABLE,
+                        DuckdbLiveCatalog.Kind.SCALAR,
+                        DuckdbLiveCatalog.Kind.AGGREGATE,
+                        DuckdbLiveCatalog.Kind.TABLE,
                     ),
                 ),
             )

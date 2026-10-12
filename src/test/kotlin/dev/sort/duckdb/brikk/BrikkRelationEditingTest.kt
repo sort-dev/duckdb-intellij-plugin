@@ -123,6 +123,14 @@ open class BrikkRelationEditingTest : BrikkDuckdbInjectionTest() {
         assertEquals(2, columns.map { it.`object` }.toSet().size)
         assertTrue(columns.all { it.lookupString == "id" })
     }
+
+    fun testSelectListOffersBrikkColumnsAlongsideMetadataFunctionsAndKeywords() {
+        val host = configure("$traits\n@BrikkSql fun query(events: Rel<CleanEvent>) = " +
+            "Sql.duckdb(\"SELECT a<caret> FROM \$events()\")")
+        injected(host)
+        val names = myFixture.completeBasic().orEmpty().map { it.lookupString }
+        assertTrue(names.toString(), names.containsAll(listOf("amount", "abs", "ABORT")))
+    }
     fun testMissingFullAndPartialColumnsHaveDifferentDiagnostics() {
         val host = configure("$traits\n@BrikkSql fun query(customers: Rel<CustomerRow>, events: Rel<CleanEvent>) = " +
             "Sql.duckdb(\"SELECT c.missing, e.extra FROM \$customers() c JOIN \$events() e ON c.tenant=e.tenant\")")

@@ -46,6 +46,7 @@ class BrikkSqlCompletionContributor : CompletionContributor() {
                     nullable,
                     relation.alias,
                     origin,
+                    relation.alias,
                 ), DuckdbCompletionProfile.styles[SqlLookupKind.BRIKK_COLUMN]))
             }
         }
