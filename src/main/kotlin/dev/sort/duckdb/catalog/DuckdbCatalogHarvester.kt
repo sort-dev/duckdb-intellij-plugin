@@ -1,5 +1,6 @@
 package dev.sort.duckdb.catalog
 
+import com.intellij.openapi.diagnostic.logger
 import dev.brikk.house.sql.intellij.catalog.CatalogRowSource
 import dev.brikk.house.sql.intellij.catalog.Harvest
 import dev.brikk.house.sql.intellij.catalog.LiveCatalogHarvester
@@ -20,14 +21,24 @@ object DuckdbCatalogHarvester : LiveCatalogHarvester {
     const val SQL_LOADED_EXTENSIONS =
         "SELECT extension_name, install_mode FROM duckdb_extensions() WHERE loaded ORDER BY 1"
 
+    private val log = logger<DuckdbCatalogHarvester>()
+    private val supportedKinds = setOf("scalar", "aggregate", "window", "table", "macro", "table_macro", "pragma")
+
     override fun harvest(rows: CatalogRowSource): Harvest? {
         var version: String? = null
         rows.forEachRow(SQL_VERSION) { version = it.string(1)?.trim()?.takeIf(String::isNotEmpty) }
         val engineVersion = version ?: return null
         val functions = ArrayList<DuckdbFunctionRow>()
+        val unknownKinds = LinkedHashSet<String>()
         rows.forEachRow(DUCKDB_FUNCTIONS.sql) { row ->
+            val kind = row.string(2)
+            if (kind != null && kind !in supportedKinds) {
+                unknownKinds += kind
+                return@forEachRow
+            }
             functions += DUCKDB_FUNCTIONS.decode(DUCKDB_FUNCTIONS.columns.indices.map { row.string(it + 1) })
         }
+        if (unknownKinds.isNotEmpty()) log.info("Skipping DuckDB function rows with unknown kinds: ${unknownKinds.joinToString()}")
         val keywords = ArrayList<DuckdbKeywordRow>()
         rows.forEachRow(DUCKDB_KEYWORDS.sql) { row ->
             keywords += DUCKDB_KEYWORDS.decode(listOf(row.string(1), row.string(2)))

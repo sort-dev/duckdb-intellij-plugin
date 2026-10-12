@@ -67,6 +67,27 @@ class DuckdbLiveHarvestTest {
     }
 
     @Test
+    fun `an unknown function kind leaves every other harvested function intact`() {
+        DriverManager.getConnection("jdbc:duckdb:").use { connection ->
+            connection.createStatement().use {
+                it.execute("CREATE TEMP MACRO temporary_only(x) AS x + 1")
+                it.execute("CREATE MACRO persistent_fn(x) AS x + 2")
+            }
+            val jdbc = JdbcCatalogRows(connection)
+            val expected = requireNotNull(DuckdbCatalogHarvester.harvest(jdbc))
+            val rows = CatalogRowSource { sql, onRow ->
+                jdbc.forEachRow(sql, onRow)
+                if (sql == DUCKDB_FUNCTIONS.sql) {
+                    onRow { column -> listOf("future_fn", "future_kind").getOrNull(column - 1) }
+                }
+            }
+            val actual = requireNotNull(DuckdbCatalogHarvester.harvest(rows))
+            assertEquals(expected, actual)
+            assertFalse((actual.shared.functions + actual.session.functions).any { it.def.name == "future_fn" })
+        }
+    }
+
+    @Test
     fun `an incomplete capture does not produce an inventory`() {
         assertNull(DuckdbCatalogHarvester.harvest(CatalogRowSource { _, _ -> }))
         val versionOnly = CatalogRowSource { sql, row ->
