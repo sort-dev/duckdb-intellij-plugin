@@ -13,6 +13,12 @@ import com.intellij.database.dataSource.LocalDataSource
 import com.intellij.database.dataSource.url.template.UrlTemplate
 import com.intellij.database.datagrid.DataAuditor
 import com.intellij.database.datagrid.DataRequest
+import com.intellij.database.dialects.DatabaseDialect
+import com.intellij.database.model.ObjectKind
+import com.intellij.database.model.ModelFactory
+import com.intellij.database.dialects.postgres.model.PgRoot
+import com.intellij.database.util.ObjectPath
+import com.intellij.database.util.SearchPath
 import com.intellij.database.psi.DbPsiFacade
 import com.intellij.database.remote.jdbc.helpers.JdbcNativeUtil
 import com.intellij.database.run.ConsoleDataRequest
@@ -141,6 +147,62 @@ class DuckdbLiveCatalogConsoleTest : DuckdbCatalogTestCase() {
                 it.execute("INSTALL fts FROM 'https://extensions.duckdb.org'")
             }
         }
+    }
+
+    fun testConsoleSwitchesAndReadsBackQuotedAttachedCatalogAndSchema() {
+        val a = console("namespace")
+        val catalog = "lake\"{schema}"
+        val schema = "web.\"space"
+        a.run("ATTACH ':memory:' AS \"lake\"\"{schema}\"")
+        a.run("CREATE SCHEMA \"lake\"\"{schema}\".\"web.\"\"space\"")
+        val dialect = DatabaseDialect.EP.forDbms(DuckdbDbms.DUCKDB_BRIKK) as dev.sort.duckdb.DuckdbDatabaseDialect
+        val path = SearchPath.of(ObjectPath.create(catalog, ObjectKind.DATABASE).append(schema, ObjectKind.SCHEMA))
+        assertEquals("USE \"lake\"\"{schema}\".\"web.\"\"space\"", dialect.sqlSetSearchPath(path))
+        a.console.switchSchema(path, false)
+        PlatformTestUtil.waitWithEventsDispatching("DuckDB console switches its schema", {
+            a.console.currentNamespace?.name == schema && a.console.currentNamespace?.parent?.name == catalog
+        }, 30)
+        assertEquals(listOf(catalog, schema), a.readNamespace())
+        assertEmpty(executionErrors)
+        errors.assertNone()
+        a.run(requireNotNull(dialect.sqlSetSearchPath(SearchPath.of(ObjectPath.create("console", ObjectKind.DATABASE)))))
+        assertEquals(listOf("console", "main"), a.readNamespace())
+        PlatformTestUtil.waitWithEventsDispatching("DuckDB console reads back a catalog-only switch", {
+            a.console.currentNamespace?.name == "main" && a.console.currentNamespace?.parent?.name == "console"
+        }, 30)
+    }
+
+    fun testOutOfScopeReferenceBehaviorStaysOff() {
+        assertFalse(DuckdbCatalogProfile.outOfScopeReferences)
+        val model = ModelFactory.BLACK_HOLE.createModel(DuckdbDbms.DUCKDB_BRIKK)
+        (model.root as PgRoot).databases.createOrGet("console").apply { name = "console" }
+        target.model = model
+        DbPsiFacade.getInstance(project).clearCaches()
+        val a = console("out-of-scope")
+        a.console.setSearchPath(SearchPath.of(ObjectPath.create("console", ObjectKind.DATABASE).append("main", ObjectKind.SCHEMA)))
+        myFixture.configureFromExistingVirtualFile(a.virtualFile)
+        WriteCommandAction.runWriteCommandAction(project) { myFixture.editor.document.setText("SELECT * FROM console.not_loaded.orders") }
+        PsiDocumentManager.getInstance(project).commitAllDocuments()
+        myFixture.enableInspections(dev.sort.duckdb.registeredSqlInspection("SqlResolveInspection"))
+        val reports = myFixture.doHighlighting()
+        assertTrue(reports.map { it.description }.toString(), reports.any {
+            it.severity == com.intellij.lang.annotation.HighlightSeverity.ERROR && it.description.orEmpty().contains("not_loaded")
+        })
+    }
+
+    private fun Console.readNamespace(): List<String> {
+        var result: SearchPath? = null
+        val dialect = DatabaseDialect.EP.forDbms(DuckdbDbms.DUCKDB_BRIKK) as dev.sort.duckdb.DuckdbDatabaseDialect
+        val request = object : DataRequest.RawRequest(session) {
+            override fun processRaw(context: DataRequest.Context, connection: DatabaseConnectionCore) {
+                result = dialect.tryToLoadSearchPath(connection)
+            }
+        }
+        session.messageBus.dataProducer.processRequest(request)
+        PlatformTestUtil.waitWithEventsDispatching("DuckDB namespace is read back", { request in finished }, 30)
+        assertEmpty(executionErrors)
+        errors.assertNone()
+        return generateSequence(requireNotNull(result).current) { it.parent }.mapNotNull { it.name }.toList().asReversed()
     }
 
     fun testTemporaryMacrosCompleteOnlyInTheirOwnSessionAndSurviveHelperRefresh() {

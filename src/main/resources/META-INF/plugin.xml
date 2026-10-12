@@ -175,6 +175,7 @@
              we don't override. The modelFacade below completes the facade/dialect/introspector
              agreement (doris ClassCast lesson) — all three sit on the PG family. -->
         <extensionFallback dbms="DUCKDB_BRIKK" fallbackDbms="POSTGRES"/>
+        <dialect dbms="DUCKDB_BRIKK" implementationClass="dev.sort.duckdb.DuckdbDatabaseDialect"/>
         <modelFacade dbms="DUCKDB_BRIKK" implementationClass="dev.sort.duckdb.DuckdbModelFacade"/>
         <introspector dbms="DUCKDB_BRIKK" implementationClass="dev.sort.duckdb.DuckdbIntrospectorGate"/>
         <jdbcHelper dbms="DUCKDB_BRIKK" implementationClass="com.intellij.database.remote.jdbc.helpers.GenericJdbcHelper"/>

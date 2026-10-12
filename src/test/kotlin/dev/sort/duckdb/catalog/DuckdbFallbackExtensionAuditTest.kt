@@ -11,7 +11,6 @@ class DuckdbFallbackExtensionAuditTest : BasePlatformTestCase() {
             "com.intellij.database.dataImporter" to "Retain PostgreSQL import defaults; fast-mode session SQL needs a separate DuckDB review.",
             "com.intellij.database.databaseViewStructureExtension" to "Retain PostgreSQL tree grouping for the existing PostgreSQL-family model.",
             "com.intellij.database.definitionProvider" to "Retain existing source retrieval; PostgreSQL catalog queries need a separate DuckDB review.",
-            "com.intellij.database.dialect" to "Retain the database dialect paired with the PostgreSQL-family model and DuckDB SQL dialect.",
             "com.intellij.database.dmlHelper" to "Retain existing grid DML; PostgreSQL row identifiers and generated SQL need a separate DuckDB review.",
             "com.intellij.database.domainRegistry" to "Retain PostgreSQL type domains used by the existing model and type system.",
             "com.intellij.database.executionEnvironmentHelper" to "Retain existing session handling; PostgreSQL SSL and time-zone probes need a separate DuckDB review.",

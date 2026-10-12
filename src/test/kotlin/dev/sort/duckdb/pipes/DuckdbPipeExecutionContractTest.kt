@@ -55,5 +55,6 @@ class DuckdbPipeExecutionContractTest : BasePlatformTestCase() {
     fun testLowersNestedOnlyPipelines() = contract().lowersNestedOnlyPipelines()
     fun testRunsTopLevelStagesToTheCaret() = contract().runsTopLevelStagesToTheCaret()
     fun testRefusesDestinationChangesDuringPrompting() = contract().refusesDestinationChangesDuringPrompting()
+    fun testRefusesSchemaChangesDuringPrompting() = contract().refusesNamespaceChangesDuringPrompting()
     fun testNotifiesRefusals() = contract().notifiesRefusals()
 }

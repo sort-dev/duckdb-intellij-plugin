@@ -18,7 +18,9 @@ class DuckdbPipesEngineTest {
         assertSame(NativeVerdict.Accepted, validator.validate("SELECT 1", null))
         val rejected = validator.validate("SELECT FROM WHERE", null) as NativeVerdict.Rejected
         assertTrue(rejected.message, rejected.message.contains("Parser Error"))
-        assertSame(NativeVerdict.Unavailable, validator.validate("SELECT '" + "x".repeat(100_001) + "'", null))
+        assertSame(NativeVerdict.Accepted, validator.validate("SELECT '" + "x".repeat(100_001) + "'", null))
+        assertSame(NativeVerdict.Unavailable, validator.validate("SELECT 'before\u0000after'", null))
+        assertSame(NativeVerdict.Unavailable, validator.validate("CREATE TABLE never_created AS SELECT 1", null))
         assertNull(supported("FROM range(3) |> LIMIT 1").verdict)
     }
     private fun supported(sql: String): PipeTranslation.Lowered {
