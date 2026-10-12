@@ -3,8 +3,8 @@
  * (https://github.com/ycyz97/starrocks-datagrip-plugin), Copyright the StarRocks Support
  * contributors, licensed under the Apache License, Version 2.0, by way of our own
  * doris-intellij-plugin (github.com/sort-dev/doris-intellij-plugin). The statement-dispatch and
- * lenient-parsing approach (wordAt / statementContainsAny / lenient consume-to-';') derives from
- * that lineage, modified for DuckDB syntax. See THIRD_PARTY_NOTICES.md.
+ * lenient-parsing approach derives from that lineage, modified for DuckDB syntax. The scanning
+ * and consumption helpers now live in Brikk SQL IntelliJ support. See THIRD_PARTY_NOTICES.md.
  */
 package dev.sort.duckdb.sql
 

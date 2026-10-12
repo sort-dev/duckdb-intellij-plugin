@@ -75,9 +75,9 @@ Copyright 2016-2026 ClickHouse, Inc.
 
 ## StarRocks Support (DataGrip plugin)
 
-The statement-dispatch and lenient-parsing approach in
-`src/main/kotlin/dev/sort/duckdb/sql/DuckdbPsiParser.kt` (bounded look-ahead helpers such as
-`wordAt` / `statementContainsAny`, and the lenient consume-to-`;` technique) is adapted from
+The statement-dispatch and lenient-parsing approach used by
+`src/main/kotlin/dev/sort/duckdb/sql/DuckdbPsiParser.kt`, with bounded scanning and lenient
+consumption now provided by Brikk SQL IntelliJ support, is adapted from
 StarRocks Support (https://github.com/ycyz97/starrocks-datagrip-plugin), Copyright the StarRocks
 Support contributors, licensed under the Apache License, Version 2.0 — by way of our own
 doris-intellij-plugin (https://github.com/sort-dev/doris-intellij-plugin), where the adaptation

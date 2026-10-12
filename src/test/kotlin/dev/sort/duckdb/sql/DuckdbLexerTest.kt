@@ -15,6 +15,33 @@ class DuckdbLexerTest : BasePlatformTestCase() {
         }
     }
 
+    fun testMissingCastTargetsKeepAsAndDelimiters() {
+        for (sql in listOf("TRY_CAST(1 AS )", "TRY_CAST(1 AS")) {
+            val tokens = DuckdbLexer().lexAll(sql)
+            assertFalse(tokens.any { it.type == SqlTokens.SQL_BLOCK_COMMENT })
+            assertSame(SqlTokens.SQL_AS, tokens.single { sql.substring(it.start, it.end) == "AS" }.type)
+            if (sql.endsWith(")")) assertSame(SqlTokens.SQL_RIGHT_PAREN, tokens.last().type)
+            else assertEquals("AS", sql.substring(tokens.last().start, tokens.last().end))
+            assertRestartsMatchFullLex(::DuckdbLexer, sql)
+        }
+    }
+
+    fun testCreateOrReplaceTableTracksColumnTypes() {
+        val sql = "CREATE OR REPLACE TABLE t (a DOUBLE);"
+        val tokens = DuckdbLexer().lexAll(sql)
+        assertEquals("OR REPLACE", tokens.single { it.type == SqlTokens.SQL_BLOCK_COMMENT }.let { sql.substring(it.start, it.end) })
+        assertSame(SqlTokens.SQL_IDENT, tokens.single { sql.substring(it.start, it.end) == "DOUBLE" }.type)
+        assertRestartsMatchFullLex(::DuckdbLexer, sql)
+    }
+
+    fun testGroupByAllAndQualifyAreRetyped() {
+        val sql = "SELECT a FROM t GROUP BY ALL QUALIFY a > 0;"
+        val tokens = DuckdbLexer().lexAll(sql)
+        assertSame(SqlTokens.SQL_IDENT, tokens.single { sql.substring(it.start, it.end) == "ALL" }.type)
+        assertSame(SqlTokens.SQL_HAVING, tokens.single { sql.substring(it.start, it.end) == "QUALIFY" }.type)
+        assertRestartsMatchFullLex(::DuckdbLexer, sql)
+    }
+
     fun testCommentsDoNotReplacePreviousToken() {
         val sql = "SELECT * /* keep */ EXCLUDE(a) FROM t;"
         val comments = DuckdbLexer().lexAll(sql).filter { it.type == SqlTokens.SQL_BLOCK_COMMENT }

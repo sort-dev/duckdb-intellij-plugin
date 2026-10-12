@@ -3,10 +3,12 @@ package dev.sort.duckdb.brikk
 import com.intellij.lang.injection.InjectedLanguageManager
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.components.service
+import com.intellij.openapi.fileTypes.SyntaxHighlighterFactory
 import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiErrorElement
 import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.refactoring.rename.RenameProcessor
+import com.intellij.sql.psi.SqlTokens
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import dev.sort.duckdb.brikk.kotlin.BrikkDuckdbInjectionPerformer
 import dev.sort.duckdb.brikk.kotlin.BrikkDuckdbKotlinContext
@@ -157,6 +159,35 @@ open class BrikkDuckdbInjectionTest : BasePlatformTestCase() {
         val context = BrikkDuckdbKotlinContext.find(host)!!
         val places = BrikkDuckdbInjectionPerformer().injectionPlaces(BrikkDuckdbKotlinContext.template(context))
         assertTrue(places.isNotEmpty())
+    }
+
+    fun testCollapsedSpanRecolorsAcrossInterpolationAndTrimmedLines() {
+        val host = configure("""
+            @BrikkSql fun query(value: Int) = Sql.duckdb(""${'"'}
+                SELECT {
+                    'before_key': 1,
+                    'param_key': ${'$'}value,
+                    'after_key': 2
+                }
+            ""${'"'}.trimIndent())
+        """.trimIndent())
+        val file = injected(host)
+        val manager = InjectedLanguageManager.getInstance(project)
+        val collapsed = PsiTreeUtil.collectElements(file) {
+            it.node?.elementType == SqlTokens.SQL_STRING_TOKEN && it.text.startsWith("{")
+        }.single()
+        assertTrue(collapsed.text, collapsed.text.contains(":value"))
+        assertTrue(manager.intersectWithAllEditableFragments(file, collapsed.textRange).size > 1)
+        val highlighter = SyntaxHighlighterFactory.getSyntaxHighlighter(DuckdbSqlDialect, project, file.virtualFile)
+        val stringColor = highlighter.getTokenHighlights(SqlTokens.SQL_STRING_TOKEN).last()
+        val all = myFixture.doHighlighting()
+        val source = myFixture.editor.document.text
+        for (word in listOf("'before_key'", "'after_key'")) {
+            val start = source.indexOf(word)
+            assertTrue("Missing SQL string recolor for $word across injection fragments: $all", all.any {
+                it.startOffset == start && it.endOffset == start + word.length && it.forcedTextAttributesKey == stringColor
+            })
+        }
     }
 
     fun testRenamePreservesKotlinReferenceAndUpdatesVirtualBind() {

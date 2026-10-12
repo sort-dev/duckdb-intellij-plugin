@@ -9,7 +9,9 @@ import com.intellij.psi.PsiErrorElement
 import com.intellij.psi.PsiFileFactory
 import com.intellij.psi.tree.IElementType
 import com.intellij.psi.util.PsiTreeUtil
+import com.intellij.sql.dialects.base.SqlSyntaxHighlighterFactory
 import com.intellij.sql.dialects.postgres.PgDialect
+import com.intellij.sql.dialects.postgres.PgLexer
 import com.intellij.sql.psi.SqlTokens
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import dev.brikk.house.sql.intellij.testing.lexAll
@@ -58,6 +60,7 @@ class DuckdbEditorSupportTest : BasePlatformTestCase() {
         val sql = "CREATE TABLE t (a STRUCT(field_name INTEGER));"
         configure(sql)
         val all = myFixture.doHighlighting()
+        assertFalse(color(SqlTokens.SQL_KEYWORD_TOKEN) == color(SqlTokens.SQL_IDENT))
         assertTrue(recolors(all, sql, "field_name").contains(color(SqlTokens.SQL_IDENT)))
         assertTrue(recolors(all, sql, "STRUCT").contains(color(SqlTokens.SQL_KEYWORD_TOKEN)))
     }
@@ -67,13 +70,39 @@ class DuckdbEditorSupportTest : BasePlatformTestCase() {
         val first = DuckdbSyntaxHighlighterFactory().getSyntaxHighlighter(project, myFixture.file.virtualFile)
         val second = DuckdbSyntaxHighlighterFactory().getSyntaxHighlighter(project, myFixture.file.virtualFile)
         val sql = "UNPIVOT ordinary_name"
-        assertTrue("UNPIVOT" in DUCKDB_KEYWORDS)
+        assertTrue("UNPIVOT" in DUCKDB_OVERLAY_KEYWORDS)
+        assertSame(SqlTokens.SQL_IDENT, PgLexer().lexAll(sql).first().type)
         val tokens = first.highlightingLexer.lexAll(sql)
         val keyword = tokens.first()
         assertNotSame(SqlTokens.SQL_IDENT, keyword.type)
         assertSame(keyword.type, second.highlightingLexer.lexAll(sql).first().type)
         assertEquals(color(SqlTokens.SQL_KEYWORD_TOKEN), first.getTokenHighlights(keyword.type).last())
         assertSame(SqlTokens.SQL_IDENT, tokens.last().type)
+    }
+
+    fun testUnreservedNamesKeepIdentifierColoring() {
+        val sql = "SELECT sample, macro, install, source, label FROM t"
+        configure(sql)
+        val highlighter = DuckdbSyntaxHighlighterFactory().getSyntaxHighlighter(project, myFixture.file.virtualFile)
+        val tokens = highlighter.highlightingLexer.lexAll(sql)
+        for (word in listOf("sample", "macro", "install")) {
+            assertTrue(word.uppercase() in DUCKDB_KEYWORDS)
+            assertFalse(word.uppercase() in DUCKDB_OVERLAY_KEYWORDS)
+            val token = tokens.single { sql.substring(it.start, it.end) == word }
+            assertSame(SqlTokens.SQL_IDENT, token.type)
+            val identifierColor = highlighter.getTokenHighlights(token.type).lastOrNull() ?: HighlighterColors.TEXT
+            assertEquals(color(SqlTokens.SQL_IDENT), identifierColor)
+            assertFalse(color(SqlTokens.SQL_KEYWORD_TOKEN) == identifierColor)
+        }
+        val plain = object : SqlSyntaxHighlighterFactory.Base(DuckdbSqlDialect) {}
+            .getSyntaxHighlighter(project, myFixture.file.virtualFile)
+        val plainTokens = plain.highlightingLexer.lexAll(sql)
+        for (word in listOf("source", "label")) {
+            val expected = plainTokens.single { sql.substring(it.start, it.end) == word }
+            val actual = tokens.single { sql.substring(it.start, it.end) == word }
+            assertSame(expected.type, actual.type)
+            assertTrue(plain.getTokenHighlights(expected.type).contentEquals(highlighter.getTokenHighlights(actual.type)))
+        }
     }
 
     fun testEnterSplitsQuotedStrings() {

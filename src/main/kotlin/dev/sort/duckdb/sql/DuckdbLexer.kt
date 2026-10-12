@@ -16,7 +16,7 @@ class DuckdbLexer : MaskingSqlLexer(PgLexer(), CastTargetMask()) {
     }
 
     override fun onNote(token: String) {
-        if (token == "TABLE" && lastMeaningful in setOf("CREATE", "REPLACE")) inCreateColumns = true
+        if (token == "TABLE" && lastMeaningful in CREATE_COLUMN_PREDECESSORS) inCreateColumns = true
     }
 
     override fun onOpenParen(depth: Int) {
@@ -37,7 +37,7 @@ class DuckdbLexer : MaskingSqlLexer(PgLexer(), CastTargetMask()) {
                 consumeBalanced(base, "{", "}")
                 span(base, SqlTokens.SQL_STRING_TOKEN, "}")
             }
-            text == "[" && (bracketIsComprehension(base) || lastMeaningful in setOf("(", ",", "=")) -> {
+            text == "[" && (bracketIsComprehension(base) || lastMeaningful in LIST_LITERAL_PREDECESSORS) -> {
                 consumeBalanced(base, "[", "]")
                 span(base, SqlTokens.SQL_STRING_TOKEN, "]")
             }
@@ -46,17 +46,17 @@ class DuckdbLexer : MaskingSqlLexer(PgLexer(), CastTargetMask()) {
             upper == "ALL" && lastMeaningful == "BY" -> emitAs(base, SqlTokens.SQL_IDENT)
             upper == "OR" && lastMeaningful == "CREATE" && wordsFollow(base, "REPLACE", "TABLE") -> maskWords(base, 2)
             upper == "BY" && wordsFollow(base, "NAME") &&
-                lastMeaningful in setOf("UNION", "EXCEPT", "INTERSECT") -> maskWords(base, 2)
+                lastMeaningful in SET_OPERATOR_HEADS -> maskWords(base, 2)
             upper == "BY" && (wordsFollow(base, "NAME", "SELECT") || wordsFollow(base, "NAME", "VALUES")) -> maskWords(base, 2)
-            upper in setOf("EXCLUDE", "REPLACE") && lastMeaningful == "*" && nextIs(base, "(") -> maskWithGroup(base)
+            upper in STAR_MODIFIER_HEADS && lastMeaningful == "*" && nextIs(base, "(") -> maskWithGroup(base)
             upper == "FILTER" && nextIs(base, "(") && !parenStartsWithWhere(base) -> maskWithGroup(base)
             upper == "VALUES" && lastMeaningful == "FROM" -> collapseValuesTableFactor(base)
             upper == "LAMBDA" -> maskLambdaHead(base)
-            upper in setOf("ASOF", "ANTI", "SEMI") && nextWordIsJoinish(base) -> maskWords(base, 1)
-            upper == "USING" && wordsFollow(base, "SAMPLE") || upper == "TABLESAMPLE" -> maskSampleSuffix(base)
+            upper in JOIN_MODIFIERS && nextWordIsJoinish(base) -> maskWords(base, 1)
+            (upper == "USING" && wordsFollow(base, "SAMPLE")) || upper == "TABLESAMPLE" -> maskSampleSuffix(base)
             upper in TYPE_COLLAPSE_HEADS && nextIs(base, "(") &&
                 (inCreateColumns || lastMeaningful == "::" || lastMeaningful == "TYPE") -> collapseTypeSpan(base)
-            text == "(" && lastMeaningful in setOf("FROM", "JOIN", ",", "(") && parenLeadsFromFirst(base) -> {
+            text == "(" && lastMeaningful in FROM_FIRST_PREDECESSORS && parenLeadsFromFirst(base) -> {
                 consumeBalanced(base)
                 span(base, SqlTokens.SQL_IDENT, "SUBQUERY_COLLAPSED")
             }
@@ -70,8 +70,8 @@ class DuckdbLexer : MaskingSqlLexer(PgLexer(), CastTargetMask()) {
                 emit(base)
                 collapseDottedPath(base)
             }
-            upper == "TABLE" && statementHead == "CREATE" ||
-                upper in setOf("FROM", "JOIN") && statementHead != "COPY" -> emitTableHead(base)
+            (upper == "TABLE" && statementHead == "CREATE") ||
+                (upper in TABLE_REFERENCE_HEADS && statementHead != "COPY") -> emitTableHead(base)
             else -> return false
         }
         return true
@@ -112,7 +112,7 @@ class DuckdbLexer : MaskingSqlLexer(PgLexer(), CastTargetMask()) {
         while (base.tokenType != null && guard-- > 0 && base.tokenText != "(") base.advance()
         consumeBalanced(base)
         skipWhitespaceTokens(base)
-        if (base.tokenText?.uppercase() in setOf("VIRTUAL", "STORED")) base.advance()
+        if (base.tokenText?.uppercase() in GENERATED_STORAGE_MODIFIERS) base.advance()
         span(base, SqlTokens.SQL_BLOCK_COMMENT, MASKED)
     }
 
@@ -167,7 +167,7 @@ class DuckdbLexer : MaskingSqlLexer(PgLexer(), CastTargetMask()) {
         base.advance()
         var guard = 12
         while (base.tokenType != null && guard-- > 0 && base.tokenText != ":") {
-            if (base.tokenText in setOf("(", ")", ";")) break
+            if (base.tokenText in LAMBDA_HEAD_DELIMITERS) break
             base.advance()
         }
         if (base.tokenText == ":") base.advance()
@@ -175,7 +175,7 @@ class DuckdbLexer : MaskingSqlLexer(PgLexer(), CastTargetMask()) {
     }
 
     private fun nextWordIsJoinish(base: Lexer): Boolean =
-        listOf("JOIN", "LEFT", "RIGHT", "FULL", "INNER", "OUTER").any { wordsFollow(base, it) }
+        JOIN_WORDS.any { wordsFollow(base, it) }
 
     private fun dottedIdentFollows(base: Lexer): Boolean {
         val seq = base.bufferSequence
@@ -214,6 +214,16 @@ class DuckdbLexer : MaskingSqlLexer(PgLexer(), CastTargetMask()) {
     }
 
     private companion object {
+        val CREATE_COLUMN_PREDECESSORS = setOf("CREATE", "REPLACE")
+        val LIST_LITERAL_PREDECESSORS = setOf("(", ",", "=")
+        val SET_OPERATOR_HEADS = setOf("UNION", "EXCEPT", "INTERSECT")
+        val STAR_MODIFIER_HEADS = setOf("EXCLUDE", "REPLACE")
+        val JOIN_MODIFIERS = setOf("ASOF", "ANTI", "SEMI")
+        val FROM_FIRST_PREDECESSORS = setOf("FROM", "JOIN", ",", "(")
+        val TABLE_REFERENCE_HEADS = setOf("FROM", "JOIN")
+        val GENERATED_STORAGE_MODIFIERS = setOf("VIRTUAL", "STORED")
+        val LAMBDA_HEAD_DELIMITERS = setOf("(", ")", ";")
+        val JOIN_WORDS = listOf("JOIN", "LEFT", "RIGHT", "FULL", "INNER", "OUTER")
         val TYPE_COLLAPSE_HEADS = setOf("STRUCT", "ROW", "UNION", "MAP")
         val PAREN_FROM_FIRST_HEADS = listOf("FROM", "DESCRIBE", "SUMMARIZE", "PIVOT", "UNPIVOT")
         val SAMPLE_WORDS = setOf("SAMPLE", "%", "PERCENT", "ROWS", "BERNOULLI", "SYSTEM", "RESERVOIR", "REPEATABLE")
