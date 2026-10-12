@@ -8,21 +8,21 @@ https://github.com/brikk/brikk-house, Apache License 2.0. The helper contains
 Brikk context/interpolation and copied relation-contract APIs. Kotlin/IntelliJ
 APIs and compiler plugins are not bundled by this dependency.
 
-## Brikk SQL IntelliJ support 0.1.2-SNAPSHOT
+## Brikk SQL IntelliJ support 0.2.0-SNAPSHOT
 
-This development build embeds `dev.brikk.house:brikk-sql-intellij-support:0.1.2-SNAPSHOT` from
+This development build embeds `dev.brikk.house:brikk-sql-intellij-support:0.2.0-SNAPSHOT` from
 Maven Local. Jayson Minard and Sortdev SRL, https://github.com/brikk/brikk-sql,
 Apache License 2.0. The helper provides cooperative Execute actions, promotion,
 document snapshots, translated script models and shared column presentation. No IntelliJ SDK, SQL engine,
 native driver or verifier is supplied transitively by this library.
 
-## brikk-sql and metadata 0.19.1
+## brikk-sql and metadata 0.20.0-SNAPSHOT
 
-Bundled translator artifacts: `dev.brikk.house:brikk-sql-jvm:0.19.1` and
-`dev.brikk.house:brikk-sql-metadata-jvm:0.19.1`, by Jayson Minard and Sortdev SRL.
+Bundled translator artifacts: `dev.brikk.house:brikk-sql-jvm:0.20.0-SNAPSHOT` and
+`dev.brikk.house:brikk-sql-metadata-jvm:0.20.0-SNAPSHOT`, by Jayson Minard and Sortdev SRL.
 Project: https://github.com/brikk/brikk-sql. Apache License 2.0, with the
 third-party-derived portions below. No native database engine or verifier is bundled.
-Published sources and license provenance are available from Maven Central.
+This development build uses Maven Local artifacts.
 
 The parser, tokenizer, AST, optimizer and SQL generators include a Kotlin port of
 SQLGlot by Toby Mao and contributors, https://github.com/tobymao/sqlglot.

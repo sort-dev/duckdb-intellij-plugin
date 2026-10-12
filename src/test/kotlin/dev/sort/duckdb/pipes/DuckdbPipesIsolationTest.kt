@@ -23,10 +23,10 @@ class DuckdbPipesIsolationTest : BasePlatformTestCase() {
         assertTrue(fragment.getResource("SqlFragment.class").toString().contains("brikk-sql-jvmMain-$engineVersion.jar"))
         val actionClass = loader.loadClass("dev.brikk.house.sql.intellij.CooperativeExecuteAction")
         assertSame(loader, actionClass.classLoader)
-        assertTrue(actionClass.getResource("CooperativeExecuteAction.class").toString().contains("brikk-sql-intellij-support-0.1.2-SNAPSHOT.jar"))
+        assertTrue(actionClass.getResource("CooperativeExecuteAction.class").toString().contains("brikk-sql-intellij-support-0.2.0-SNAPSHOT.jar"))
         val completionClass = loader.loadClass("dev.brikk.house.sql.intellij.SqlColumnCompletion")
         assertSame(loader, completionClass.classLoader)
-        assertTrue(completionClass.getResource("SqlColumnCompletion.class").toString().contains("brikk-sql-intellij-support-0.1.2-SNAPSHOT.jar"))
+        assertTrue(completionClass.getResource("SqlColumnCompletion.class").toString().contains("brikk-sql-intellij-support-0.2.0-SNAPSHOT.jar"))
         val value = fragment.getConstructor(String::class.java, String::class.java)
             .newInstance("FROM range(3) |> LIMIT 1", "duckdb")
         val result = fragment.getMethod("toExecutable", String::class.java, Boolean::class.javaPrimitiveType,
