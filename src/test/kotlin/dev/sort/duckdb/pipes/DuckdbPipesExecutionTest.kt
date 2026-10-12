@@ -140,6 +140,20 @@ class DuckdbPipesExecutionTest : BasePlatformTestCase() {
         }
     }
 
+    fun testStraightJoinRefusesTheWholeScriptWithoutSubmittingOrDelegating() {
+        for (join in listOf("STRAIGHT_JOIN b ON a.id=b.id", "STRAIGHT_JOIN b USING (id)")) {
+            Fixture("SELECT 1; FROM a |> $join;").use { f ->
+                withOption(DatabaseSettings.ExecOption().apply {
+                    execInside = DatabaseSettings.EXECUTE_INSIDE_WHOLE_SCRIPT
+                }) { f.execute() }
+                assertEmpty(f.requests)
+                assertEmpty(f.previousEvents)
+                assertTrue(f.notifications.map { it.content }.toString(),
+                    f.notifications.any { "STRAIGHT_JOIN" in it.content })
+            }
+        }
+    }
+
     fun testNativeValidationRunsOnlyAfterParameterSubstitution() {
         val checked = mutableListOf<String>()
         var lookups = 0
