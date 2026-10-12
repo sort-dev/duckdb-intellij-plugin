@@ -19,7 +19,7 @@ class BrikkDuckdbInjectionPerformer : LanguageInjectionPerformer {
         val template = BrikkDuckdbKotlinContext.template(brikk)
         val places = injectionPlaces(template)
         if (places.isEmpty()) return false
-        registrar.startInjecting(DuckdbSqlDialect.INSTANCE)
+        registrar.startInjecting(DuckdbSqlDialect)
         registrar.putInjectedFileUserData(BrikkDuckdbProfile.KEY, template.profile)
         // Synthetic text has no Kotlin runtime value; leave template refs in the host language.
         registrar.frankensteinInjection(template.profile.issues.isNotEmpty())

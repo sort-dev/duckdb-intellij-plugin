@@ -13,7 +13,7 @@ class BrikkDuckdbInjectionContributor : LanguageInjectionContributor {
         if (BrikkDuckdbKotlinContext.find(host) == null) return null
         return object : Injection {
             override fun getInjectedLanguageId() = "DuckDBSQL"
-            override fun getInjectedLanguage() = DuckdbSqlDialect.INSTANCE
+            override fun getInjectedLanguage() = DuckdbSqlDialect
             override fun getPrefix() = "-- dialect: duckdb\n"
             override fun getSuffix() = ""
             override fun getSupportId() = "kotlin"

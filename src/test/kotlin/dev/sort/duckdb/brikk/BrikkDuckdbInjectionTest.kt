@@ -60,7 +60,7 @@ open class BrikkDuckdbInjectionTest : BasePlatformTestCase() {
         val injections = InjectedLanguageManager.getInstance(project).getInjectedPsiFiles(host).orEmpty()
         assertFalse("No SQL injection for ${host.text}", injections.isEmpty())
         val file = injections.first().first.containingFile
-        assertEquals(DuckdbSqlDialect.INSTANCE, file.language)
+        assertEquals(DuckdbSqlDialect, file.language)
         return file
     }
 
@@ -186,7 +186,7 @@ open class BrikkDuckdbInjectionTest : BasePlatformTestCase() {
 
     fun testDdlBackedInspectionsKeepColumnsAndBindsDistinct() {
         val schema = myFixture.addFileToProject("schema.sql", "CREATE TABLE customers (tenant TEXT NOT NULL, id INTEGER);")
-        dev.sort.duckdb.setSqlDialectMapping(project, schema.virtualFile, DuckdbSqlDialect.INSTANCE)
+        dev.brikk.house.sql.intellij.testing.setSqlDialectMapping(project, schema.virtualFile, DuckdbSqlDialect)
         val manager = com.intellij.sql.database.SqlDataSourceManager.getInstance(project)
         val source = manager.createEmpty().apply {
             name = "Brikk schema test"

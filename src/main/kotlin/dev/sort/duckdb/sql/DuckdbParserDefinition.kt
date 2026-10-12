@@ -21,6 +21,6 @@ class DuckdbParserDefinition : SqlParserDefinitionBase() {
     override fun getFileNodeType(): IFileElementType = FILE
 
     private companion object {
-        private val FILE = SqlFileElementType("DUCKDB_BRIKK_SQL_FILE", DuckdbSqlDialect.INSTANCE)
+        private val FILE = SqlFileElementType("DUCKDB_BRIKK_SQL_FILE", DuckdbSqlDialect)
     }
 }

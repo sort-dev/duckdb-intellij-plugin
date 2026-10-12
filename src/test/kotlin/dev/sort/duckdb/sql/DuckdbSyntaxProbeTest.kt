@@ -2,7 +2,7 @@ package dev.sort.duckdb.sql
 
 import com.intellij.psi.PsiErrorElement
 import com.intellij.psi.util.PsiTreeUtil
-import dev.sort.duckdb.setSqlDialectMapping
+import dev.brikk.house.sql.intellij.testing.setSqlDialectMapping
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import java.io.File
 
@@ -19,7 +19,7 @@ class DuckdbSyntaxProbeTest : BasePlatformTestCase() {
 
     private fun errorsIn(sql: String): List<String> {
         val psi = myFixture.configureByText("p${counter++}.sql", sql)
-        setSqlDialectMapping(project, psi.virtualFile, DuckdbSqlDialect.INSTANCE)
+        setSqlDialectMapping(project, psi.virtualFile, DuckdbSqlDialect)
         val file = com.intellij.psi.PsiManager.getInstance(project).findFile(psi.virtualFile)!!
         return PsiTreeUtil.findChildrenOfType(file, PsiErrorElement::class.java).map { it.errorDescription }
     }

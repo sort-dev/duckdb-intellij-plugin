@@ -3,12 +3,12 @@ package dev.sort.duckdb.sql
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import dev.brikk.house.sql.metadata.FunctionKind
 import dev.brikk.house.sql.metadata.FunctionPresentation
-import dev.sort.duckdb.setSqlDialectMapping
+import dev.brikk.house.sql.intellij.testing.setSqlDialectMapping
 
 class DuckdbCompletionInsertionTest : BasePlatformTestCase() {
     override fun setUp() {
         super.setUp()
-        setSqlDialectMapping(project, null, DuckdbSqlDialect.INSTANCE)
+        setSqlDialectMapping(project, null, DuckdbSqlDialect)
     }
 
     override fun tearDown() {

@@ -13,7 +13,7 @@ import dev.brikk.house.sql.metadata.FunctionKind
 import dev.brikk.house.sql.metadata.FunctionPresentation
 import dev.brikk.house.sql.metadata.InvocationSyntax
 import dev.sort.duckdb.DuckdbDbms
-import dev.sort.duckdb.setSqlDialectMapping
+import dev.brikk.house.sql.intellij.testing.setSqlDialectMapping
 import dev.sort.duckdb.sql.DuckdbCompletionProfile
 import dev.sort.duckdb.sql.DuckdbSqlDialect
 import java.nio.file.Files
@@ -97,7 +97,7 @@ class DuckdbCatalogResolverTest : BasePlatformTestCase() {
             assertEquals(setOf("SELECT"), active.keywords)
 
             // Completion level, same two assertions through the real contributor.
-            setSqlDialectMapping(project, null, DuckdbSqlDialect.INSTANCE)
+            setSqlDialectMapping(project, null, DuckdbSqlDialect)
             myFixture.configureByText("c1.sql", "SELECT only_liv<caret> FROM t;")
             myFixture.completeBasic()
             val offered = myFixture.lookupElementStrings.orEmpty()
@@ -116,7 +116,7 @@ class DuckdbCatalogResolverTest : BasePlatformTestCase() {
     }
 
     fun testExtensionOffersShowRequiresSpatial() {
-        setSqlDialectMapping(project, null, DuckdbSqlDialect.INSTANCE)
+        setSqlDialectMapping(project, null, DuckdbSqlDialect)
         myFixture.configureByText("e1.sql", "SELECT * FROM st_re<caret>;")
         myFixture.completeBasic()
         val offered = myFixture.lookupElementStrings.orEmpty()
@@ -157,7 +157,7 @@ class DuckdbCatalogResolverTest : BasePlatformTestCase() {
                 DuckdbLiveCatalog.Fn("session_macro", DuckdbLiveCatalog.Kind.MACRO),
                 DuckdbLiveCatalog.Fn("show_tables", DuckdbLiveCatalog.Kind.PRAGMA),
             ), setOf("SELECT"), 1L))
-            setSqlDialectMapping(project, null, DuckdbSqlDialect.INSTANCE)
+            setSqlDialectMapping(project, null, DuckdbSqlDialect)
             val file = myFixture.configureByText("spatial.sql", "SELECT st_ar<caret>")
             val active = DuckdbCatalogResolver.activeCatalogFor(file)
             assertEquals("macro", active.functions.single { it.name == "session_macro" }.nativeKind)
@@ -184,7 +184,7 @@ class DuckdbCatalogResolverTest : BasePlatformTestCase() {
                 DuckdbLiveCatalog.Fn("only_live_fn", DuckdbLiveCatalog.Kind.SCALAR),
                 DuckdbLiveCatalog.Fn("current_date", DuckdbLiveCatalog.Kind.SCALAR),
             ), setOf("SELECT"), 1L))
-            setSqlDialectMapping(project, null, DuckdbSqlDialect.INSTANCE)
+            setSqlDialectMapping(project, null, DuckdbSqlDialect)
             val file = myFixture.configureByText("grammar.sql", "SELECT ca<caret>")
             val active = DuckdbCatalogResolver.activeCatalogFor(file)
             assertFalse(active.functions.any { it.name == "read_parquet" })
@@ -216,7 +216,7 @@ class DuckdbCatalogResolverTest : BasePlatformTestCase() {
         val manager = LocalDataSourceManager.getInstance(project)
         manager.addDataSource(source)
         try {
-            setSqlDialectMapping(project, null, DuckdbSqlDialect.INSTANCE)
+            setSqlDialectMapping(project, null, DuckdbSqlDialect)
             block(source)
         } finally {
             manager.removeDataSource(source)

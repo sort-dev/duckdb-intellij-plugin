@@ -14,6 +14,7 @@ import dev.brikk.house.sql.intellij.CooperativeExecuteAction
 import dev.brikk.house.sql.intellij.ExecuteInterceptor
 import dev.brikk.house.sql.intellij.ExecutionClaim
 import dev.brikk.house.sql.intellij.pipe.isEnabled
+import dev.brikk.house.sql.intellij.testing.setSqlDialectMapping
 
 class DuckdbPipesPlatformTest : BasePlatformTestCase() {
     override fun tearDown() {
@@ -34,14 +35,14 @@ class DuckdbPipesPlatformTest : BasePlatformTestCase() {
         project.service<DuckdbPipesSettings>().enabled = true
         val longHead = (1..600).joinToString(", ") { "$it AS c$it" }
         val sql = "SELECT $longHead |> LIMIT 1; SELECT 2;"
-        val file = PsiFileFactory.getInstance(project).createFileFromText("pipe.sql", DuckdbSqlDialect.INSTANCE, sql)
+        val file = PsiFileFactory.getInstance(project).createFileFromText("pipe.sql", DuckdbSqlDialect, sql)
         val statements = PsiTreeUtil.findChildrenOfType(file, SqlStatement::class.java).filterNot { it.parent is SqlStatement }
         assertEquals(2, statements.size)
         assertTrue(statements.first().text.contains("|> LIMIT 1"))
     }
     fun testPipeDiagnosticsReplaceNativeValidatorErrors() {
         project.service<DuckdbPipesSettings>().enabled = true
-        val file = PsiFileFactory.getInstance(project).createFileFromText("pipe.sql", DuckdbSqlDialect.INSTANCE,
+        val file = PsiFileFactory.getInstance(project).createFileFromText("pipe.sql", DuckdbSqlDialect,
             "FROM range(3) |> LIMIT 1; FROM t |> BOGUS 2; SELECT FROM WHERE;")
         val annotator = DuckdbErrorAnnotator()
         val info = annotator.collectInformation(file)!!
@@ -106,7 +107,7 @@ class DuckdbPipesPlatformTest : BasePlatformTestCase() {
     }
     fun testStageKeywordsAndInputAliasesCompleteWithoutACatalog() {
         project.service<DuckdbPipesSettings>().enabled = true
-        dev.sort.duckdb.setSqlDialectMapping(project, null, DuckdbSqlDialect.INSTANCE)
+        setSqlDialectMapping(project, null, DuckdbSqlDialect)
         myFixture.configureByText("keywords.sql", "FROM range(3) |> <caret>")
         myFixture.completeBasic()
         assertTrue("Lookups: ${myFixture.lookupElementStrings}",
@@ -122,7 +123,7 @@ class DuckdbPipesPlatformTest : BasePlatformTestCase() {
         project.service<DuckdbPipesSettings>().enabled = true
         val sql = "FROM t |> FULL OUTER JOIN u ON t.id = u.id"
         val file = myFixture.configureByText("stage-colors.sql", sql)
-        dev.sort.duckdb.setSqlDialectMapping(project, file.virtualFile, DuckdbSqlDialect.INSTANCE)
+        setSqlDialectMapping(project, file.virtualFile, DuckdbSqlDialect)
         val colors = myFixture.doHighlighting().filter {
             it.forcedTextAttributesKey == com.intellij.openapi.editor.DefaultLanguageHighlighterColors.KEYWORD
         }

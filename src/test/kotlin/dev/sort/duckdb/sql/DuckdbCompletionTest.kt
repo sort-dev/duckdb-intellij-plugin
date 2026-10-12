@@ -1,14 +1,14 @@
 package dev.sort.duckdb.sql
 
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
-import dev.sort.duckdb.setSqlDialectMapping
+import dev.brikk.house.sql.intellij.testing.setSqlDialectMapping
 
 class DuckdbCompletionTest : BasePlatformTestCase() {
 
     fun testDuckdbFunctionsOfferedInExpression() {
         // mapping must precede file creation — a post-configure setMapping leaves the completion
         // session on the pre-mapping PSI (empirically bisected; highlight-only tests tolerate it)
-        setSqlDialectMapping(project, null, DuckdbSqlDialect.INSTANCE)
+        setSqlDialectMapping(project, null, DuckdbSqlDialect)
         myFixture.configureByText("c.sql", "SELECT list_tra<caret> FROM t;")
         myFixture.completeBasic()
         // a single match auto-inserts (lookup never shows) — accept either evidence
@@ -21,7 +21,7 @@ class DuckdbCompletionTest : BasePlatformTestCase() {
     }
 
     fun testTableFunctionOfferedInFrom() {
-        setSqlDialectMapping(project, null, DuckdbSqlDialect.INSTANCE)
+        setSqlDialectMapping(project, null, DuckdbSqlDialect)
         myFixture.configureByText("f.sql", "SELECT * FROM read_par<caret>;")
         myFixture.completeBasic()
         val lookups = myFixture.lookupElementStrings.orEmpty()

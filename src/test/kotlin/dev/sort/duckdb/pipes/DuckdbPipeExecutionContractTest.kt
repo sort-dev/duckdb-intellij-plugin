@@ -5,7 +5,7 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.testFramework.PlatformTestUtil
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import dev.brikk.house.sql.intellij.testing.PipeExecutionContract
-import dev.sort.duckdb.setSqlDialectMapping
+import dev.brikk.house.sql.intellij.testing.setSqlDialectMapping
 import dev.sort.duckdb.sql.DuckdbSqlDialect
 import java.util.UUID
 
@@ -41,7 +41,7 @@ class DuckdbPipeExecutionContractTest : BasePlatformTestCase() {
 
     private fun contract() = PipeExecutionContract(DuckdbPipeDialect, "duckdb-brikk-native", "mysql", { settings.enabled = it }) { sql ->
         val file = myFixture.configureByText("pipe-contract-${UUID.randomUUID()}.sql", sql)
-        setSqlDialectMapping(project, file.virtualFile, DuckdbSqlDialect.INSTANCE)
+        setSqlDialectMapping(project, file.virtualFile, DuckdbSqlDialect)
         mappedFiles.add(file.virtualFile)
         myFixture.editor
     }

@@ -10,7 +10,7 @@ import dev.brikk.house.sql.metadata.MetadataSnapshot
 import dev.sort.duckdb.catalog.DuckdbCatalogResolver
 
 object DuckdbCompletionProfile : SqlCompletionProfile {
-    override val language get() = DuckdbSqlDialect.INSTANCE
+    override val language get() = DuckdbSqlDialect
     override val metadata = DUCKDB_METADATA
 
     override fun snapshot(file: PsiFile) = DuckdbCatalogResolver.activeCatalogFor(file).snapshot

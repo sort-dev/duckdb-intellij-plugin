@@ -29,6 +29,21 @@ class DuckdbPipesIsolationTest : BasePlatformTestCase() {
         assertTrue(completionClass.getResource("SqlColumnCompletion.class").toString().contains("brikk-sql-intellij-support-0.2.0-SNAPSHOT.jar"))
         val pipeClass = loader.loadClass("dev.brikk.house.sql.intellij.pipe.PipeDialect")
         assertSame(loader, pipeClass.classLoader)
+        for (name in listOf(
+            "lexer.MaskingSqlLexer", "lexer.CastTargetMask", "parser.LenientSqlParsingKt",
+            "pipe.PipeStatementGate", "editor.MaskedSpanRecolorAnnotator", "editor.SubstrateErrorFilter",
+            "editor.SqlDialectQuoteHandler", "editor.KeywordOverlayHighlighterFactory",
+            "dialect.PgFamilyDialect", "dialect.SqlDialectRegistry",
+        )) assertSame(name, loader, loader.loadClass("dev.brikk.house.sql.intellij.$name").classLoader)
+        for ((base, consumer) in listOf(
+            "lexer.MaskingSqlLexer" to "DuckdbLexer",
+            "editor.MaskedSpanRecolorAnnotator" to "DuckdbMaskedSpanRecolorAnnotator",
+            "editor.SubstrateErrorFilter" to "DuckdbHighlightErrorFilter",
+            "editor.SqlDialectQuoteHandler" to "DuckdbQuoteHandler",
+            "editor.KeywordOverlayHighlighterFactory" to "DuckdbSyntaxHighlighterFactory",
+            "dialect.PgFamilyDialect" to "DuckdbSqlDialect",
+        )) assertTrue(consumer, loader.loadClass("dev.brikk.house.sql.intellij.$base")
+            .isAssignableFrom(loader.loadClass("dev.sort.duckdb.sql.$consumer")))
         val sharedCompletion = loader.loadClass("dev.brikk.house.sql.intellij.completion.SqlCompletionContributor")
         assertSame(loader, sharedCompletion.classLoader)
         val completionProfile = loader.loadClass("dev.sort.duckdb.sql.DuckdbCompletionProfile")

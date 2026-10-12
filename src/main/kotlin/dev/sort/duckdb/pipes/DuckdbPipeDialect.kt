@@ -20,7 +20,7 @@ object DuckdbPipeDialect : PipeDialect {
     override val dialect = "duckdb"
     override val label = "DuckDB PIPE"
     override val vetoProperty = "duckdb.pipes"
-    override val language get() = DuckdbSqlDialect.INSTANCE
+    override val language get() = DuckdbSqlDialect
     override val serverColumnUnit = ColumnUnit.UTF16
     override fun isProjectEnabled(project: Project) = project.service<DuckdbPipesSettings>().enabled
     override fun enablesEditing(file: PsiFile) = BrikkDuckdbProfile.forFile(file) != null

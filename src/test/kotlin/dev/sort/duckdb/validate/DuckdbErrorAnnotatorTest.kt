@@ -5,7 +5,7 @@ import com.intellij.codeInsight.daemon.impl.AnnotationHolderImpl
 import com.intellij.lang.annotation.Annotator
 import com.intellij.lang.annotation.AnnotationSession
 import com.intellij.lang.annotation.HighlightSeverity
-import dev.sort.duckdb.setSqlDialectMapping
+import dev.brikk.house.sql.intellij.testing.setSqlDialectMapping
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiFile
@@ -18,7 +18,7 @@ class DuckdbErrorAnnotatorTest : BasePlatformTestCase() {
 
     private fun highlight(sql: String): List<HighlightInfo> {
         val psi = myFixture.configureByText("v${counter++}.sql", sql)
-        setSqlDialectMapping(project, psi.virtualFile, DuckdbSqlDialect.INSTANCE)
+        setSqlDialectMapping(project, psi.virtualFile, DuckdbSqlDialect)
         return myFixture.doHighlighting().filter { it.severity == HighlightSeverity.ERROR }
     }
 
@@ -31,7 +31,7 @@ class DuckdbErrorAnnotatorTest : BasePlatformTestCase() {
         // correctly leaves alone.
         val sql = "SELECT 1;\nSELECT FROM WHERE;"
         val psi = myFixture.configureByText("u.sql", sql)
-        setSqlDialectMapping(project, psi.virtualFile, DuckdbSqlDialect.INSTANCE)
+        setSqlDialectMapping(project, psi.virtualFile, DuckdbSqlDialect)
         val file = requireNotNull(com.intellij.psi.PsiManager.getInstance(project).findFile(psi.virtualFile))
         val annotator = DuckdbErrorAnnotator()
         val info = annotator.collectInformation(file)
@@ -51,7 +51,7 @@ class DuckdbErrorAnnotatorTest : BasePlatformTestCase() {
             assertEquals(2, native.error.line)
             assertEquals(sql.indexOf("WHERE"), native.error.offset)
             val psi = myFixture.configureByText("coordinates${counter++}.sql", sql)
-            setSqlDialectMapping(project, psi.virtualFile, DuckdbSqlDialect.INSTANCE)
+            setSqlDialectMapping(project, psi.virtualFile, DuckdbSqlDialect)
             val file = requireNotNull(com.intellij.psi.PsiManager.getInstance(project).findFile(psi.virtualFile))
             val annotator = DuckdbErrorAnnotator()
             val result = requireNotNull(annotator.doAnnotate(annotator.collectInformation(file)))

@@ -46,7 +46,7 @@ class DuckdbErrorAnnotator : ExternalAnnotator<DuckdbErrorAnnotator.Info, Duckdb
         collectInformation(file)
 
     override fun collectInformation(file: PsiFile): Info? {
-        if (!file.language.isKindOf(DuckdbSqlDialect.INSTANCE)) return null
+        if (!file.language.isKindOf(DuckdbSqlDialect)) return null
         val profile = BrikkDuckdbProfile.forFile(file)
         if (profile != null) return Info(emptyList(), null, DuckdbPipeDialect.isEditingEnabled(file),
             brikk = profile, brikkText = com.intellij.lang.injection.InjectedLanguageManager.getInstance(file.project).getUnescapedText(file),

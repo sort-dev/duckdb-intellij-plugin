@@ -34,7 +34,7 @@ class BrikkSqlResolveExtension : SqlResolveExtension {
 
 internal class BrikkColumnSymbol(private val file: PsiFile, relation: BrikkSqlScopes.Relation,
                                  val contract: ColumnContract) :
-    LightElement(file.manager, DuckdbSqlDialect.INSTANCE), DasPsiSymbol, DasColumnSymbol {
+    LightElement(file.manager, DuckdbSqlDialect), DasPsiSymbol, DasColumnSymbol {
     private val objectValue = ContractColumn(relation, contract)
     private val scopeIdentity = Triple(relation.alias.lowercase(java.util.Locale.ROOT), relation.slot, relation.sourceStart)
     override fun equals(other: Any?): Boolean = other is BrikkColumnSymbol && file.originalFile === other.file.originalFile &&

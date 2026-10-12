@@ -207,7 +207,7 @@ class DuckdbPipesExecutionTest : BasePlatformTestCase() {
         val notifications = mutableListOf<Notification>()
         private val notificationConnection = project.messageBus.connect()
         init {
-            dev.sort.duckdb.setSqlDialectMapping(project, vf, DuckdbSqlDialect.INSTANCE)
+            dev.brikk.house.sql.intellij.testing.setSqlDialectMapping(project, vf, DuckdbSqlDialect)
             recording = RecordingConsole(project, vf, "duckdb-brikk-native")
             notificationConnection.subscribe(Notifications.TOPIC, object : Notifications {
                 override fun notify(notification: Notification) {
@@ -235,7 +235,7 @@ class DuckdbPipesExecutionTest : BasePlatformTestCase() {
             try {
                 recording.close()
             } finally {
-                dev.sort.duckdb.setSqlDialectMapping(project, vf, null)
+                dev.brikk.house.sql.intellij.testing.setSqlDialectMapping(project, vf, null)
             }
         }
     }

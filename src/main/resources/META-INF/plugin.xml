@@ -146,7 +146,8 @@
         <gotoDeclarationHandler implementation="dev.sort.duckdb.brikk.BrikkSqlGotoDeclarationHandler"/>
         <annotator language="DuckDBSQL" implementationClass="dev.sort.duckdb.brikk.BrikkSqlContractAnnotator"/>
         <lang.parserDefinition language="DuckDBSQL" implementationClass="dev.sort.duckdb.sql.DuckdbParserDefinition"/>
-        <lang.commenter language="DuckDBSQL" implementationClass="dev.sort.duckdb.sql.DuckdbCommenter"/>
+        <lang.commenter language="DuckDBSQL" implementationClass="com.intellij.database.sql.common.core.psi.impl.support.SqlNestedCommenter"/>
+        <lang.quoteHandler language="DuckDBSQL" implementationClass="dev.sort.duckdb.sql.DuckdbQuoteHandler"/>
         <!-- LOAD-BEARING beyond colors: the SQL todo/id indexers derive their filter lexer from
              the language's syntax highlighter; absence crashes the TODO index on our files. -->
         <lang.syntaxHighlighterFactory language="DuckDBSQL" implementationClass="dev.sort.duckdb.sql.DuckdbSyntaxHighlighterFactory"/>

@@ -10,4 +10,4 @@ import dev.sort.duckdb.sql.DuckdbSqlDialect
 
 @Service(Service.Level.PROJECT)
 @State(name = "DuckdbPipesSettings", storages = [Storage(StoragePathMacros.WORKSPACE_FILE)])
-class DuckdbPipesSettings(project: Project) : ToggleSettings(project, DuckdbSqlDialect.INSTANCE)
+class DuckdbPipesSettings(project: Project) : ToggleSettings(project, DuckdbSqlDialect)
