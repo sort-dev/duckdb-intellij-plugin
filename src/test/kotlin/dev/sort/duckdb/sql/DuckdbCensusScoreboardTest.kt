@@ -4,6 +4,7 @@ import com.intellij.psi.PsiErrorElement
 import com.intellij.psi.util.PsiTreeUtil
 import dev.sort.duckdb.setSqlDialectMapping
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
+import dev.brikk.house.sql.intellij.testing.assertRestartsMatchFullLex
 import java.io.File
 
 /**
@@ -14,6 +15,13 @@ import java.io.File
  * scoreboard; this one measures the whole language.
  */
 class DuckdbCensusScoreboardTest : BasePlatformTestCase() {
+
+    fun testCensusLexerRestarts() {
+        val dir = File(System.getProperty("corpus.dir"), "census")
+        val files = dir.listFiles { file -> file.extension == "sql" }.orEmpty()
+        assertEquals(226, files.size)
+        for (file in files) assertRestartsMatchFullLex(::DuckdbLexer, file.readText())
+    }
 
     private var counter = 0
 
