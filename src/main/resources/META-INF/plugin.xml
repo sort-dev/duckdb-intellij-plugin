@@ -164,11 +164,7 @@
         <completion.contributor language="DuckDBSQL" implementationClass="dev.sort.duckdb.sql.DuckdbMetadataCompletionContributor" id="duckdb.metadata" order="first"/>
         <!-- Catalog-refresh balloons (manual action + INSTALL/LOAD observer). -->
         <notificationGroup id="DuckDB (Brikk)" displayType="BALLOON"/>
-        <!-- Stage 4b refresh-on-INSTALL/LOAD: one root DataAuditor per project (DataBus.addRootAuditor)
-             re-harvests a Brikk data source's live catalog when INSTALL/FORCE INSTALL/LOAD runs in a
-             console (debounced ~2s per source). Autoloaded extensions are NOT observable here — the
-             manual Refresh DuckDB Catalog action covers them. -->
-        <postStartupActivity implementation="dev.sort.duckdb.catalog.DuckdbInstallLoadStartup"/>
+        <postStartupActivity implementation="dev.sort.duckdb.catalog.DuckdbExecutionObserverStartup"/>
     </extensions>
 
     <extensions defaultExtensionNs="com.intellij.database">
@@ -181,19 +177,23 @@
         <introspector dbms="DUCKDB_BRIKK" implementationClass="dev.sort.duckdb.DuckdbIntrospectorGate"/>
         <jdbcHelper dbms="DUCKDB_BRIKK" implementationClass="com.intellij.database.remote.jdbc.helpers.GenericJdbcHelper"/>
         <errorHandler dbms="DUCKDB_BRIKK" implementationClass="com.intellij.database.dialects.generic.GenericDatabaseErrorHandler"/>
-        <!-- Stage 4b: on-connect duckdb_functions()/duckdb_keywords() harvest -> live
-             per-data-source catalog that replaces the bundled snapshot for that source
-             (persisted under $SYSTEM/duckdb-brikk/catalog, fail-soft, never blocks connect). -->
-        <database.connectionInterceptor implementation="dev.sort.duckdb.catalog.DuckdbCatalogConnectionInterceptor"/>
+        <database.connectionInterceptor implementation="dev.sort.duckdb.catalog.DuckdbHarvestConnectionInterceptor"/>
         <driversConfig config="config/duckdb-brikk-drivers.xml"/>
         <artifactsConfig config="config/duckdb-brikk-artifacts.xml"/>
     </extensions>
+
+    <projectListeners>
+        <listener class="dev.sort.duckdb.catalog.DuckdbLiveCatalogCleanup" topic="com.intellij.database.dataSource.DataSourceStorage$Listener"/>
+    </projectListeners>
+    <applicationListeners>
+        <listener class="dev.sort.duckdb.catalog.DuckdbLiveCatalogCleanup" topic="com.intellij.database.dataSource.DataSourceStorage$Listener"/>
+    </applicationListeners>
 
     <actions>
         <!-- Manual live-catalog refresh; also the ONLY trigger that surfaces autoloaded
              extensions (no INSTALL/LOAD ever runs for those, so the observer can't see them). -->
         <action id="Duckdb.RefreshCatalog"
-                class="dev.sort.duckdb.catalog.DuckdbRefreshCatalogAction"
+                class="dev.sort.duckdb.catalog.DuckdbRefreshLiveCatalogAction"
                 text="Refresh DuckDB Catalog"
                 description="Re-read functions, keywords, and loaded extensions from the connected DuckDB engine">
             <add-to-group group-id="EditorPopupMenu" anchor="last"/>
