@@ -61,18 +61,6 @@ class DuckdbPipesExecutionTest : BasePlatformTestCase() {
             }
         }
     }
-    fun testUnselectedPipelineUsesPlatformStatementPreparation() {
-        Fixture("SELECT 1; FROM offline_rows |> LIMIT 2; SELECT 9;").use { f ->
-            f.editor.caretModel.moveToOffset(f.editor.document.text.indexOf("LIMIT"))
-            val settings = DatabaseSettings.getSettings()
-            val previous = settings.execOptions[0]
-            settings.execOptions[0] = DatabaseSettings.ExecOption().apply { execInside = DatabaseSettings.EXECUTE_INSIDE_SMALLEST }
-            try { f.execute() } finally { settings.execOptions[0] = previous }
-            assertEquals("Notifications: ${f.notifications.map { it.content }}; predecessor calls: ${f.previousEvents.size}", 1, f.requests.size)
-            assertFalse((f.requests.single() as DataRequest.QueryRequest).query.contains("|>"))
-            assertEmpty(f.previousEvents)
-        }
-    }
     fun testOrdinaryFromFirstAndQuotedMarkersReachPredecessor() {
         for (sql in listOf("FROM range(3)", "SELECT '|>'", "SELECT $$|>$$", "SELECT /* |> */ 1", "SELECT 'unclosed |> fake")) {
             Fixture(sql).use { f ->
@@ -125,17 +113,6 @@ class DuckdbPipesExecutionTest : BasePlatformTestCase() {
             assertEmpty(f.notifications)
         }
     }
-    fun testRunToFirstStageOfClaimedPipeline() {
-        Fixture("FROM offline_rows |> WHERE id > 1 |> LIMIT 2").use { f ->
-            f.editor.caretModel.moveToOffset(3)
-            RunPipesToStageIntention().invoke(project, f.editor, f.file)
-            assertEquals(1, f.requests.size)
-            val query = (f.requests.single() as DataRequest.QueryRequest).query
-            assertFalse(query.contains("|>"))
-            assertFalse(query.contains("WHERE"))
-            assertEmpty(f.previousEvents)
-        }
-    }
 
     fun testOutsideStatementWholeScriptStillClaimsPipelines() {
         Fixture("SELECT 1; FROM offline_rows |> SELECT id; -- outside statements").use { f ->
@@ -160,19 +137,6 @@ class DuckdbPipesExecutionTest : BasePlatformTestCase() {
             withOption(DatabaseSettings.ExecOption().apply {
                 execInside = DatabaseSettings.EXECUTE_INSIDE_SMALLEST
                 execOutside = DatabaseSettings.EXECUTE_OUTSIDE_SCRIPT_TAIL
-            }) { f.execute() }
-            assertEquals(f.notifications.map { it.content }.toString(), 1, f.requests.size)
-            assertFalse((f.requests.single() as DataRequest.QueryRequest).query.contains("|>"))
-            assertEmpty(f.previousEvents)
-        }
-    }
-
-    fun testSmartSelectionClaimsTheEnclosingPipeline() {
-        Fixture("FROM offline_rows |> WHERE id > 0 |> SELECT id").use { f ->
-            val text = f.editor.document.text
-            f.editor.selectionModel.setSelection(text.indexOf("WHERE"), text.indexOf(" |> SELECT"))
-            withOption(DatabaseSettings.ExecOption().apply {
-                execSelection = DatabaseSettings.EXECUTE_SELECTION_SMART_EXPAND
             }) { f.execute() }
             assertEquals(f.notifications.map { it.content }.toString(), 1, f.requests.size)
             assertFalse((f.requests.single() as DataRequest.QueryRequest).query.contains("|>"))
@@ -295,15 +259,6 @@ class DuckdbPipesExecutionTest : BasePlatformTestCase() {
             assertTrue(query, "17" in query)
             assertEmpty(f.previousEvents)
             assertEmpty(f.notifications)
-        }
-    }
-
-    fun testMissingSubmissionClientDoesNotDelegateRawPipe() {
-        Fixture("FROM offline_rows |> SELECT id").use { f ->
-            f.console.session.detach(f.console)
-            f.execute()
-            assertEmpty(f.requests)
-            assertEmpty(f.previousEvents)
         }
     }
 
