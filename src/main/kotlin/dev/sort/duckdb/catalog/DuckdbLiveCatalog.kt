@@ -26,18 +26,24 @@ import java.util.concurrent.ConcurrentHashMap
  */
 object DuckdbLiveCatalog {
 
-    enum class Kind { SCALAR, AGGREGATE, TABLE, MACRO, TABLE_MACRO, PRAGMA, OTHER }
+    enum class Kind { SCALAR, AGGREGATE, WINDOW, TABLE, MACRO, TABLE_MACRO, PRAGMA, OTHER }
 
     data class Fn(val name: String, val kind: Kind)
 
-    data class Entry(
+    class Entry(
         val engineVersion: String,
         /** Sorted — part of the "which engine is this" identity the harvest captured. */
-        val loadedExtensions: List<String>,
-        val functions: List<Fn>,
-        val keywords: Set<String>,
+        loadedExtensions: List<String>,
+        functions: List<Fn>,
+        keywords: Set<String>,
         val harvestedAtMillis: Long,
-    )
+    ) {
+        val loadedExtensions = loadedExtensions.toList()
+        val functions = functions.toList()
+        val keywords = keywords.toSet()
+    }
+
+    private const val FORMAT_HEADER = "# duckdb-brikk live catalog v2 (see DuckdbLiveCatalog for the format)"
 
     private val LOG = Logger.getInstance(DuckdbLiveCatalog::class.java)
 
@@ -101,7 +107,7 @@ object DuckdbLiveCatalog {
     private fun save(file: Path, entry: Entry) {
         Files.createDirectories(file.parent)
         val text = buildString {
-            appendLine("# duckdb-brikk live catalog v1 (see DuckdbLiveCatalog for the format)")
+            appendLine(FORMAT_HEADER)
             appendLine("# meta\tengineVersion\textensions-csv\tharvestedAtMillis; fn\tname\tKIND; kw\tKEYWORD")
             appendLine("meta\t${entry.engineVersion}\t${entry.loadedExtensions.joinToString(",")}\t${entry.harvestedAtMillis}")
             for (fn in entry.functions) appendLine("fn\t${fn.name}\t${fn.kind.name}")
@@ -120,12 +126,14 @@ object DuckdbLiveCatalog {
     /** `null` for absent/corrupt files — a bad cache degrades to the bundled snapshot. */
     private fun load(file: Path, readLines: (Path) -> List<String>): Entry? {
         if (!Files.isRegularFile(file)) return null
+        val lines = readLines(file)
+        if (lines.firstOrNull() != FORMAT_HEADER) return null
         var version: String? = null
         var extensions: List<String> = emptyList()
         var harvestedAt = 0L
         val functions = ArrayList<Fn>()
         val keywords = LinkedHashSet<String>()
-        for (line in readLines(file)) {
+        for (line in lines) {
             if (line.isBlank() || line.startsWith("#")) continue
             val parts = line.split('\t')
             when (parts[0]) {

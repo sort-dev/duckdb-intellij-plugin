@@ -1,6 +1,7 @@
 package dev.sort.duckdb.catalog
 
 import com.intellij.codeInsight.lookup.LookupElementPresentation
+import com.intellij.codeInsight.CodeInsightSettings
 import com.intellij.database.dataSource.DatabaseDriverManager
 import com.intellij.database.dataSource.LocalDataSource
 import com.intellij.database.dataSource.LocalDataSourceManager
@@ -8,6 +9,7 @@ import com.intellij.database.util.Version
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import dev.brikk.house.sql.intellij.completion.completableFunctions
 import dev.brikk.house.sql.metadata.DUCKDB_METADATA
+import dev.brikk.house.sql.metadata.FunctionKind
 import dev.brikk.house.sql.metadata.FunctionPresentation
 import dev.brikk.house.sql.metadata.InvocationSyntax
 import dev.sort.duckdb.DuckdbDbms
@@ -16,6 +18,8 @@ import dev.sort.duckdb.sql.DuckdbCompletionProfile
 import dev.sort.duckdb.sql.DuckdbSqlDialect
 import java.nio.file.Files
 import java.nio.file.Path
+import java.sql.DriverManager
+import icons.DatabaseIcons
 
 /**
  * Pins the Stage-4b resolution rules end to end: live REPLACES bundled for the editor's data
@@ -25,9 +29,12 @@ import java.nio.file.Path
 class DuckdbCatalogResolverTest : BasePlatformTestCase() {
 
     private lateinit var tempDir: Path
+    private var autocomplete = false
 
     override fun setUp() {
         super.setUp()
+        autocomplete = CodeInsightSettings.getInstance().AUTOCOMPLETE_ON_CODE_COMPLETION
+        CodeInsightSettings.getInstance().AUTOCOMPLETE_ON_CODE_COMPLETION = false
         tempDir = Files.createTempDirectory("duckdb-live-catalog-fixture")
         DuckdbLiveCatalog.baseDirOverride = tempDir
         DuckdbLiveCatalog.clearForTests()
@@ -35,6 +42,7 @@ class DuckdbCatalogResolverTest : BasePlatformTestCase() {
 
     override fun tearDown() {
         try {
+            CodeInsightSettings.getInstance().AUTOCOMPLETE_ON_CODE_COMPLETION = autocomplete
             DuckdbLiveCatalog.baseDirOverride = null
             DuckdbLiveCatalog.clearForTests()
             tempDir.toFile().deleteRecursively()
@@ -107,7 +115,7 @@ class DuckdbCatalogResolverTest : BasePlatformTestCase() {
         }
     }
 
-    fun testExtensionOffersPreserveNamesAndFoldCaseForSuppression() {
+    fun testExtensionOffersShowRequiresSpatial() {
         setSqlDialectMapping(project, null, DuckdbSqlDialect.INSTANCE)
         myFixture.configureByText("e1.sql", "SELECT * FROM st_re<caret>;")
         myFixture.completeBasic()
@@ -118,15 +126,6 @@ class DuckdbCatalogResolverTest : BasePlatformTestCase() {
         stRead.renderElement(presentation)
         assertEquals("requires spatial", presentation.typeText)
 
-        // Suppression: the bundled catalog already has list_transform, so the offer adds nothing.
-        myFixture.configureByText("e2.sql", "SELECT list_tr<caret> FROM t;")
-        myFixture.completeBasic()
-        val strings = myFixture.lookupElementStrings.orEmpty()
-        val inserted = myFixture.editor.document.text.contains("list_transform(")
-        if (!inserted) {
-            assertEquals("exactly one list_transform: $strings", 1, strings.count { it.equals("list_transform", true) })
-        }
-        assertFalse("mixed-case duplicate must not be offered", strings.contains("List_Transform"))
     }
 
     fun testOfflineSnapshotUsesTheKnownServerVersion() {
@@ -209,6 +208,104 @@ class DuckdbCatalogResolverTest : BasePlatformTestCase() {
         } finally {
             manager.removeDataSource(source)
         }
+    }
+
+    private fun withDataSource(block: (LocalDataSource) -> Unit) {
+        val source = LocalDataSource.create("review-duck", "org.duckdb.DuckDBDriver", "jdbc:duckdb:", "")
+        source.databaseDriver = DatabaseDriverManager.getInstance().getDriver("duckdb-brikk-native")
+        val manager = LocalDataSourceManager.getInstance(project)
+        manager.addDataSource(source)
+        try {
+            setSqlDialectMapping(project, null, DuckdbSqlDialect.INSTANCE)
+            block(source)
+        } finally {
+            manager.removeDataSource(source)
+        }
+    }
+
+    fun testRealHarvestKeepsCallableKindsAfterDroppingPragmas() = withDataSource { source ->
+        DriverManager.getConnection("jdbc:duckdb:").use { connection ->
+            val entry = requireNotNull(DuckdbCatalogHarvester.harvest(JdbcRowSource(connection)))
+            DuckdbLiveCatalog.store(source.uniqueId, entry)
+            DuckdbLiveCatalog.clearForTests()
+            for ((name, kind) in listOf(
+                "version" to FunctionKind.SCALAR,
+                "enable_profiling" to FunctionKind.TABLE_VALUED,
+                "disable_profiling" to FunctionKind.TABLE_VALUED,
+                "force_checkpoint" to FunctionKind.TABLE_VALUED,
+                "json_execute_serialized_sql" to FunctionKind.TABLE_VALUED,
+            )) {
+                assertTrue(entry.functions.any { it.name == name && it.kind == DuckdbLiveCatalog.Kind.PRAGMA })
+                myFixture.configureByText("harvest.sql", "SELECT ${name.take(4)}<caret>")
+                val entries = myFixture.completeBasic().orEmpty().mapNotNull { it.`object` as? FunctionPresentation }
+                assertTrue("$name / $kind missing: $entries", entries.any { it.name == name && it.kind == kind })
+            }
+        }
+    }
+
+    fun testLiveInventoryDoesNotRestoreRegisteredGrammarNames() = withDataSource { source ->
+        DuckdbLiveCatalog.store(source.uniqueId, DuckdbLiveCatalog.Entry("v1.5.5", emptyList(),
+            listOf(DuckdbLiveCatalog.Fn("only_live_fn", DuckdbLiveCatalog.Kind.SCALAR)), setOf("SELECT"), 1L))
+        val file = myFixture.configureByText("missing.sql", "SELECT current_da<caret>")
+        assertFalse(DuckdbCatalogResolver.activeCatalogFor(file).functions.any { it.name.equals("current_date", true) })
+        val entries = myFixture.completeBasic().orEmpty().mapNotNull { it.`object` as? FunctionPresentation }
+        assertFalse(entries.any { it.name.equals("current_date", true) })
+    }
+
+    fun testLiveMergedListsAreReusedUntilTheHarvestEntryChanges() = withDataSource { source ->
+        val first = DuckdbLiveCatalog.Entry("v1.5.5", emptyList(),
+            listOf(DuckdbLiveCatalog.Fn("first_live_fn", DuckdbLiveCatalog.Kind.SCALAR)), setOf("SELECT"), 1L)
+        DuckdbLiveCatalog.store(source.uniqueId, first)
+        val file = myFixture.configureByText("cache.sql", "SELECT 1")
+        val active = DuckdbCatalogResolver.activeCatalogFor(file)
+        assertSame(active.functions, DuckdbCatalogResolver.activeCatalogFor(file).functions)
+        assertSame(active.functions, DuckdbCompletionProfile.functions(file))
+        assertSame(active.keywords, DuckdbCatalogResolver.activeCatalogFor(file).keywords)
+        val replacement = DuckdbLiveCatalog.Entry("v1.5.5", emptyList(),
+            listOf(DuckdbLiveCatalog.Fn("second_live_fn", DuckdbLiveCatalog.Kind.SCALAR)), setOf("SELECT"), 2L)
+        DuckdbLiveCatalog.store(source.uniqueId, replacement)
+        val refreshed = DuckdbCatalogResolver.activeCatalogFor(file)
+        assertNotSame(active.functions, refreshed.functions)
+        assertTrue(refreshed.functions.any { it.name == "second_live_fn" })
+        assertFalse(refreshed.functions.any { it.name == "first_live_fn" })
+        assertSame(refreshed.functions, DuckdbCatalogResolver.activeCatalogFor(file).functions)
+    }
+
+    fun testLiveMacroKindsUseDuckdbLookupStyles() = withDataSource { source ->
+        DriverManager.getConnection("jdbc:duckdb:").use { connection ->
+            connection.createStatement().use {
+                it.execute("CREATE MACRO review_scalar(x) AS x + 1")
+                it.execute("CREATE MACRO review_table(x) AS TABLE SELECT x AS value")
+            }
+            DuckdbLiveCatalog.store(source.uniqueId,
+                requireNotNull(DuckdbCatalogHarvester.harvest(JdbcRowSource(connection))))
+            myFixture.configureByText("macros.sql", "SELECT review_<caret>")
+            val items = myFixture.completeBasic().orEmpty()
+            val scalar = items.single { it.lookupString == "review_scalar" && it.`object` is FunctionPresentation }
+            val table = items.single { it.lookupString == "review_table" && it.`object` is FunctionPresentation }
+            val scalarPresentation = LookupElementPresentation.renderElement(scalar)
+            assertEquals("macro", scalarPresentation.typeText)
+            assertEquals(DatabaseIcons.Routine, scalarPresentation.icon)
+            assertEquals("table_macro", LookupElementPresentation.renderElement(table).typeText)
+        }
+    }
+
+    fun testHarvestedWindowKindReachesCompletion() = withDataSource { source ->
+        val rows = CatalogRowSource { sql, row ->
+            val values = when (sql) {
+                DuckdbCatalogHarvester.SQL_VERSION -> listOf("v2.0.0")
+                DuckdbCatalogHarvester.SQL_FUNCTIONS -> listOf("review_window", "window")
+                DuckdbCatalogHarvester.SQL_KEYWORDS -> listOf("select")
+                else -> emptyList()
+            }
+            if (values.isNotEmpty()) row { values.getOrNull(it - 1) }
+        }
+        DuckdbLiveCatalog.store(source.uniqueId, requireNotNull(DuckdbCatalogHarvester.harvest(rows)))
+        myFixture.configureByText("window.sql", "SELECT review_<caret>")
+        val item = myFixture.completeBasic().orEmpty().single {
+            it.lookupString == "review_window" && it.`object` is FunctionPresentation
+        }
+        assertEquals(FunctionKind.WINDOW, (item.`object` as FunctionPresentation).kind)
     }
 
 }

@@ -55,7 +55,6 @@ sourceSets {
 
 dependencies {
     "toolsImplementation"("dev.brikk.ducklake:slt-format:0.3.0")
-    "toolsImplementation"(libs.duckdb.jdbc)
 }
 
 val harvestCensus by tasks.registering(JavaExec::class) {

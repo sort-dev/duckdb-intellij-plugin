@@ -74,17 +74,19 @@ class DuckdbLiveHarvestTest {
     }
 
     @Test
-    fun `canned rows - kind mapping, operator filter, first-wins dedupe, uppercased keywords`() {
+    fun `canned rows retain distinct kinds and filter operators with uppercased keywords`() {
         val rows = FakeRows(
             mapOf(
                 DuckdbCatalogHarvester.SQL_VERSION to listOf(listOf("v1.3.0")),
                 DuckdbCatalogHarvester.SQL_LOADED_EXTENSIONS to listOf(listOf("json")),
                 DuckdbCatalogHarvester.SQL_FUNCTIONS to listOf(
                     listOf("!~~", "scalar"), // operator -> not completable, filtered
-                    listOf("dup_fn", "aggregate"), // sorted (1,2): first type wins…
-                    listOf("dup_fn", "scalar"), // …this one is dropped
+                    listOf("dup_fn", "aggregate"),
+                    listOf("dup_fn", "aggregate"),
+                    listOf("dup_fn", "scalar"),
                     listOf("read_csv", "table"),
                     listOf("odd", "somenewtype"), // unknown function_type -> OTHER
+                    listOf("row_number", "window"),
                 ),
                 DuckdbCatalogHarvester.SQL_KEYWORDS to listOf(listOf("select"), listOf("pivot")),
             ),
@@ -95,12 +97,14 @@ class DuckdbLiveHarvestTest {
         assertEquals("v1.3.0", entry.engineVersion)
         assertEquals(listOf("json"), entry.loadedExtensions)
         assertEquals(
-            mapOf(
-                "dup_fn" to DuckdbLiveCatalog.Kind.AGGREGATE,
-                "read_csv" to DuckdbLiveCatalog.Kind.TABLE,
-                "odd" to DuckdbLiveCatalog.Kind.OTHER,
+            listOf(
+                DuckdbLiveCatalog.Fn("dup_fn", DuckdbLiveCatalog.Kind.AGGREGATE),
+                DuckdbLiveCatalog.Fn("dup_fn", DuckdbLiveCatalog.Kind.SCALAR),
+                DuckdbLiveCatalog.Fn("read_csv", DuckdbLiveCatalog.Kind.TABLE),
+                DuckdbLiveCatalog.Fn("odd", DuckdbLiveCatalog.Kind.OTHER),
+                DuckdbLiveCatalog.Fn("row_number", DuckdbLiveCatalog.Kind.WINDOW),
             ),
-            entry.functions.associate { it.name to it.kind },
+            entry.functions,
         )
         assertEquals(setOf("SELECT", "PIVOT"), entry.keywords)
     }

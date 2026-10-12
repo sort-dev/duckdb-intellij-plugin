@@ -54,11 +54,11 @@ object DuckdbCatalogHarvester {
         rows.forEachRow(SQL_LOADED_EXTENSIONS) { col -> col(1)?.trim()?.takeIf { it.isNotEmpty() }?.let(extensions::add) }
 
         if (overBudget()) return null
-        val fns = LinkedHashMap<String, DuckdbLiveCatalog.Kind>()
+        val fns = LinkedHashSet<DuckdbLiveCatalog.Fn>()
         rows.forEachRow(SQL_FUNCTIONS) { col ->
             val name = col(1) ?: return@forEachRow
             if (!isCompletableName(name)) return@forEachRow
-            fns.putIfAbsent(name, kindOf(col(2).orEmpty()))
+            fns.add(DuckdbLiveCatalog.Fn(name, kindOf(col(2).orEmpty())))
         }
         if (fns.isEmpty()) return null // an engine with no functions is a broken read, not a truth
 
@@ -70,7 +70,7 @@ object DuckdbCatalogHarvester {
         return DuckdbLiveCatalog.Entry(
             engineVersion = engineVersion,
             loadedExtensions = extensions.sorted(),
-            functions = fns.map { (name, kind) -> DuckdbLiveCatalog.Fn(name, kind) },
+            functions = fns.toList(),
             keywords = keywords,
             harvestedAtMillis = clock(),
         )
@@ -82,6 +82,7 @@ object DuckdbCatalogHarvester {
     private fun kindOf(raw: String): DuckdbLiveCatalog.Kind = when (raw.trim().lowercase()) {
         "scalar" -> DuckdbLiveCatalog.Kind.SCALAR
         "aggregate" -> DuckdbLiveCatalog.Kind.AGGREGATE
+        "window" -> DuckdbLiveCatalog.Kind.WINDOW
         "table" -> DuckdbLiveCatalog.Kind.TABLE
         "macro" -> DuckdbLiveCatalog.Kind.MACRO
         "table_macro" -> DuckdbLiveCatalog.Kind.TABLE_MACRO

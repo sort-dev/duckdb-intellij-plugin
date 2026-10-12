@@ -100,6 +100,7 @@ class DuckdbCatalogRefreshTest {
             val rows = JdbcRowSource(connection)
             val refreshed = DuckdbCatalogRefresh.harvestAndStore("refresh-ds", rows) as DuckdbCatalogRefresh.Outcome.Refreshed
             for (cancellation in listOf(ProcessCanceledException(), CancellationException(), LinkageError())) {
+                val previous = DuckdbLiveCatalog.entryFor("refresh-ds")
                 val interrupted = CatalogRowSource { sql, onRow ->
                     rows.forEachRow(sql) { column ->
                         onRow(column)
@@ -109,9 +110,9 @@ class DuckdbCatalogRefreshTest {
                 assertSame(cancellation, assertThrows(cancellation.javaClass) {
                     DuckdbCatalogRefresh.harvestAndStore("refresh-ds", interrupted)
                 })
-                assertEquals(refreshed.entry, DuckdbLiveCatalog.entryFor("refresh-ds"))
+                assertSame(previous, DuckdbLiveCatalog.entryFor("refresh-ds"))
                 DuckdbLiveCatalog.clearForTests()
-                assertEquals(refreshed.entry, DuckdbLiveCatalog.entryFor("refresh-ds"))
+                assertCatalogContents(refreshed.entry, DuckdbLiveCatalog.entryFor("refresh-ds"))
             }
         }
     }

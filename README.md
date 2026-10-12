@@ -137,11 +137,9 @@ at every engine bump, so coverage is re-proven per DuckDB version, not asserted 
 
 ## Function coverage
 
-Live: whatever your connected engine reports — version- and extension-exact, replaced (never
-merged) per connection. Offline: **943 built-in functions** (with kind icons) and **489
-keywords** from `duckdb_functions()` / `duckdb_keywords()` of DuckDB 1.5.5, plus a harvested
-extension→functions map (189 functions across 5 extensions) powering the
-*"requires \<extension\>"* completion hints.
+Live function and keyword inventories come from the connected engine. Offline completion uses
+version-selected `brikk-sql-metadata`, defaulting to DuckDB 1.5.6. Grammar-only forms remain
+available with a live inventory; unloaded extension functions show *"requires \<extension\>"*.
 
 ## Requirements
 
@@ -179,9 +177,9 @@ The earlier 0.3.4 local testing ZIP still contains the previously tested snapsho
 until explicitly replaced. Updating source dependencies does not alter an installed ZIP.
 
 **Engine bump checklist** (when moving to a new DuckDB): bump `duckdb-jdbc` in settings.gradle.kts
-and the artifact pin in `config/duckdb-brikk-artifacts.xml`, then re-run all three harvests and
-commit their output: `./gradlew harvestCensus harvestFunctionCatalog harvestExtensionCatalog`
-(the last needs network for extension INSTALLs).
+and the artifact pin in `src/main/resources/config/duckdb-brikk-artifacts.xml`, then run
+`./gradlew harvestCensus` and review the corpus changes. Refresh the Brikk metadata dependency
+for bundled function, keyword and extension catalogs.
 
 For the upcoming 2.0 release, read [the plugin integration watch note](DUCKDB-2.0-WATCH.md)
 before bumping the engine. Grammar extensions and validator session state need more than a catalog

@@ -15,6 +15,7 @@ import dev.brikk.house.sql.intellij.pipe.PipeExecuteInterceptor
 import dev.brikk.house.sql.intellij.pipe.isEditingEnabled
 import dev.sort.duckdb.pipes.DuckdbPipesSettings
 import dev.sort.duckdb.sql.DuckdbSqlDialect
+import dev.sort.duckdb.syncAndWait
 import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.psi.KtStringTemplateExpression
 import org.jetbrains.kotlin.idea.references.mainReference
@@ -194,11 +195,7 @@ open class BrikkDuckdbInjectionTest : BasePlatformTestCase() {
         }
         manager.addDataSource(source)
         try {
-            val sync = com.intellij.openapi.application.ApplicationManager.getApplication().executeOnPooledThread {
-                source.sync()
-                source.javaClass.methods.firstOrNull { it.name == "waitComputed" && it.parameterCount == 0 }?.invoke(source)
-            }
-            com.intellij.testFramework.PlatformTestUtil.waitForFuture(sync)
+            source.syncAndWait()
             com.intellij.database.psi.DbPsiFacade.getInstance(project).clearCaches()
             com.intellij.sql.dialects.SqlResolveMappings.getInstance(project).setMapping(null,
                 com.intellij.sql.dialects.SqlResolveMappings.ALL_DATA_SOURCES)
