@@ -9,6 +9,7 @@ import dev.brikk.house.sql.intellij.pipe.NativeVerdict
 import dev.brikk.house.sql.intellij.pipe.PipeDialect
 import dev.brikk.house.sql.intellij.pipe.ValidationTiming
 import dev.brikk.house.sql.parser.ColumnUnit
+import dev.brikk.house.sql.verify.VerifyResult
 import dev.sort.duckdb.DuckdbDbms
 import dev.sort.duckdb.brikk.BrikkDuckdbProfile
 import dev.sort.duckdb.brikk.isBrikkInjectedSql
@@ -36,9 +37,9 @@ object DuckdbPipeDialect : PipeDialect {
                 located = true
             }
             return when (val verdict = DuckdbEngineValidator.verdicts(listOf(sql), jar).single()) {
-                DuckdbEngineValidator.Verdict.Clean -> NativeVerdict.Accepted
-                DuckdbEngineValidator.Verdict.Unavailable -> NativeVerdict.Unavailable
-                is DuckdbEngineValidator.Verdict.Flagged -> NativeVerdict.Rejected(verdict.error.message)
+                VerifyResult.Accepted -> NativeVerdict.Accepted
+                is VerifyResult.Unavailable, is VerifyResult.Unverified -> NativeVerdict.Unavailable
+                is VerifyResult.Rejected -> NativeVerdict.Rejected(verdict.error.message)
             }
         }
     }

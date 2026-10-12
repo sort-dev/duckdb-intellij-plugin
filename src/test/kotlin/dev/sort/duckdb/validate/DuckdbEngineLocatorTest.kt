@@ -36,7 +36,7 @@ class DuckdbEngineLocatorTest {
         val verdicts = DuckdbEngineValidator.verdicts(listOf("SELEC 1"), jar)
         assertTrue(
             "engine from jar must flag a parser error, got: $verdicts",
-            verdicts.single() is DuckdbEngineValidator.Verdict.Flagged,
+            verdicts.single() is dev.brikk.house.sql.verify.VerifyResult.Rejected,
         )
     }
 

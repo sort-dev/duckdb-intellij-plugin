@@ -7,6 +7,8 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
 import java.sql.Connection
+import java.util.Properties
+import dev.brikk.house.sql.verify.VerifyResult
 
 class DuckdbEngineValidatorGradingTest {
     private enum class Expected { CLEAN, FLAGGED, UNAVAILABLE }
@@ -45,7 +47,7 @@ class DuckdbEngineValidatorGradingTest {
         val exceptions = bindingOnlyErrors + unavailableErrors
         assertEquals("stale parser exceptions", exceptions, parserOrigins.intersect(exceptions))
         val verdicts = DuckdbEngineValidator.verdicts(cases.map { it.sql })
-        requireNotNull(DuckdbEngineValidator.connect(DuckDBDriver())).use { connection ->
+        requireNotNull(DuckDBDriver().connect("jdbc:duckdb:", Properties())).use { connection ->
             cases.zip(verdicts).forEach { (case, verdict) ->
                 val expected = when {
                     !case.parserFailure -> nativeExpectation(case.sql, connection)
@@ -65,7 +67,7 @@ class DuckdbEngineValidatorGradingTest {
                 file.readText().split(Regex("(?m)^-- from .*$")).map { it.trim() }.filter { it.isNotEmpty() }
             }
         val verdicts = DuckdbEngineValidator.verdicts(statements)
-        requireNotNull(DuckdbEngineValidator.connect(DuckDBDriver())).use { connection ->
+        requireNotNull(DuckDBDriver().connect("jdbc:duckdb:", Properties())).use { connection ->
             statements.zip(verdicts).forEach { (sql, verdict) ->
                 val expected = nativeExpectation(sql, connection)
                 assertTrue("valid corpus rejected by the native parser: $sql", expected != Expected.FLAGGED)
@@ -87,12 +89,12 @@ class DuckdbEngineValidatorGradingTest {
             }
         }
 
-    private fun assertVerdict(source: String, expected: Expected, actual: DuckdbEngineValidator.Verdict) {
+    private fun assertVerdict(source: String, expected: Expected, actual: VerifyResult) {
         when (expected) {
-            Expected.CLEAN -> assertEquals(source, DuckdbEngineValidator.Verdict.Clean, actual)
+            Expected.CLEAN -> assertEquals(source, VerifyResult.Accepted, actual)
             Expected.FLAGGED -> assertTrue("$source must report a parser failure, got $actual",
-                actual is DuckdbEngineValidator.Verdict.Flagged)
-            Expected.UNAVAILABLE -> assertEquals(source, DuckdbEngineValidator.Verdict.Unavailable, actual)
+                actual is VerifyResult.Rejected)
+            Expected.UNAVAILABLE -> assertTrue("$source must remain unverified, got $actual", actual is VerifyResult.Unverified)
         }
     }
 }

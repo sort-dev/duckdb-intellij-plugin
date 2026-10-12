@@ -4,6 +4,7 @@ import com.intellij.lang.annotation.AnnotationHolder
 import com.intellij.lang.annotation.ExternalAnnotator
 import com.intellij.lang.annotation.HighlightSeverity
 import com.intellij.openapi.editor.Document
+import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.PsiFile
@@ -18,7 +19,10 @@ import dev.brikk.house.sql.parser.ParseError
 import dev.brikk.house.sql.parser.SqlStatementRange
 import dev.brikk.house.sql.parser.SyntacticRange
 import dev.brikk.house.sql.parser.TokenError
+import dev.brikk.house.sql.parser.Tokenizer
+import dev.brikk.house.sql.parser.TokenizerConfigs
 import dev.brikk.house.sql.shape.ShapeError
+import dev.brikk.house.sql.verify.VerifyError
 import dev.sort.duckdb.brikk.BrikkDuckdbProfile
 import dev.sort.duckdb.pipes.DuckdbPipeDialect
 import dev.sort.duckdb.sql.DuckdbSqlDialect
@@ -36,7 +40,7 @@ class DuckdbErrorAnnotator : ExternalAnnotator<DuckdbErrorAnnotator.Info, Duckdb
                     val pipesEnabled: Boolean = false, val pipes: List<Pair<SqlStatementRange, String>> = emptyList(),
                     val brikk: BrikkDuckdbProfile? = null, val brikkText: String? = null,
                     val brikkSlots: Set<String> = emptySet())
-    data class Result(val errors: List<Pair<TextRange, DuckdbEngineValidator.EngineError>>,
+    data class Result(val errors: List<Pair<TextRange, VerifyError>>,
                       val pipesEnabled: Boolean = false,
                       val pipeErrors: List<Pair<TextRange, PipeTranslation.Refused>> = emptyList())
 
@@ -126,24 +130,19 @@ class DuckdbErrorAnnotator : ExternalAnnotator<DuckdbErrorAnnotator.Info, Duckdb
         }
     }
 
-    /** Map the engine's statement-relative line + near-token onto a document range. */
-    private fun errorRange(doc: Document, stmt: TextRange, err: DuckdbEngineValidator.EngineError): TextRange {
+    private fun errorRange(doc: Document, stmt: TextRange, err: VerifyError): TextRange {
         err.offset?.let { offset ->
             val start = (stmt.startOffset + offset).coerceIn(stmt.startOffset, (stmt.endOffset - 1).coerceAtLeast(stmt.startOffset))
-            val length = err.nearToken?.length?.coerceAtLeast(1) ?: 1
-            return TextRange(start, (start + length).coerceAtMost(stmt.endOffset))
+            val sql = doc.charsSequence.subSequence(stmt.startOffset, stmt.endOffset).toString()
+            val end = err.endOffset ?: Tokenizer(TokenizerConfigs.forName("duckdb")).tokenizeForEditor(sql, ProgressManager::checkCanceled).tokens
+                .firstOrNull { offset in it.start..it.end }?.let { it.end + 1 } ?: offset + 1
+            return TextRange(start, (stmt.startOffset + end).coerceIn(start + 1, stmt.endOffset))
         }
         val stmtStartLine = doc.getLineNumber(stmt.startOffset)
-        val targetLine = (stmtStartLine + err.line - 1).coerceAtMost(doc.lineCount - 1)
+        val targetLine = (stmtStartLine + (err.line ?: 1) - 1).coerceAtMost(doc.lineCount - 1)
         val lineStart = doc.getLineStartOffset(targetLine).coerceAtLeast(stmt.startOffset)
         val lineEnd = doc.getLineEndOffset(targetLine).coerceAtMost(stmt.endOffset)
         if (lineEnd <= lineStart) return stmt
-        val near = err.nearToken
-        if (!near.isNullOrBlank()) {
-            val lineText = doc.charsSequence.subSequence(lineStart, lineEnd).toString()
-            val at = lineText.indexOf(near)
-            if (at >= 0) return TextRange(lineStart + at, lineStart + at + near.length)
-        }
         return TextRange(lineStart, lineEnd)
     }
 }

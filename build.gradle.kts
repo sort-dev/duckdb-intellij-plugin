@@ -12,6 +12,8 @@ sqlDialectPlugin {
             "brikk-sql-metadata-jvmMain-${brikk.sql.core.get()}.jar",
             "brikk-engine-kotlin-intellij-support-${brikk.engine.kotlin.intellij.support.get()}.jar",
             "brikk-sql-intellij-support-${brikk.sql.intellij.support.get()}.jar",
+            "brikk-sql-verify-api-${brikk.sql.core.get()}.jar",
+            "brikk-sql-verify-duckdb-${brikk.sql.core.get()}.jar",
         )
     }
     requiredNotices = with(libs.versions) {
@@ -19,6 +21,8 @@ sqlDialectPlugin {
             "brikk-sql-jvm:${brikk.sql.core.get()}",
             "brikk-engine-kotlin-intellij-support:${brikk.engine.kotlin.intellij.support.get()}",
             "brikk-sql-intellij-support:${brikk.sql.intellij.support.get()}",
+            "brikk-sql-verify-api:${brikk.sql.core.get()}",
+            "brikk-sql-verify-duckdb:${brikk.sql.core.get()}",
         )
     }
 }
@@ -27,6 +31,9 @@ dependencies {
     implementation(libs.brikk.sql.intellij.support)
     implementation(libs.brikk.engine.kotlin.intellij.support)
     implementation(libs.brikk.sql.jvm)
+    implementation("dev.brikk.house:brikk-sql-verify-duckdb:${libs.versions.brikk.sql.core.get()}") {
+        exclude(group = "org.duckdb")
+    }
     testImplementation(libs.brikk.sql.intellij.test.support)
     testImplementation(libs.duckdb.jdbc)
     testImplementation("dev.brikk.duckdb:quack-jdbc:0.5.0")

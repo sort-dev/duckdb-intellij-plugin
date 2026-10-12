@@ -29,6 +29,26 @@ class DuckdbPipesIsolationTest : BasePlatformTestCase() {
         assertTrue(completionClass.getResource("SqlColumnCompletion.class").toString().contains("brikk-sql-intellij-support-0.2.0-SNAPSHOT.jar"))
         val pipeClass = loader.loadClass("dev.brikk.house.sql.intellij.pipe.PipeDialect")
         assertSame(loader, pipeClass.classLoader)
+        val verifierClass = loader.loadClass("dev.brikk.house.sql.verify.ParseOnlyDuckdbVerifier")
+        assertSame(loader, verifierClass.classLoader)
+        assertSame(loader, loader.loadClass("dev.brikk.house.sql.verify.VerifyResult").classLoader)
+        var settings: java.util.Properties? = null
+        val driver = java.lang.reflect.Proxy.newProxyInstance(java.sql.Driver::class.java.classLoader,
+            arrayOf(java.sql.Driver::class.java)) { _, method, arguments ->
+            if (method.name != "connect") throw AssertionError("Unexpected driver access: ${method.name}")
+            assertEquals("jdbc:duckdb:", arguments!![0])
+            settings = arguments[1] as java.util.Properties
+            null
+        }
+        val verifier = verifierClass.getConstructor(java.sql.Driver::class.java).newInstance(driver)
+        try {
+            val outcome = verifierClass.getMethod("verify", String::class.java).invoke(verifier, "SELECT 1")
+            assertEquals("dev.brikk.house.sql.verify.VerifyResult\$Unavailable", outcome.javaClass.name)
+            assertEquals("false", requireNotNull(settings).getProperty("enable_external_access"))
+            assertEquals("true", requireNotNull(settings).getProperty("lock_configuration"))
+        } finally {
+            verifierClass.getMethod("close").invoke(verifier)
+        }
         for (name in listOf(
             "lexer.MaskingSqlLexer", "lexer.CastTargetMask", "parser.LenientSqlParsingKt",
             "pipe.PipeStatementGate", "editor.MaskedSpanRecolorAnnotator", "editor.SubstrateErrorFilter",

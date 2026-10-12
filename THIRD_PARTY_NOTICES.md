@@ -21,8 +21,13 @@ native driver or verifier is supplied transitively by this library.
 Bundled translator artifacts: `dev.brikk.house:brikk-sql-jvm:0.20.0-SNAPSHOT` and
 `dev.brikk.house:brikk-sql-metadata-jvm:0.20.0-SNAPSHOT`, by Jayson Minard and Sortdev SRL.
 Project: https://github.com/brikk/brikk-sql. Apache License 2.0, with the
-third-party-derived portions below. No native database engine or verifier is bundled.
+third-party-derived portions below. No native database engine is bundled.
 This development build uses Maven Local artifacts.
+
+Bundled parse-only verifier artifacts: `dev.brikk.house:brikk-sql-verify-api:0.20.0-SNAPSHOT`
+and `dev.brikk.house:brikk-sql-verify-duckdb:0.20.0-SNAPSHOT`, by Jayson Minard and
+Sortdev SRL, https://github.com/brikk/brikk-sql, Apache License 2.0. The DuckDB JDBC
+dependency is excluded; verification uses the user's driver and never executes authored SQL.
 
 The parser, tokenizer, AST, optimizer and SQL generators include a Kotlin port of
 SQLGlot by Toby Mao and contributors, https://github.com/tobymao/sqlglot.

@@ -47,7 +47,7 @@ class DuckdbErrorAnnotatorTest : BasePlatformTestCase() {
     fun testSupplementaryCharactersAndCrLfKeepExactErrorRanges() {
         for (newline in listOf("\n", "\r\n")) {
             val sql = "SELECT '😊😊😊😊'${newline}FROM WHERE"
-            val native = DuckdbEngineValidator.verdicts(listOf(sql)).single() as DuckdbEngineValidator.Verdict.Flagged
+            val native = DuckdbEngineValidator.verdicts(listOf(sql)).single() as dev.brikk.house.sql.verify.VerifyResult.Rejected
             assertEquals(2, native.error.line)
             assertEquals(sql.indexOf("WHERE"), native.error.offset)
             val psi = myFixture.configureByText("coordinates${counter++}.sql", sql)
@@ -72,5 +72,17 @@ class DuckdbErrorAnnotatorTest : BasePlatformTestCase() {
             "FROM range(10) SELECT *;\nSUMMARIZE t2;"
         val errors = highlight(sql).filter { it.description?.startsWith("DuckDB:") == true }
         assertTrue("valid DuckDB must produce no engine errors, got: ${errors.map { it.description }}", errors.isEmpty())
+    }
+
+    fun testUnverifiedAndUnavailableProduceNoNativeAnnotations() {
+        val sql = "CREATE TABLE never_created AS SELECT * FROM read_csv('/not-readable.csv')"
+        val psi = myFixture.configureByText("unverified.sql", sql)
+        setSqlDialectMapping(project, psi.virtualFile, DuckdbSqlDialect)
+        val annotator = DuckdbErrorAnnotator()
+        for (jar in listOf(null, "/missing/duckdb.jar")) {
+            val result = requireNotNull(annotator.doAnnotate(DuckdbErrorAnnotator.Info(listOf(TextRange(0, sql.length) to sql), jar)))
+            assertEmpty(result.errors)
+            assertEmpty(appliedRanges(psi, annotator, result))
+        }
     }
 }

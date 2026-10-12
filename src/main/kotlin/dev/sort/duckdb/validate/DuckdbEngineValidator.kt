@@ -1,38 +1,14 @@
 package dev.sort.duckdb.validate
 
-import com.intellij.openapi.progress.ProgressManager
-import com.intellij.openapi.components.service
 import com.intellij.openapi.application.ApplicationManager
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.booleanOrNull
-import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
-import java.sql.Connection
+import com.intellij.openapi.components.service
+import com.intellij.openapi.progress.ProgressManager
+import dev.brikk.house.sql.verify.ParseOnlyDuckdbVerifier
+import dev.brikk.house.sql.verify.VerifyError
+import dev.brikk.house.sql.verify.VerifyResult
 import java.sql.Driver
-import java.sql.SQLException
-import java.util.Properties
 
-/** Only the native parser runs; unsupported serialization never falls back to binding. */
 object DuckdbEngineValidator {
-
-    sealed interface Verdict {
-        data object Clean : Verdict
-        data object Unavailable : Verdict
-        data class Flagged(val error: EngineError) : Verdict
-    }
-
-    data class EngineError(
-        /** 1-based line within the VALIDATED statement text. */
-        val line: Int,
-        /** The token the engine pointed at ("syntax error at or near \"X\""), if any. */
-        val nearToken: String?,
-        /** Full first line of the engine message, "Parser Error: ..." included. */
-        val message: String,
-        /** UTF-16 offset within the validated statement, when supplied by the parser. */
-        val offset: Int? = null,
-    )
-
     val available: Boolean get() = withDrivers { it.defaultDriver != null }
 
     private inline fun <T> withDrivers(operation: (DuckdbEngineDrivers) -> T): T {
@@ -41,67 +17,21 @@ object DuckdbEngineValidator {
         else operation(application.service<DuckdbEngineDriverService>().drivers)
     }
 
-    internal fun connect(driver: Driver): Connection? = driver.connect("jdbc:duckdb:", Properties().apply {
-        setProperty("enable_external_access", "false")
-        setProperty("autoinstall_known_extensions", "false")
-        setProperty("autoload_known_extensions", "false")
-        setProperty("threads", "1")
-        setProperty("memory_limit", "256MB")
-    })
-
-    /** Returns only engine-confirmed parser errors, aligned with the input statements. */
-    fun validate(statements: List<String>, jarPath: String? = null): Map<Int, EngineError> =
+    fun validate(statements: List<String>, jarPath: String? = null): Map<Int, VerifyError> =
         verdicts(statements, jarPath).withIndex()
-            .mapNotNull { (i, v) -> (v as? Verdict.Flagged)?.let { i to it.error } }
+            .mapNotNull { (index, result) -> (result as? VerifyResult.Rejected)?.let { index to it.error } }
             .toMap()
 
-    fun verdicts(statements: List<String>, jarPath: String? = null): List<Verdict> = withDrivers { drivers ->
+    fun verdicts(statements: List<String>, jarPath: String? = null): List<VerifyResult> = withDrivers { drivers ->
         verdictsWithDriver(statements, if (jarPath == null) drivers.defaultDriver else drivers.driverForJar(jarPath))
     }
 
-    internal fun verdictsWithDriver(statements: List<String>, engine: Driver?): List<Verdict> {
+    internal fun verdictsWithDriver(statements: List<String>, driver: Driver?): List<VerifyResult> {
         ProgressManager.checkCanceled()
-        if (engine == null) return statements.map { Verdict.Unavailable }
-        val connection = try {
-            connect(engine)
-        } catch (_: SQLException) {
-            null
-        } catch (_: LinkageError) {
-            null
-        } ?: return statements.map { Verdict.Unavailable }
-        return connection.use { statements.map { sql -> verdict(sql, it) } }
+        if (driver == null) return statements.map { VerifyResult.Unavailable("No local DuckDB driver") }
+        return ParseOnlyDuckdbVerifier(driver).use { verifier -> statements.map { sql ->
+            ProgressManager.checkCanceled()
+            verifier.verify(sql).also { ProgressManager.checkCanceled() }
+        } }
     }
-
-    internal fun verdict(sql: String, connection: Connection): Verdict {
-        ProgressManager.checkCanceled()
-        if (sql.isBlank()) return Verdict.Clean
-        if (sql.length > MAX_STATEMENT) return Verdict.Unavailable
-        val parsed = try {
-            val literal = "'" + sql.replace("'", "''") + "'"
-            connection.createStatement().use { statement ->
-                statement.executeQuery("SELECT json_serialize_sql($literal)").use { result ->
-                    if (!result.next()) return Verdict.Unavailable
-                    Json.parseToJsonElement(result.getString(1)).jsonObject
-                }
-            }
-        } catch (_: SQLException) {
-            return Verdict.Unavailable
-        }
-        ProgressManager.checkCanceled()
-        if (parsed["error"]?.jsonPrimitive?.booleanOrNull == false) return Verdict.Clean
-        if (parsed["error_type"]?.jsonPrimitive?.contentOrNull == "parser") {
-            val message = parsed["error_message"]?.jsonPrimitive?.contentOrNull ?: return Verdict.Unavailable
-            val position = parsed["position"]?.jsonPrimitive?.contentOrNull?.toIntOrNull()
-            val offset = position?.takeIf { it >= 0 }?.let {
-                sql.offsetByCodePoints(0, it.coerceAtMost(sql.codePointCount(0, sql.length)))
-            }
-            val line = sql.take(offset ?: 0).count { it == '\n' } + 1
-            return Verdict.Flagged(EngineError(line, NEAR_TOKEN.find(message)?.groupValues?.get(1), "Parser Error: $message", offset))
-        }
-
-        return Verdict.Unavailable
-    }
-
-    private val NEAR_TOKEN = Regex("""at or near "([^"]+)"""")
-    private const val MAX_STATEMENT = 100_000
 }
