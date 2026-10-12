@@ -1,12 +1,7 @@
 package dev.sort.duckdb.catalog
 
-import com.intellij.database.console.JdbcConsoleProvider
-import com.intellij.database.dataSource.LocalDataSource
-import com.intellij.database.dataSource.LocalDataSourceManager
-import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiFile
 import dev.brikk.house.sql.intellij.completion.completableFunctions
-import dev.brikk.house.sql.intellij.recoverEditorOperation
 import dev.brikk.house.sql.metadata.DUCKDB_METADATA
 import dev.brikk.house.sql.metadata.FunctionDef
 import dev.brikk.house.sql.metadata.FunctionKind
@@ -15,18 +10,12 @@ import dev.brikk.house.sql.metadata.KeywordCatalog
 import dev.brikk.house.sql.metadata.KeywordDef
 import dev.brikk.house.sql.metadata.MetadataSnapshot
 import dev.brikk.house.sql.metadata.presentation
-import dev.sort.duckdb.DuckdbDbms
 import java.util.WeakHashMap
 
 /**
  * Decides which catalog serves an editor: the data source's LIVE harvest when one exists, else
  * the bundled snapshot. Live replaces the bundled registry; grammar forms and unloaded
  * extension offers remain available independently.
- *
- * Data-source resolution, public seams only:
- *  1. a database console resolves through [JdbcConsoleProvider.getValidConsole] (its own source);
- *  2. any other file falls back to "the project has exactly one DuckDB (Brikk) data source" —
- *     ambiguous setups (0 or 2+) stay on the bundled snapshot rather than guessing.
  */
 object DuckdbCatalogResolver {
 
@@ -56,7 +45,7 @@ object DuckdbCatalogResolver {
     }
 
     fun activeCatalogFor(file: PsiFile): ActiveCatalog {
-        val dataSource = dataSourceFor(file)
+        val dataSource = duckdbDataSourceResolver.resolve(file).dataSource
         val dataSourceId = dataSource?.uniqueId
         val live = DuckdbLiveCatalog.entryFor(dataSourceId)
         val catalog = if (live != null) {
@@ -104,26 +93,4 @@ object DuckdbCatalogResolver {
         return FunctionDef(name, kind = normalized, nativeKind = native).presentation()
     }
 
-    /** Everything best-effort: any surprise resolves to `null` -> bundled snapshot. */
-    fun dataSourceIdFor(file: PsiFile): String? = dataSourceFor(file)?.uniqueId
-
-    /** Same resolution, keeping the [LocalDataSource] itself (the refresh action's target). */
-    fun dataSourceFor(file: PsiFile): LocalDataSource? {
-        val project = file.project
-        val virtualFile = file.originalFile.virtualFile
-        if (virtualFile != null) {
-            val console = recoverEditorOperation { JdbcConsoleProvider.getValidConsole(project, virtualFile) }.getOrNull()
-            val dataSource = console?.dataSource
-            if (dataSource != null && dataSource.dbms == DuckdbDbms.DUCKDB_BRIKK) return dataSource
-        }
-        return singleDataSource(project)
-    }
-
-    /** The project's single DuckDB (Brikk) data source; 0 or 2+ resolve to `null` (no guessing). */
-    fun singleDataSource(project: Project): LocalDataSource? {
-        val ours = recoverEditorOperation {
-            LocalDataSourceManager.getInstance(project).dataSources.filter { it.dbms == DuckdbDbms.DUCKDB_BRIKK }
-        }.getOrDefault(emptyList())
-        return ours.singleOrNull()
-    }
 }

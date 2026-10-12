@@ -1,6 +1,7 @@
 package dev.sort.duckdb.catalog
 
 import com.intellij.database.dataSource.LocalDataSource
+import com.intellij.database.dataSource.LocalDataSourceManager
 import com.intellij.openapi.actionSystem.ActionPlaces
 import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnAction
@@ -9,14 +10,14 @@ import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiFile
+import dev.brikk.house.sql.intellij.recoverEditorOperation
+import dev.sort.duckdb.DuckdbDbms.DUCKDB_BRIKK
 
 /**
  * "Refresh DuckDB Catalog" — the manual half of the live-catalog refresh (plugin.xml `<actions>`;
  * editor context menu on DuckDB (Brikk) files + Find Action anywhere).
  *
- * Target resolution mirrors [DuckdbCatalogResolver] exactly: the file's console data source when
- * there is one, else the project's single DuckDB (Brikk) data source; disabled when neither
- * resolves. The refresh runs on a pooled thread ([DuckdbCatalogRefresh.harvestNow] blocks on the
+ * The refresh runs on a pooled thread ([DuckdbCatalogRefresh.harvestNow] blocks on the
  * helper connect) and finishes with a balloon either way — the success balloon lists the loaded
  * extensions, which is how users confirm AUTOLOADED extensions arrived (autoload never executes
  * an INSTALL/LOAD the observer could see, so this action is that path's only trigger).
@@ -60,6 +61,8 @@ class DuckdbRefreshCatalogAction : AnAction() {
         file != null && runCatching { file.language.id == "DuckDBSQL" }.getOrDefault(false)
 
     private fun resolveTarget(project: Project, file: PsiFile?): LocalDataSource? =
-        if (file != null) DuckdbCatalogResolver.dataSourceFor(file)
-        else DuckdbCatalogResolver.singleDataSource(project)
+        if (file != null) duckdbDataSourceResolver.resolve(file).dataSource
+        else recoverEditorOperation {
+            LocalDataSourceManager.getInstance(project).dataSources.filter { it.dbms == DUCKDB_BRIKK }.singleOrNull()
+        }.getOrNull()
 }
