@@ -17,7 +17,7 @@ class DuckdbExecutionObserverProfileTest {
         }
         assertTrue((detector.detect("LOAD fts").single().effect as StatementEffect.FunctionInventory).sessionFacts)
         assertTrue((detector.detect("CREATE TEMP MACRO local(x) AS x").single().effect as StatementEffect.FunctionInventory).sessionFacts)
-        assertNull(DuckdbExecutionObserverProfile.autoIntrospect)
+        assertSame(DuckdbAutoIntrospectService::class.java, DuckdbExecutionObserverProfile.autoIntrospect)
     }
 
     @Test

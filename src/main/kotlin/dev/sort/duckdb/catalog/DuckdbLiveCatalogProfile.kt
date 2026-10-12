@@ -44,6 +44,7 @@ object DuckdbExecutionObserverProfile : ExecutionObserverProfile {
     override val dbms get() = DuckdbDbms.DUCKDB_BRIKK
     override val dataSources get() = duckdbDataSourceResolver
     override val liveCatalog = DuckdbLiveCatalogService::class.java
+    override val autoIntrospect = DuckdbAutoIntrospectService::class.java
     override val statements = StatementHeadDetector(StatementRules.DUCKDB.map { rule ->
         if (rule.pattern in setOf("INSTALL", "FORCE INSTALL", "LOAD")) rule.notifying() else rule
     }, "duckdb")

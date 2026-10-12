@@ -165,6 +165,8 @@
         <!-- Catalog-refresh balloons (manual action + INSTALL/LOAD observer). -->
         <notificationGroup id="DuckDB (Brikk)" displayType="BALLOON"/>
         <postStartupActivity implementation="dev.sort.duckdb.catalog.DuckdbExecutionObserverStartup"/>
+        <editorNotificationProvider implementation="dev.sort.duckdb.catalog.DuckdbIntrospectBannerProvider"/>
+        <completion.contributor language="DuckDBSQL" implementationClass="dev.sort.duckdb.catalog.DuckdbQualifiedPathIntrospectContributor" order="first"/>
     </extensions>
 
     <extensions defaultExtensionNs="com.intellij.database">

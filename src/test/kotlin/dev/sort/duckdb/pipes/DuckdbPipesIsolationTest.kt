@@ -37,6 +37,8 @@ class DuckdbPipesIsolationTest : BasePlatformTestCase() {
             "catalog.PgFamilyModelFacade", "catalog.GenericJdbcIntrospectorGate", "catalog.DialectDataSourceResolver",
             "catalog.LiveCatalogService", "catalog.LiveCatalogHarvester", "catalog.LiveCatalogStore",
             "catalog.ExecutionObserver", "catalog.HarvestConnectionInterceptor", "catalog.RefreshLiveCatalogAction",
+            "catalog.CatalogProfile", "catalog.AutoIntrospectService", "catalog.IntrospectBannerProvider",
+            "catalog.QualifiedPathIntrospectContributor",
         )) assertSame(name, loader, loader.loadClass("dev.brikk.house.sql.intellij.$name").classLoader)
         for ((base, consumer) in listOf(
             "PgFamilyModelFacade" to "DuckdbModelFacade",
@@ -49,6 +51,9 @@ class DuckdbPipesIsolationTest : BasePlatformTestCase() {
             "HarvestConnectionInterceptor" to "DuckdbHarvestConnectionInterceptor",
             "ExecutionObserver" to "DuckdbExecutionObserver",
             "RefreshLiveCatalogAction" to "DuckdbRefreshLiveCatalogAction",
+            "AutoIntrospectService" to "DuckdbAutoIntrospectService",
+            "IntrospectBannerProvider" to "DuckdbIntrospectBannerProvider",
+            "QualifiedPathIntrospectContributor" to "DuckdbQualifiedPathIntrospectContributor",
         )) assertTrue(consumer, loader.loadClass("dev.brikk.house.sql.intellij.catalog.$base")
             .isAssignableFrom(loader.loadClass("dev.sort.duckdb.catalog.$consumer")))
         for ((base, consumer) in listOf(
