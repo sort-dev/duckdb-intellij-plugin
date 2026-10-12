@@ -6,19 +6,25 @@ import com.intellij.database.console.session.DatabaseSession
 import com.intellij.database.console.session.DatabaseSessionManager
 import com.intellij.database.console.session.DatabaseSessionViewService
 import com.intellij.database.connection.throwable.info.ErrorInfo
+import com.intellij.database.dataSource.DatabaseConnectionCore
 import com.intellij.database.dataSource.DatabaseDriverImpl
 import com.intellij.database.dataSource.DatabaseDriverManager
 import com.intellij.database.dataSource.LocalDataSource
 import com.intellij.database.dataSource.url.template.UrlTemplate
 import com.intellij.database.datagrid.DataAuditor
 import com.intellij.database.datagrid.DataRequest
+import com.intellij.database.psi.DbPsiFacade
+import com.intellij.database.remote.jdbc.helpers.JdbcNativeUtil
+import com.intellij.database.run.ConsoleDataRequest
 import com.intellij.notification.Notification
 import com.intellij.notification.Notifications
 import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.actionSystem.impl.SimpleDataContext
 import com.intellij.openapi.command.WriteCommandAction
+import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiManager
 import com.intellij.testFramework.PlatformTestUtil
@@ -48,7 +54,7 @@ class DuckdbLiveCatalogConsoleTest : DuckdbCatalogTestCase() {
     private lateinit var target: LocalDataSource
     private lateinit var driver: DatabaseDriverImpl
     private val consoles = ArrayList<Console>()
-    private val finished = AtomicInteger()
+    private val finished = CopyOnWriteArrayList<DataRequest>()
     private val executionErrors = CopyOnWriteArrayList<String>()
     private val notifications = CopyOnWriteArrayList<Notification>()
 
@@ -68,6 +74,7 @@ class DuckdbLiveCatalogConsoleTest : DuckdbCatalogTestCase() {
             url = "jdbc:duckdb:${directory.resolve("console.db").toAbsolutePath()}"
         }
         setSqlDialectMapping(project, null, DuckdbSqlDialect)
+        DbPsiFacade.getInstance(project).clearCaches()
         val observer = DuckdbExecutionObserver(project, errors.newScope(testRootDisposable))
         Disposer.register(testRootDisposable, observer)
         observer.start()
@@ -76,7 +83,7 @@ class DuckdbLiveCatalogConsoleTest : DuckdbCatalogTestCase() {
                 executionErrors += error.toString()
             }
             override fun requestFinished(context: DataRequest.Context) {
-                finished.incrementAndGet()
+                finished += context.request
             }
         }, testRootDisposable)
         project.messageBus.connect(testRootDisposable).subscribe(Notifications.TOPIC, object : Notifications {
@@ -98,14 +105,18 @@ class DuckdbLiveCatalogConsoleTest : DuckdbCatalogTestCase() {
         val file = myFixture.addFileToProject("$name-${UUID.randomUUID()}.sql", "SELECT 1")
         val session = DatabaseSessionManager.openSession(project, target, name)
         val console = JdbcConsole.newConsole(project).forFile(file.virtualFile).fromDataSource(target).useSession(session).build()
+        assertTrue(console.isValid)
         return Console(file.virtualFile, session, console).also { consoles += it }
     }
 
     private fun Console.run(sql: String) {
-        val before = finished.get()
-        val request = object : DataRequest.QueryRequest(console, sql, DataRequest.newConstraints(), null) {}
+        myFixture.configureFromExistingVirtualFile(virtualFile)
+        WriteCommandAction.runWriteCommandAction(project) { myFixture.editor.document.setText(sql) }
+        PsiDocumentManager.getInstance(project).commitDocument(myFixture.editor.document)
+        FileDocumentManager.getInstance().saveDocument(myFixture.editor.document)
+        val request = requireNotNull(ConsoleDataRequest.newConsoleRequest(console, myFixture.editor, console.scriptModel, false))
         session.messageBus.dataProducer.processRequest(request)
-        PlatformTestUtil.waitWithEventsDispatching("'$sql' finishes", { finished.get() > before }, 30)
+        PlatformTestUtil.waitWithEventsDispatching("'$sql' finishes", { request in finished }, 30)
         assertEmpty(executionErrors)
         errors.assertNone()
     }
@@ -199,6 +210,43 @@ class DuckdbLiveCatalogConsoleTest : DuckdbCatalogTestCase() {
         assertSame(prior, catalog.selection(target).inventory)
         assertFalse("in_transaction" in a.sessionFunctions())
         a.run("COMMIT")
+        assertEquals(1, committedRows())
+    }
+
+    fun testManualRollbackDiscardsWritesWithoutLeavingAStaleTransaction() {
+        val a = console("a")
+        a.run("CREATE TABLE written(x INT)")
+        a.session.setAutoCommit(false)
+        a.run("INSERT INTO written VALUES (1)")
+        assertEquals(RefreshOutcome.SessionInTransaction, runBlocking { catalog.refresh(project, a.session) })
+        a.run("ROLLBACK")
+        assertEquals(0, committedRows())
+    }
+
+    private fun committedRows(): Int {
+        val reader = console("readback")
+        val count = AtomicInteger(-1)
+        val request = object : DataRequest.RawRequest(reader.session) {
+            override fun processRaw(context: DataRequest.Context, connection: DatabaseConnectionCore) {
+                val statement = requireNotNull(JdbcNativeUtil.computeRemote { connection.remoteConnection.createStatement() })
+                try {
+                    val rows = requireNotNull(JdbcNativeUtil.computeRemote { statement.executeQuery("SELECT count(*) FROM written") })
+                    try {
+                        assertTrue(rows.next())
+                        count.set(rows.getString(1).toInt())
+                    } finally {
+                        JdbcNativeUtil.performSafe { rows.close() }
+                    }
+                } finally {
+                    JdbcNativeUtil.closeRemoteStatementSafe(statement)
+                }
+            }
+        }
+        reader.session.messageBus.dataProducer.processRequest(request)
+        PlatformTestUtil.waitWithEventsDispatching("committed rows are read in another session", { request in finished }, 30)
+        assertEmpty(executionErrors)
+        errors.assertNone()
+        return count.get()
     }
 
     fun testTemporaryMacroShadowsTheBundledSignatureOnlyInItsSession() {

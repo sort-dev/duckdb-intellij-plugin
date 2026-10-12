@@ -1,12 +1,13 @@
 package dev.sort.duckdb.catalog
 
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import dev.brikk.house.sql.intellij.testing.assertFallbackExtensionsAudited
 import dev.sort.duckdb.DuckdbDbms.DUCKDB_BRIKK
 
 class DuckdbFallbackExtensionAuditTest : BasePlatformTestCase() {
     fun testInheritedExtensionsAreAudited() {
-        val allowed = mapOf(
+        val allowed = mutableMapOf(
             "com.intellij.database.dataImporter" to "Retain PostgreSQL import defaults; fast-mode session SQL needs a separate DuckDB review.",
             "com.intellij.database.databaseViewStructureExtension" to "Retain PostgreSQL tree grouping for the existing PostgreSQL-family model.",
             "com.intellij.database.definitionProvider" to "Retain existing source retrieval; PostgreSQL catalog queries need a separate DuckDB review.",
@@ -32,6 +33,10 @@ class DuckdbFallbackExtensionAuditTest : BasePlatformTestCase() {
             "com.intellij.database.typeSystem" to "Retain the PostgreSQL type system paired with the existing domain registry and model.",
             "com.intellij.sql.navigationHelper" to "The UNKNOWN navigation helper supplies generic SQL PSI navigation.",
         )
+        val transactionHandler = "com.intellij.database.transactionControlLanguageHandler"
+        if (ApplicationManager.getApplication().extensionArea.hasExtensionPoint(transactionHandler)) {
+            allowed[transactionHandler] = "Retain the native handler for PostgreSQL-family COMMIT/ROLLBACK PSI; live console tests verify committed and rolled-back data in another session."
+        }
         assertFallbackExtensionsAudited(DUCKDB_BRIKK, allowed)
     }
 }
