@@ -73,7 +73,7 @@
         <ul>
             <li>Uses the published Brikk Kotlin IntelliJ support 0.1.0 library from Maven Central.</li>
             <li>Resolves, completes and navigates Kotlin relation-input columns with statement-local
-                aliases, joins and supported PIPE-stage scopes.</li>
+                 aliases, joins and stage scopes supported by DuckDB PIPE syntax.</li>
             <li>Preserves partial/unavailable contract distinctions and labelled generated-column
                 navigation fallbacks. Kotlin remains optional.</li>
         </ul>

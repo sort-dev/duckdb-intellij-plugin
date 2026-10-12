@@ -212,6 +212,8 @@ class DuckdbPipesExecutionTest : BasePlatformTestCase() {
             notificationConnection.subscribe(Notifications.TOPIC, object : Notifications {
                 override fun notify(notification: Notification) {
                     if (notification.groupId == "DuckDB PIPE") {
+                        assertEquals(DuckdbPipeDialect.label, notification.title)
+                        assertTrue(notification.content.isNotBlank())
                         notification.setSuppressShowingPopup(true)
                         notifications.add(notification)
                     }
