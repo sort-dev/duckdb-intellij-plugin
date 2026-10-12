@@ -34,7 +34,13 @@ class DuckdbPipesIsolationTest : BasePlatformTestCase() {
             "pipe.PipeStatementGate", "editor.MaskedSpanRecolorAnnotator", "editor.SubstrateErrorFilter",
             "editor.SqlDialectQuoteHandler", "editor.KeywordOverlayHighlighterFactory",
             "dialect.PgFamilyDialect", "dialect.SqlDialectRegistry",
+            "catalog.PgFamilyModelFacade", "catalog.GenericJdbcIntrospectorGate", "catalog.DialectDataSourceResolver",
         )) assertSame(name, loader, loader.loadClass("dev.brikk.house.sql.intellij.$name").classLoader)
+        for ((base, consumer) in listOf(
+            "PgFamilyModelFacade" to "DuckdbModelFacade",
+            "GenericJdbcIntrospectorGate" to "DuckdbIntrospectorGate",
+        )) assertTrue(consumer, loader.loadClass("dev.brikk.house.sql.intellij.catalog.$base")
+            .isAssignableFrom(loader.loadClass("dev.sort.duckdb.$consumer")))
         for ((base, consumer) in listOf(
             "lexer.MaskingSqlLexer" to "DuckdbLexer",
             "editor.MaskedSpanRecolorAnnotator" to "DuckdbMaskedSpanRecolorAnnotator",
