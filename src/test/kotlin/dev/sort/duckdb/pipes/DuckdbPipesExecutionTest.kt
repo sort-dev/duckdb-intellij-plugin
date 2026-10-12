@@ -15,10 +15,20 @@ import com.intellij.testFramework.PlatformTestUtil
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import dev.sort.duckdb.sql.DuckdbSqlDialect
 import dev.brikk.house.sql.intellij.CooperativeExecuteAction
-import dev.brikk.house.sql.intellij.ExecuteInterceptor
+import dev.brikk.house.sql.intellij.RenderedSql
+import dev.brikk.house.sql.intellij.SqlExecutionAdapter
 import dev.brikk.house.sql.intellij.TranslatingScriptModel
 import dev.brikk.house.sql.intellij.SqlExecutionRefusal
 import dev.brikk.house.sql.intellij.testing.RecordingConsole
+import dev.brikk.house.sql.intellij.pipe.PipeDialect
+import dev.brikk.house.sql.intellij.pipe.PipeExecuteInterceptor
+import dev.brikk.house.sql.intellij.pipe.PipeRun
+import dev.brikk.house.sql.intellij.pipe.PipeSubmitListener
+import dev.brikk.house.sql.intellij.pipe.PipeTranslation
+import dev.brikk.house.sql.intellij.pipe.NativeSqlValidator
+import dev.brikk.house.sql.intellij.pipe.NativeVerdict
+import dev.brikk.house.sql.intellij.pipe.ValidationTiming
+import dev.brikk.house.sql.intellij.pipe.lower
 import java.util.UUID
 
 /** Real console and stock preparation, recorded at the shared submission boundary. */
@@ -42,7 +52,7 @@ class DuckdbPipesExecutionTest : BasePlatformTestCase() {
                 f.execute(variant)
                 assertEquals(variant, f.requests.size)
                 val request = f.requests.last() as DataRequest.QueryRequest
-                assertEquals((DuckdbPipesEngine.transpile(sql) as DuckdbPipesEngine.Transpile.Ok).sql, request.query)
+                assertEquals((DuckdbPipeDialect.lower(sql) as PipeTranslation.Lowered).sql, request.query)
                 assertSame(f.console, request.owner)
                 assertSame(f.editor, (request as DataRequest.CoupledWithEditor).editor)
                 assertEquals(sql, f.editor.document.text)
@@ -64,7 +74,7 @@ class DuckdbPipesExecutionTest : BasePlatformTestCase() {
         }
     }
     fun testOrdinaryFromFirstAndQuotedMarkersReachPredecessor() {
-        for (sql in listOf("FROM range(3)", "SELECT '|>'", "SELECT $$|>$$", "SELECT /* |> */ 1")) {
+        for (sql in listOf("FROM range(3)", "SELECT '|>'", "SELECT $$|>$$", "SELECT /* |> */ 1", "SELECT 'unclosed |> fake")) {
             Fixture(sql).use { f ->
                 val event = f.execute()
                 assertEquals(listOf(event), f.previousEvents)
@@ -118,7 +128,7 @@ class DuckdbPipesExecutionTest : BasePlatformTestCase() {
     fun testRunToFirstStageOfClaimedPipeline() {
         Fixture("FROM offline_rows |> WHERE id > 1 |> LIMIT 2").use { f ->
             f.editor.caretModel.moveToOffset(3)
-            DuckdbPipesUi.runToStage(project, f.file, f.editor)
+            RunPipesToStageIntention().invoke(project, f.editor, f.file)
             assertEquals(1, f.requests.size)
             val query = (f.requests.single() as DataRequest.QueryRequest).query
             assertFalse(query.contains("|>"))
@@ -220,7 +230,16 @@ class DuckdbPipesExecutionTest : BasePlatformTestCase() {
 
     fun testStaleSnapshotRefusesEvenWhenTextIsRestored() {
         Fixture("FROM offline_rows |> SELECT id").use { f ->
-            val model = TranslatingScriptModel(f.console.scriptModel, f.editor, DuckdbExecutionAdapter())
+            val adapter = object : SqlExecutionAdapter {
+                override fun claims(text: String) = true
+                override fun parameters(text: String) = DuckdbPipeDialect.parameterSpans(text)
+                override fun translate(text: String, beforeSubstitution: Boolean): RenderedSql {
+                    val translation = DuckdbPipeDialect.lower(text, substituted = !beforeSubstitution) as PipeTranslation.Lowered
+                    translation.blocker?.let { throw SqlExecutionRefusal(it) }
+                    return RenderedSql(translation.sql, text)
+                }
+            }
+            val model = TranslatingScriptModel(f.console.scriptModel, f.editor, adapter)
             com.intellij.openapi.command.WriteCommandAction.runWriteCommandAction(project) {
                 f.editor.document.insertString(0, " ")
                 f.editor.document.deleteString(0, 1)
@@ -233,15 +252,49 @@ class DuckdbPipesExecutionTest : BasePlatformTestCase() {
     }
 
     fun testSourceMapIsUnavailableAfterParameterExpansion() {
-        for (parameterized in listOf(false, true)) Fixture(
-            if (parameterized) "FROM offline_rows |> WHERE id = :id" else "FROM offline_rows |> SELECT id").use { f ->
+        for (parameterized in listOf(false, true)) {
+            var observed = false
+            val dialect = object : PipeDialect by DuckdbPipeDialect {
+                override val submitListener = object : PipeSubmitListener {
+                    override fun beforeSubmit(run: PipeRun) {
+                        observed = true
+                        val map = run.statements.single()!!.sourceMap
+                        if (parameterized) assertNull(map) else assertNotNull(map)
+                        throw SqlExecutionRefusal("Source-map inspection only")
+                    }
+                }
+            }
+            Fixture(if (parameterized) "FROM offline_rows |> WHERE id = :id" else "FROM offline_rows |> SELECT id", dialect).use { f ->
+                ShowSqlParametersPanelAction.getStorage(f.console).putValue("id", "17")
+                f.execute()
+                assertTrue(observed)
+                assertEmpty(f.requests)
+            }
+        }
+    }
+
+    fun testNativeValidationRunsOnlyAfterParameterSubstitution() {
+        val checked = mutableListOf<String>()
+        val dialect = object : PipeDialect by DuckdbPipeDialect {
+            override val validator = object : NativeSqlValidator {
+                override val timing = ValidationTiming.Submission
+                override fun validate(sql: String, file: com.intellij.psi.PsiFile?): NativeVerdict {
+                    assertNotNull(file)
+                    assertFalse(sql, ":id" in sql || "|>" in sql)
+                    checked.add(sql)
+                    return DuckdbPipeDialect.validator.validate(sql, file)
+                }
+            }
+        }
+        Fixture("FROM offline_rows |> WHERE id = :id |> SELECT id", dialect).use { f ->
             ShowSqlParametersPanelAction.getStorage(f.console).putValue("id", "17")
-            val model = TranslatingScriptModel(f.console.scriptModel, f.editor, DuckdbExecutionAdapter())
-            model.finalizeTranslations(f.console.pStorage)
-            val statement = model.statements().single()!!
-            val map = model.authoredMap(statement.range(), statement.rangeOffset())
-            if (parameterized) assertNull(map) else assertNotNull(map)
-            assertEmpty(f.requests)
+            f.execute()
+            assertEquals(1, f.requests.size)
+            val query = (f.requests.single() as DataRequest.QueryRequest).query
+            assertEquals(listOf(query), checked)
+            assertTrue(query, "17" in query)
+            assertEmpty(f.previousEvents)
+            assertEmpty(f.notifications)
         }
     }
 
@@ -271,7 +324,7 @@ class DuckdbPipesExecutionTest : BasePlatformTestCase() {
         try { settings.execOptions[0] = option; action() } finally { settings.execOptions[0] = previous }
     }
 
-    private inner class Fixture(sql: String) : AutoCloseable {
+    private inner class Fixture(sql: String, private val dialect: PipeDialect = DuckdbPipeDialect) : AutoCloseable {
         private val id = UUID.randomUUID().toString()
         private val vf = myFixture.configureByText("offline-pipe-$id.sql", sql).virtualFile
         val file get() = PsiManager.getInstance(project).findFile(vf)!!
@@ -301,7 +354,7 @@ class DuckdbPipesExecutionTest : BasePlatformTestCase() {
                     .add(SessionClientHolder.CLIENT_KEY, console).build())
             val previous = object : AnAction() { override fun actionPerformed(e: AnActionEvent) { previousEvents.add(e) } }
             val action = CooperativeExecuteAction(if (variant == 4) -1 else variant, previous,
-                ExecuteInterceptor(PipesExecuteInterceptor::handle), variant == 4)
+                PipeExecuteInterceptor(dialect), variant == 4)
             action.actionPerformed(event)
             return event
         }

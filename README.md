@@ -49,7 +49,7 @@ validating SQL with the real engine.
 
 ## PIPE queries
 
-This development build uses brikk-sql 0.19.1 and SQL IntelliJ support 0.1.2-SNAPSHOT for PIPE authoring. SQL Transpiler is
+This development build uses brikk-sql 0.20.0-SNAPSHOT and SQL IntelliJ support 0.2.0-SNAPSHOT for PIPE authoring. SQL Transpiler is
 not required. Enable **Settings > Tools > DuckDB PIPE > Enable PIPE syntax in
 this project**; it defaults off and is saved per workspace.
 
@@ -166,15 +166,15 @@ the dialect or PIPE consoles in DataGrip.
 
 The plugin consumes
 `dev.brikk.house:brikk-engine-kotlin-intellij-support:0.2.0` from Maven Central.
-Cooperative Execute actions and translated script models come from
-`dev.brikk.house:brikk-sql-intellij-support:0.1.2-SNAPSHOT`. DuckDB keeps its own execution
-eligibility, optional native validation, notifications and inspection-view guards.
+PIPE editing and execution come from
+`dev.brikk.house:brikk-sql-intellij-support:0.2.0-SNAPSHOT`. DuckDB supplies its dialect
+profile, session ownership and optional native validation.
 The SQL support and test-support snapshots must be published to Maven Local.
 Test-support supplies the shared recording console and is never bundled. Neither dependency
 bundles an IntelliJ SDK, Kotlin stdlib or compiler plugin.
 
-Maven Local resolution is restricted to those two snapshot coordinates; all other dependencies
-remain released versions. Core 0.19.1 owns the comment-boundary fix.
+Maven Local resolution is restricted to Brikk House snapshot coordinates. Core and metadata
+use 0.20.0-SNAPSHOT; other dependencies remain released versions.
 The earlier 0.3.4 local testing ZIP still contains the previously tested snapshot
 until explicitly replaced. Updating source dependencies does not alter an installed ZIP.
 

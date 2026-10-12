@@ -16,6 +16,7 @@
         </intentionAction>
         <notificationGroup id="DuckDB PIPE" displayType="BALLOON"/>
         <completion.contributor language="DuckDBSQL" implementationClass="dev.sort.duckdb.pipes.DuckdbPipesCompletionContributor" order="first"/>
+        <annotator language="DuckDBSQL" implementationClass="dev.sort.duckdb.pipes.DuckdbPipeStageKeywordAnnotator"/>
     </extensions>
     <actions>
         <group id="DuckdbPipes.EditorMenu" text="DuckDB PIPE" popup="true">

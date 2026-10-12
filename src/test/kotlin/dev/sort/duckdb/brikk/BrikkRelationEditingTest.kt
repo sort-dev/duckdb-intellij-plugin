@@ -71,6 +71,13 @@ open class BrikkRelationEditingTest : BrikkDuckdbInjectionTest() {
             myFixture.lookupElementStrings.orEmpty().contains("amount") || myFixture.editor.document.text.contains("WHERE amount"))
         assertTrue(BrikkSqlEditorSupport.contracts(file).containsKey("events"))
     }
+    fun testOfflinePipeAliasesStillCompleteInBrikkFiles() {
+        val host = configure("@BrikkSql fun query() = Sql.duckdb(\"FROM range(3) |> SELECT range AS my_output |> WHERE my_ou<caret>\")")
+        assertNotNull(BrikkDuckdbProfile.forFile(injected(host)))
+        myFixture.completeBasic()
+        assertTrue("Lookups: ${myFixture.lookupElementStrings}; text=${myFixture.editor.document.text}",
+            myFixture.lookupElementStrings.orEmpty().contains("my_output") || myFixture.editor.document.text.contains("WHERE my_output"))
+    }
     fun testPlainNativeSqlCompletionUsesASlotAlias() {
         val host = configure("$traits\n@BrikkSql fun query(events: Rel<CleanEvent>) = Sql.duckdb(\"SELECT e.am<caret> FROM \$events() AS e\")")
         injected(host)

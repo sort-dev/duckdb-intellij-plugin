@@ -27,6 +27,11 @@ class DuckdbPipesIsolationTest : BasePlatformTestCase() {
         val completionClass = loader.loadClass("dev.brikk.house.sql.intellij.SqlColumnCompletion")
         assertSame(loader, completionClass.classLoader)
         assertTrue(completionClass.getResource("SqlColumnCompletion.class").toString().contains("brikk-sql-intellij-support-0.2.0-SNAPSHOT.jar"))
+        val pipeClass = loader.loadClass("dev.brikk.house.sql.intellij.pipe.PipeDialect")
+        assertSame(loader, pipeClass.classLoader)
+        val profile = loader.loadClass("dev.sort.duckdb.pipes.DuckdbPipeDialect")
+        assertSame(loader, profile.classLoader)
+        assertTrue(pipeClass.isAssignableFrom(profile))
         val value = fragment.getConstructor(String::class.java, String::class.java)
             .newInstance("FROM range(3) |> LIMIT 1", "duckdb")
         val result = fragment.getMethod("toExecutable", String::class.java, Boolean::class.javaPrimitiveType,

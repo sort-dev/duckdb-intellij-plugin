@@ -10,7 +10,9 @@ import com.intellij.refactoring.rename.RenameProcessor
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import dev.sort.duckdb.brikk.kotlin.BrikkDuckdbInjectionPerformer
 import dev.sort.duckdb.brikk.kotlin.BrikkDuckdbKotlinContext
-import dev.sort.duckdb.pipes.DuckdbPipes
+import dev.sort.duckdb.pipes.DuckdbPipeDialect
+import dev.brikk.house.sql.intellij.pipe.PipeExecuteInterceptor
+import dev.brikk.house.sql.intellij.pipe.isEditingEnabled
 import dev.sort.duckdb.pipes.DuckdbPipesSettings
 import dev.sort.duckdb.sql.DuckdbSqlDialect
 import org.jetbrains.kotlin.psi.KtNamedFunction
@@ -73,7 +75,7 @@ open class BrikkDuckdbInjectionTest : BasePlatformTestCase() {
         assertFalse(file.text.contains("tenant = tenant"))
         assertEquals(listOf("tenant"), BrikkDuckdbProfile.forFile(file)!!.binds)
         assertFalse(project.service<DuckdbPipesSettings>().enabled)
-        assertTrue(DuckdbPipes.isEnabled(file))
+        assertTrue(DuckdbPipeDialect.isEditingEnabled(file))
         assertEmpty(PsiTreeUtil.findChildrenOfType(file, PsiErrorElement::class.java))
         val ref = host.entries.mapNotNull { it.expression as? KtNameReferenceExpression }.single()
         assertNotNull(ref.mainReference.resolve())
@@ -292,9 +294,18 @@ open class BrikkDuckdbInjectionTest : BasePlatformTestCase() {
                 .add(com.intellij.openapi.actionSystem.CommonDataKeys.PROJECT, project)
                 .add(com.intellij.openapi.actionSystem.CommonDataKeys.PSI_FILE, file).build())
         assertEquals(dev.brikk.house.sql.intellij.ExecutionClaim.HANDLED,
-            dev.sort.duckdb.pipes.PipesExecuteInterceptor.handle(event, com.intellij.database.settings.DatabaseSettings.ExecOption()))
+            PipeExecuteInterceptor(DuckdbPipeDialect).execute(event, com.intellij.database.settings.DatabaseSettings.ExecOption()))
         assertTrue(isBrikkInjectedSql(file))
         assertFalse(dev.sort.duckdb.pipes.RunPipesToStageIntention().isAvailable(project, myFixture.editor, file))
+        assertTrue(DuckdbPipeDialect.enablesPreview(file))
+        val previous = System.getProperty(DuckdbPipeDialect.vetoProperty)
+        try {
+            System.setProperty(DuckdbPipeDialect.vetoProperty, "false")
+            assertFalse(DuckdbPipeDialect.isEditingEnabled(file))
+        } finally {
+            if (previous == null) System.clearProperty(DuckdbPipeDialect.vetoProperty)
+            else System.setProperty(DuckdbPipeDialect.vetoProperty, previous)
+        }
     }
 
     fun testRemovingAnnotationRestoresNativeInjectionWithoutProfileLeak() {
@@ -309,7 +320,7 @@ open class BrikkDuckdbInjectionTest : BasePlatformTestCase() {
         host = PsiTreeUtil.findChildrenOfType(myFixture.file, KtStringTemplateExpression::class.java).single()
         val file = injected(host)
         assertNull(BrikkDuckdbProfile.forFile(file))
-        assertFalse(DuckdbPipes.isEnabled(file))
+        assertFalse(DuckdbPipeDialect.isEditingEnabled(file))
         assertTrue(file.text, file.text.contains("SELECT id"))
     }
     fun testMalformedAndMultipleSqlStatementsReportInsteadOfCrashing() {
@@ -319,6 +330,15 @@ open class BrikkDuckdbInjectionTest : BasePlatformTestCase() {
             val annotator = dev.sort.duckdb.validate.DuckdbErrorAnnotator()
             val result = annotator.doAnnotate(annotator.collectInformation(file))!!
             assertEquals(1, result.pipeErrors.size)
+            val annotations = com.intellij.codeInsight.daemon.impl.AnnotationHolderImpl(
+                com.intellij.lang.annotation.AnnotationSession(file), false)
+            annotations.runAnnotatorWithContext(file, com.intellij.lang.annotation.Annotator { _, holder ->
+                annotator.apply(file, result, holder)
+            })
+            annotations.assertAllAnnotationsCreated()
+            val error = annotations.single { it.severity == com.intellij.lang.annotation.HighlightSeverity.ERROR }
+            assertEquals(1, error.endOffset - error.startOffset)
+            assertEquals(file.text.indexOf("SELECT"), error.startOffset)
         }
     }
 }

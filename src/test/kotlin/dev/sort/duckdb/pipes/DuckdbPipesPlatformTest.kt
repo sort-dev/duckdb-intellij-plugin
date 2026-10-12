@@ -13,6 +13,7 @@ import dev.sort.duckdb.validate.DuckdbErrorAnnotator
 import dev.brikk.house.sql.intellij.CooperativeExecuteAction
 import dev.brikk.house.sql.intellij.ExecuteInterceptor
 import dev.brikk.house.sql.intellij.ExecutionClaim
+import dev.brikk.house.sql.intellij.pipe.isEnabled
 
 class DuckdbPipesPlatformTest : BasePlatformTestCase() {
     override fun tearDown() {
@@ -23,9 +24,9 @@ class DuckdbPipesPlatformTest : BasePlatformTestCase() {
     fun testSettingDefaultsOffAndDoesNotReplaceActions() {
         val manager = ActionManager.getInstance()
         val actions = DuckdbPipesActionConfiguration.EXECUTE_IDS.map { manager.getAction(it) }
-        assertFalse(DuckdbPipes.isEnabled(project))
+        assertFalse(DuckdbPipeDialect.isEnabled(project))
         project.service<DuckdbPipesSettings>().enabled = true
-        assertTrue(DuckdbPipes.isEnabled(project))
+        assertTrue(DuckdbPipeDialect.isEnabled(project))
         project.service<DuckdbPipesSettings>().enabled = false
         assertEquals(actions, DuckdbPipesActionConfiguration.EXECUTE_IDS.map { manager.getAction(it) })
     }
@@ -115,6 +116,21 @@ class DuckdbPipesPlatformTest : BasePlatformTestCase() {
         myFixture.completeBasic()
         assertTrue(myFixture.lookupElementStrings.orEmpty().contains("my_output") ||
             myFixture.editor.document.text.contains("WHERE my_output"))
+    }
+    fun testWholeStagePhraseGetsKeywordColoring() {
+        project.service<DuckdbPipesSettings>().enabled = true
+        val sql = "FROM t |> FULL OUTER JOIN u ON t.id = u.id"
+        val file = myFixture.configureByText("stage-colors.sql", sql)
+        dev.sort.duckdb.setSqlDialectMapping(project, file.virtualFile, DuckdbSqlDialect.INSTANCE)
+        val colors = myFixture.doHighlighting().filter {
+            it.forcedTextAttributesKey == com.intellij.openapi.editor.DefaultLanguageHighlighterColors.KEYWORD
+        }
+        for (word in listOf("FULL", "OUTER", "JOIN")) {
+            val start = sql.indexOf(word)
+            assertTrue("Missing keyword color for $word: $colors", colors.any {
+                it.startOffset <= start && it.endOffset >= start + word.length
+            })
+        }
     }
     fun testBothPeerWrapperOrdersPreserveOwnershipAndOrdinaryExecution() {
         val event = AnActionEvent.createFromDataContext("PIPE chain test", Presentation(), DataContext.EMPTY_CONTEXT)

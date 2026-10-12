@@ -13,6 +13,10 @@ import com.intellij.sql.dialects.postgres.PgParser
 import com.intellij.sql.psi.SqlCompositeElementTypes.SQL_STATEMENT
 import com.intellij.psi.impl.source.resolve.FileContextUtil
 import dev.sort.duckdb.brikk.BrikkDuckdbProfile
+import dev.brikk.house.sql.intellij.pipe.isEditingEnabled
+import dev.brikk.house.sql.intellij.pipe.isEnabled
+import dev.brikk.house.sql.parser.SqlStatementRange
+import dev.sort.duckdb.pipes.DuckdbPipeDialect
 
 /**
  * DuckDB statement parsing on the PG foundation, Tier-1 (statement boundaries).
@@ -32,21 +36,21 @@ import dev.sort.duckdb.brikk.BrikkDuckdbProfile
  */
 class DuckdbPsiParser : PgParser(false) {
     private var pipeText: CharSequence? = null
-    private var pipeChunks: List<dev.sort.duckdb.pipes.DuckdbPipes.Chunk> = emptyList()
+    private var pipeChunks: List<SqlStatementRange> = emptyList()
 
     override fun parseSqlStatement(builder: PsiBuilder, level: Int): Boolean {
         // Raw lexical ranges avoid PSI masking and the bounded PG lookahead. Bare FROM
         // remains ordinary DuckDB SQL, independently of the PIPE setting.
         val file = builder.getUserData(FileContextUtil.CONTAINING_FILE_KEY)
-        if (file?.let { dev.sort.duckdb.pipes.DuckdbPipes.isEnabled(it) }
-                ?: dev.sort.duckdb.pipes.DuckdbPipes.isEnabled(builder.project)) {
+        if (file?.let { DuckdbPipeDialect.isEditingEnabled(it) }
+                ?: builder.project?.let { DuckdbPipeDialect.isEnabled(it) } == true) {
             if (pipeText !== builder.originalText) {
                 pipeText = builder.originalText
                 val text = builder.originalText.toString()
-                pipeChunks = if (text.contains("|>")) dev.sort.duckdb.pipes.DuckdbPipes.chunks(text) else emptyList()
+                pipeChunks = if (text.contains("|>")) DuckdbPipeDialect.scriptRanges(text) else emptyList()
             }
-            val chunk = pipeChunks.firstOrNull { builder.currentOffset >= it.startOffset && builder.currentOffset < it.endOffset }
-            if (chunk?.hasPipeOperator == true) return parseLenientStatement(builder, SQL_STATEMENT)
+            val chunk = pipeChunks.firstOrNull { builder.currentOffset >= it.start && builder.currentOffset < it.end }
+            if (chunk?.hasPipe == true) return parseLenientStatement(builder, SQL_STATEMENT)
         }
         when (wordAt(builder, 0)) {
             // Statement heads PG has no rule for at all — always lenient.

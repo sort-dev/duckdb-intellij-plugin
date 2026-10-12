@@ -8,7 +8,7 @@ import dev.brikk.house.sql.parser.ParseError
 import dev.brikk.house.sql.parser.Token
 import dev.brikk.house.sql.parser.TokenType
 import dev.brikk.house.sql.shape.SqlFragment
-import dev.sort.duckdb.pipes.runPipeCatching
+import dev.brikk.house.sql.intellij.recoverEditorOperation
 import java.util.IdentityHashMap
 
 /** Statement-local SQL scopes over copied Kotlin input contracts, never upstream SQL or caller unions. */
@@ -38,7 +38,7 @@ object BrikkSqlScopes {
             .minByOrNull { it.end - it.start }
     }
 
-    fun analyze(sql: String, contracts: Map<String, ShapeResult>): Analysis? = runPipeCatching {
+    fun analyze(sql: String, contracts: Map<String, ShapeResult>): Analysis? = recoverEditorOperation {
         Analyzer(contracts).analyze(parse(sql, contracts.keys))
     }.getOrNull()
 
