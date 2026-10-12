@@ -1,7 +1,7 @@
 package dev.sort.duckdb.catalog
 
-import com.intellij.codeInsight.lookup.LookupElementPresentation
 import com.intellij.codeInsight.CodeInsightSettings
+import com.intellij.codeInsight.lookup.LookupElementPresentation
 import com.intellij.database.dataSource.DatabaseDriverManager
 import com.intellij.database.dataSource.LocalDataSource
 import com.intellij.database.dataSource.LocalDataSourceManager
@@ -261,6 +261,7 @@ class DuckdbCatalogResolverTest : BasePlatformTestCase() {
         assertSame(active.functions, DuckdbCatalogResolver.activeCatalogFor(file).functions)
         assertSame(active.functions, DuckdbCompletionProfile.functions(file))
         assertSame(active.keywords, DuckdbCatalogResolver.activeCatalogFor(file).keywords)
+        assertSame(active.keywordCatalog, DuckdbCompletionProfile.keywordCatalog(file, active.snapshot))
         val replacement = DuckdbLiveCatalog.Entry("v1.5.5", emptyList(),
             listOf(DuckdbLiveCatalog.Fn("second_live_fn", DuckdbLiveCatalog.Kind.SCALAR)), setOf("SELECT"), 2L)
         DuckdbLiveCatalog.store(source.uniqueId, replacement)
@@ -306,6 +307,18 @@ class DuckdbCatalogResolverTest : BasePlatformTestCase() {
             it.lookupString == "review_window" && it.`object` is FunctionPresentation
         }
         assertEquals(FunctionKind.WINDOW, (item.`object` as FunctionPresentation).kind)
+    }
+
+    fun testLiveKeywordsReplaceBundledKeywordsThroughCompletion() = withDataSource { source ->
+        val keyword = "REVIEW_LIVE_KEYWORD"
+        assertFalse(keyword in requireNotNull(DUCKDB_METADATA.default.keywords))
+        DuckdbLiveCatalog.store(source.uniqueId, DuckdbLiveCatalog.Entry("v1.5.5", emptyList(),
+            listOf(DuckdbLiveCatalog.Fn("only_live_fn", DuckdbLiveCatalog.Kind.SCALAR)), setOf(keyword), 1L))
+        myFixture.configureByText("keyword.sql", "SELECT review_liv<caret>")
+        val items = myFixture.completeBasic().orEmpty()
+        assertTrue(items.toString(), items.any { it.lookupString == keyword && it.`object` !is FunctionPresentation })
+        myFixture.configureByText("bundled-keyword.sql", "SELECT ab<caret>")
+        assertFalse(myFixture.completeBasic().orEmpty().any { it.lookupString == "ABORT" })
     }
 
 }

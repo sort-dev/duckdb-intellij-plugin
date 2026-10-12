@@ -6,6 +6,7 @@ import dev.brikk.house.sql.intellij.completion.SqlCompletionProfile
 import dev.brikk.house.sql.intellij.completion.SqlLookupKind
 import dev.brikk.house.sql.intellij.completion.SqlLookupStyles
 import dev.brikk.house.sql.metadata.DUCKDB_METADATA
+import dev.brikk.house.sql.metadata.MetadataSnapshot
 import dev.sort.duckdb.catalog.DuckdbCatalogResolver
 
 object DuckdbCompletionProfile : SqlCompletionProfile {
@@ -14,6 +15,8 @@ object DuckdbCompletionProfile : SqlCompletionProfile {
 
     override fun snapshot(file: PsiFile) = DuckdbCatalogResolver.activeCatalogFor(file).snapshot
     override fun functions(file: PsiFile) = DuckdbCatalogResolver.activeCatalogFor(file).functions
+    override fun keywordCatalog(file: PsiFile, snapshot: MetadataSnapshot) =
+        DuckdbCatalogResolver.activeCatalogFor(file).keywordCatalog
 
     override val nativeKinds = mapOf("macro" to SqlLookupKind.MACRO, "table_macro" to SqlLookupKind.TABLE_MACRO)
     override val styles = SqlLookupStyles.DEFAULT.let { defaults ->

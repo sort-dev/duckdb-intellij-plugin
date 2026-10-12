@@ -11,6 +11,8 @@ import dev.brikk.house.sql.metadata.DUCKDB_METADATA
 import dev.brikk.house.sql.metadata.FunctionDef
 import dev.brikk.house.sql.metadata.FunctionKind
 import dev.brikk.house.sql.metadata.FunctionPresentation
+import dev.brikk.house.sql.metadata.KeywordCatalog
+import dev.brikk.house.sql.metadata.KeywordDef
 import dev.brikk.house.sql.metadata.MetadataSnapshot
 import dev.brikk.house.sql.metadata.presentation
 import dev.sort.duckdb.DuckdbDbms
@@ -35,12 +37,14 @@ object DuckdbCatalogResolver {
         val live: Boolean,
         val dataSourceId: String?,
         val snapshot: MetadataSnapshot,
+        val keywordCatalog: KeywordCatalog?,
     )
 
     private data class CompletionCatalog(
         val functions: List<FunctionPresentation>,
         val keywords: Set<String>,
         val snapshot: MetadataSnapshot,
+        val keywordCatalog: KeywordCatalog? = snapshot.keywords,
     )
 
     private val liveCatalogs = WeakHashMap<DuckdbLiveCatalog.Entry, CompletionCatalog>()
@@ -61,7 +65,7 @@ object DuckdbCatalogResolver {
             val snapshot = DUCKDB_METADATA.forServerVersion(dataSource?.databaseVersion?.version).snapshot
             bundledCatalogs.getValue(snapshot)
         }
-        return ActiveCatalog(catalog.functions, catalog.keywords, live != null, dataSourceId, catalog.snapshot)
+        return ActiveCatalog(catalog.functions, catalog.keywords, live != null, dataSourceId, catalog.snapshot, catalog.keywordCatalog)
     }
 
     private fun DuckdbLiveCatalog.Entry.completionCatalog(): CompletionCatalog {
@@ -80,7 +84,8 @@ object DuckdbCatalogResolver {
         }
         val names = functions.mapTo(HashSet()) { it.name.lowercase() }
         val extensions = bundled.filter { it.extension != null && it.name.lowercase() !in names }
-        return CompletionCatalog(functions + grammar + extensions, keywords, snapshot)
+        return CompletionCatalog(functions + grammar + extensions, keywords, snapshot,
+            KeywordCatalog(keywords.map { KeywordDef(it) }))
     }
 
     private fun DuckdbLiveCatalog.Fn.presentation(): FunctionPresentation? {
