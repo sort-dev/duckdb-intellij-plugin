@@ -1,12 +1,19 @@
 package dev.sort.duckdb.brikk
 
-import com.intellij.codeInsight.completion.*
+import com.intellij.codeInsight.completion.CompletionContributor
+import com.intellij.codeInsight.completion.CompletionParameters
+import com.intellij.codeInsight.completion.CompletionProvider
+import com.intellij.codeInsight.completion.CompletionResultSet
+import com.intellij.codeInsight.completion.CompletionType
 import com.intellij.lang.injection.InjectedLanguageManager
 import com.intellij.patterns.PlatformPatterns
 import com.intellij.util.ProcessingContext
 import dev.brikk.house.intellij.ColumnNullability
 import dev.brikk.house.intellij.NavigationKind
 import dev.brikk.house.sql.intellij.SqlColumnCompletion
+import dev.brikk.house.sql.intellij.SqlColumnFacts
+import dev.brikk.house.sql.intellij.completion.SqlLookupKind
+import dev.sort.duckdb.sql.DuckdbCompletionProfile
 
 class BrikkSqlCompletionContributor : CompletionContributor() {
     init { extend(CompletionType.BASIC, PlatformPatterns.psiElement(), Provider) }
@@ -33,13 +40,13 @@ class BrikkSqlCompletionContributor : CompletionContributor() {
                     ColumnNullability.UNKNOWN -> null
                 }
                 val origin = if (column.navigation?.kind == NavigationKind.RELATION_FALLBACK) "relation contract" else "brikk column"
-                result.caseInsensitive().addElement(SqlColumnCompletion.create(
+                result.caseInsensitive().addElement(SqlColumnCompletion.create(SqlColumnFacts(
                     column.name,
                     column.kotlinClassId?.substringAfterLast('.'),
                     nullable,
                     relation.alias,
                     origin,
-                ))
+                ), DuckdbCompletionProfile.styles[SqlLookupKind.BRIKK_COLUMN]))
             }
         }
     }

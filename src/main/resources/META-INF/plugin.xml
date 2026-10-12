@@ -26,7 +26,7 @@
                 live from <code>duckdb_functions()</code> — your engine version, your loaded
                 extensions. Run <code>INSTALL</code>/<code>LOAD</code> and completion updates
                 itself; autoloaded extensions arrive via <i>Refresh DuckDB Catalog</i> (editor
-                right-click). Offline you get the bundled 943-function snapshot, plus
+                right-click). Offline you get bundled version-aware metadata, plus
                 <i>"requires &lt;extension&gt;"</i> hints for extension functions.</li>
             <li><b>Two data sources, one dialect:</b> local file / in-memory DuckDB, and GizmoSQL
                 over <code>jdbc:quack://</code> (default port 9494). Driver versions are pinned
@@ -160,8 +160,7 @@
         <annotator language="DuckDBSQL" implementationClass="dev.sort.duckdb.sql.DuckdbMaskedSpanRecolorAnnotator"/>
         <!-- Native parser errors only; unavailable when serialization is unsupported. -->
         <externalAnnotator language="DuckDBSQL" implementationClass="dev.sort.duckdb.validate.DuckdbErrorAnnotator"/>
-        <!-- Stage 4: function completion from the bundled duckdb_functions() catalog. -->
-        <completion.contributor language="DuckDBSQL" implementationClass="dev.sort.duckdb.sql.DuckdbCompletionContributor"/>
+        <completion.contributor language="DuckDBSQL" implementationClass="dev.sort.duckdb.sql.DuckdbMetadataCompletionContributor" id="duckdb.metadata" order="first"/>
         <!-- Catalog-refresh balloons (manual action + INSTALL/LOAD observer). -->
         <notificationGroup id="DuckDB (Brikk)" displayType="BALLOON"/>
         <!-- Stage 4b refresh-on-INSTALL/LOAD: one root DataAuditor per project (DataBus.addRootAuditor)

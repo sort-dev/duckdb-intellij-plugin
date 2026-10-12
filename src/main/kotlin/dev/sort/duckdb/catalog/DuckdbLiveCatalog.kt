@@ -2,7 +2,6 @@ package dev.sort.duckdb.catalog
 
 import com.intellij.openapi.application.PathManager
 import com.intellij.openapi.diagnostic.Logger
-import dev.sort.duckdb.sql.DuckdbFunctionCatalog
 import dev.brikk.house.sql.intellij.recoverEditorOperation
 import org.jetbrains.annotations.TestOnly
 import java.nio.file.AtomicMoveNotSupportedException
@@ -21,17 +20,21 @@ import java.util.concurrent.ConcurrentHashMap
  * File format (`<sanitized dsId>.tsv`, UTF-8, one record per line, tab-separated):
  *  - `#`-prefixed lines: comments (the writer starts with a self-describing header)
  *  - `meta<TAB>engineVersion<TAB>comma-joined sorted loaded extensions<TAB>harvestedAtMillis` (exactly once)
- *  - `fn<TAB>name<TAB>KIND` (KIND = [DuckdbFunctionCatalog.Kind] enum name)
+ *  - `fn<TAB>name<TAB>KIND` (KIND = [Kind] enum name)
  *  - `kw<TAB>KEYWORD`
  * A file that fails to parse is treated as absent (never a crash, never a partial entry).
  */
 object DuckdbLiveCatalog {
 
+    enum class Kind { SCALAR, AGGREGATE, TABLE, MACRO, TABLE_MACRO, PRAGMA, OTHER }
+
+    data class Fn(val name: String, val kind: Kind)
+
     data class Entry(
         val engineVersion: String,
         /** Sorted — part of the "which engine is this" identity the harvest captured. */
         val loadedExtensions: List<String>,
-        val functions: List<DuckdbFunctionCatalog.Fn>,
+        val functions: List<Fn>,
         val keywords: Set<String>,
         val harvestedAtMillis: Long,
     )
@@ -120,7 +123,7 @@ object DuckdbLiveCatalog {
         var version: String? = null
         var extensions: List<String> = emptyList()
         var harvestedAt = 0L
-        val functions = ArrayList<DuckdbFunctionCatalog.Fn>()
+        val functions = ArrayList<Fn>()
         val keywords = LinkedHashSet<String>()
         for (line in readLines(file)) {
             if (line.isBlank() || line.startsWith("#")) continue
@@ -134,9 +137,8 @@ object DuckdbLiveCatalog {
                 }
                 "fn" -> {
                     if (parts.size < 3) return null
-                    val kind = runCatching { DuckdbFunctionCatalog.Kind.valueOf(parts[2]) }
-                        .getOrDefault(DuckdbFunctionCatalog.Kind.OTHER)
-                    functions.add(DuckdbFunctionCatalog.Fn(parts[1], kind))
+                    val kind = runCatching { Kind.valueOf(parts[2]) }.getOrDefault(Kind.OTHER)
+                    functions.add(Fn(parts[1], kind))
                 }
                 "kw" -> {
                     if (parts.size < 2) return null

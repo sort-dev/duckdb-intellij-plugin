@@ -1,7 +1,5 @@
 package dev.sort.duckdb.catalog
 
-import dev.sort.duckdb.sql.DuckdbFunctionCatalog
-
 /**
  * One query's rows, decoupled from where they come from: in the IDE the connect-time interceptor
  * feeds `RemoteResultSet` rows (out-of-process JDBC), tests feed a plain `java.sql.ResultSet`
@@ -26,7 +24,6 @@ object DuckdbCatalogHarvester {
     const val SQL_VERSION = "SELECT version()"
     const val SQL_LOADED_EXTENSIONS = "SELECT extension_name FROM duckdb_extensions() WHERE loaded ORDER BY 1"
 
-    /** ORDER BY 1, 2 + first-wins dedupe = the bundled harvest's row discipline (FunctionCatalogHarvest). */
     const val SQL_FUNCTIONS = "SELECT DISTINCT function_name, function_type FROM duckdb_functions() ORDER BY 1, 2"
 
     /** Column name `keyword_name` proven against the in-process 1.5.5 engine by DuckdbLiveHarvestTest. */
@@ -57,13 +54,11 @@ object DuckdbCatalogHarvester {
         rows.forEachRow(SQL_LOADED_EXTENSIONS) { col -> col(1)?.trim()?.takeIf { it.isNotEmpty() }?.let(extensions::add) }
 
         if (overBudget()) return null
-        // Sorted (1, 2) + putIfAbsent: a name listed under several types keeps the alphabetically
-        // first — byte-identical to how the bundled functions.tsv is produced.
-        val fns = LinkedHashMap<String, DuckdbFunctionCatalog.Kind>()
+        val fns = LinkedHashMap<String, DuckdbLiveCatalog.Kind>()
         rows.forEachRow(SQL_FUNCTIONS) { col ->
             val name = col(1) ?: return@forEachRow
-            if (!DuckdbFunctionCatalog.isCompletableName(name)) return@forEachRow
-            fns.putIfAbsent(name, DuckdbFunctionCatalog.kindOf(col(2).orEmpty()))
+            if (!isCompletableName(name)) return@forEachRow
+            fns.putIfAbsent(name, kindOf(col(2).orEmpty()))
         }
         if (fns.isEmpty()) return null // an engine with no functions is a broken read, not a truth
 
@@ -75,9 +70,22 @@ object DuckdbCatalogHarvester {
         return DuckdbLiveCatalog.Entry(
             engineVersion = engineVersion,
             loadedExtensions = extensions.sorted(),
-            functions = fns.map { (name, kind) -> DuckdbFunctionCatalog.Fn(name, kind) },
+            functions = fns.map { (name, kind) -> DuckdbLiveCatalog.Fn(name, kind) },
             keywords = keywords,
             harvestedAtMillis = clock(),
         )
+    }
+
+    internal fun isCompletableName(name: String): Boolean =
+        name.isNotEmpty() && (name.first().isLetter() || name.first() == '_')
+
+    private fun kindOf(raw: String): DuckdbLiveCatalog.Kind = when (raw.trim().lowercase()) {
+        "scalar" -> DuckdbLiveCatalog.Kind.SCALAR
+        "aggregate" -> DuckdbLiveCatalog.Kind.AGGREGATE
+        "table" -> DuckdbLiveCatalog.Kind.TABLE
+        "macro" -> DuckdbLiveCatalog.Kind.MACRO
+        "table_macro" -> DuckdbLiveCatalog.Kind.TABLE_MACRO
+        "pragma" -> DuckdbLiveCatalog.Kind.PRAGMA
+        else -> DuckdbLiveCatalog.Kind.OTHER
     }
 }

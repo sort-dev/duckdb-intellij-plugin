@@ -15,7 +15,7 @@
             <category>DuckDB PIPE</category>
         </intentionAction>
         <notificationGroup id="DuckDB PIPE" displayType="BALLOON"/>
-        <completion.contributor language="DuckDBSQL" implementationClass="dev.sort.duckdb.pipes.DuckdbPipesCompletionContributor" order="first"/>
+        <completion.contributor language="DuckDBSQL" implementationClass="dev.sort.duckdb.pipes.DuckdbPipesCompletionContributor" order="first, before duckdb.metadata"/>
         <annotator language="DuckDBSQL" implementationClass="dev.sort.duckdb.pipes.DuckdbPipeStageKeywordAnnotator"/>
     </extensions>
     <actions>

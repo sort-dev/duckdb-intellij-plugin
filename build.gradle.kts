@@ -58,18 +58,6 @@ dependencies {
     "toolsImplementation"(libs.duckdb.jdbc)
 }
 
-val harvestFunctionCatalog by tasks.registering(JavaExec::class) {
-    classpath = sourceSets["tools"].runtimeClasspath
-    mainClass = "dev.sort.duckdb.tools.FunctionCatalogHarvestKt"
-    args(layout.projectDirectory.dir("src/main/resources/duckdb").asFile.absolutePath)
-}
-
-val harvestExtensionCatalog by tasks.registering(JavaExec::class) {
-    classpath = sourceSets["tools"].runtimeClasspath
-    mainClass = "dev.sort.duckdb.tools.ExtensionCatalogHarvestKt"
-    args(layout.projectDirectory.dir("src/main/resources/duckdb").asFile.absolutePath)
-}
-
 val harvestCensus by tasks.registering(JavaExec::class) {
     classpath = sourceSets["tools"].runtimeClasspath
     mainClass = "dev.sort.duckdb.tools.SltCensusHarvestKt"
