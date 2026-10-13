@@ -508,4 +508,44 @@ open class BrikkDuckdbInjectionTest : BasePlatformTestCase() {
             assertTrue(dev.brikk.house.intellij.BrikkInspectionView.isInspectionOnly(host.containingFile, host.textOffset + 2))
         }
     }
+
+    private fun brikkGutters(file: PsiFile): List<com.intellij.codeInsight.daemon.LineMarkerInfo<*>> {
+        val markers = mutableListOf<com.intellij.codeInsight.daemon.LineMarkerInfo<*>>()
+        dev.sort.duckdb.brikk.kotlin.BrikkDuckdbLineMarkerProvider().collectSlowLineMarkers(
+            PsiTreeUtil.collectElements(file) { it.firstChild == null }.toList(), markers)
+        return markers
+    }
+
+    fun testPerStringBricksGuttersAreNamedAndTogglable() {
+        val host = configure("""
+            @BrikkSql fun first() = Sql.duckdb("SELECT 1")
+            @BrikkSql fun second() = Sql.duckdb("SELECT 2")
+            fun unrelated() = "SELECT 3"
+        """.trimIndent())
+        val provider = dev.sort.duckdb.brikk.kotlin.BrikkDuckdbLineMarkerProvider()
+        val markers = brikkGutters(host.containingFile)
+        assertEquals(2, markers.size)
+        assertTrue(markers.all { it.icon == dev.brikk.house.sql.intellij.completion.SqlLookupIcons.BrikkColumn })
+        assertTrue(markers.all { it.createGutterRenderer().tooltipText!!.contains("inspection only, not executable") })
+        assertFalse(markers.any { it.createGutterRenderer().tooltipText!!.contains("waiting for indexing") })
+        assertEquals("DuckDB Brikk SQL", provider.name)
+        val settings = com.intellij.codeInsight.daemon.LineMarkerSettings.getSettings()
+        val previous = settings.isEnabled(provider)
+        try {
+            settings.setEnabled(provider, false)
+            assertFalse(settings.isEnabled(provider))
+            settings.setEnabled(provider, true)
+            assertTrue(settings.isEnabled(provider))
+        } finally { settings.setEnabled(provider, previous) }
+    }
+
+    fun testIndexingDimsRememberedGutterAndExplainsTheWait() {
+        val host = configure("@BrikkSql fun query(id: Int) = Sql.duckdb(\"SELECT \$id\")")
+        injected(host)
+        com.intellij.testFramework.DumbModeTestUtils.runInDumbModeSynchronously(project) {
+            val marker = brikkGutters(host.containingFile).single()
+            assertEquals(com.intellij.openapi.util.IconLoader.getDisabledIcon(dev.brikk.house.sql.intellij.completion.SqlLookupIcons.BrikkColumn), marker.icon)
+            assertTrue(marker.createGutterRenderer().tooltipText!!.contains("waiting for indexing"))
+        }
+    }
 }

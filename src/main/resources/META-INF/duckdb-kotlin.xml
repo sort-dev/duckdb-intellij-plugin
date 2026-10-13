@@ -8,5 +8,6 @@
         <languageInjectionPerformer language="kotlin" implementationClass="dev.sort.duckdb.brikk.kotlin.BrikkDuckdbInjector" order="first"/>
         <annotator language="kotlin" implementationClass="dev.sort.duckdb.brikk.kotlin.BrikkDuckdbHostAnnotator"/>
         <externalAnnotator language="kotlin" implementationClass="dev.sort.duckdb.validate.DuckdbErrorAnnotator"/>
+        <codeInsight.lineMarkerProvider language="kotlin" implementationClass="dev.sort.duckdb.brikk.kotlin.BrikkDuckdbLineMarkerProvider"/>
     </extensions>
 </idea-plugin>

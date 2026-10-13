@@ -503,3 +503,17 @@ inspection-only string and still delegates outside strings. Pending/claimed stri
 are protected even when this plugin has no injected profile. Run-to-stage is not
 offered there. Native checks skip statements containing placeholders and suppress
 placeholder-caused diagnostics through the shared marker policy.
+
+### Step 5: gutter, banner deferred
+
+`BrikkDuckdbLineMarkerProvider` uses the shared host marker provider and bricks
+icon, one marker per claimed Kotlin string. Its named descriptor is togglable in
+Settings > Editor > General > Gutter Icons. The tooltip names DuckDB, PIPE editing,
+named binds and relation contracts, and says `inspection only, not executable`.
+Pending and indexing markers are dimmed and say `waiting for indexing`, including
+previously recognized injections cached before indexing started. The channel's
+caller data supplies the project for that last check; no message parsing is used.
+
+Two new gutter tests pass in the 31-test injection lane, also adding two inherited
+instances to the relation-editing fixture. No files deleted. The action-needed
+banner remains deferred pending the helper's typed status publication.

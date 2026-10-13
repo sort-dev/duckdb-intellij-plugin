@@ -7,6 +7,7 @@ import dev.brikk.house.intellij.BrikkHostState
 import dev.brikk.house.sql.intellij.host.HostSqlClaim
 import dev.brikk.house.sql.intellij.host.HostSqlInjector
 import dev.sort.duckdb.brikk.DuckdbHostSql
+import dev.sort.duckdb.brikk.DuckdbHostData
 import dev.sort.duckdb.sql.DuckdbSqlDialect
 import org.jetbrains.kotlin.psi.KtStringTemplateExpression
 
@@ -21,7 +22,7 @@ class BrikkDuckdbInjector : HostSqlInjector(DuckdbHostSql, DuckdbSqlDialect) {
         if (context != null) {
             val template = BrikkDuckdbKotlinContext.template(context)
             return HostSqlClaim.Injected(DuckdbSqlDialect, template.entries, pending = context.pending,
-                inspectionOnly = true, colonBinds = true, data = template.profile)
+                inspectionOnly = true, colonBinds = true, data = DuckdbHostData(template.profile, host.project))
         }
         return if (state is BrikkHostState.Pending) HostSqlClaim.Unavailable(state.reason) else HostSqlClaim.NotClaimed
     }
