@@ -2,7 +2,7 @@
 
 ## Brikk Kotlin IntelliJ support 0.2.0
 
-This plugin embeds `dev.brikk.house:brikk-engine-kotlin-intellij-support:0.2.0`
+This plugin embeds `dev.brikk.house:brikk-engine-kotlin-intellij-support:0.3.0-SNAPSHOT`
 from Maven Central. Jayson Minard and Sortdev SRL,
 https://github.com/brikk/brikk-house, Apache License 2.0. The helper contains
 Brikk context/interpolation and copied relation-contract APIs. Kotlin/IntelliJ

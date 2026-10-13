@@ -26,7 +26,7 @@ class DuckdbPipesIsolationTest : BasePlatformTestCase() {
         assertSame(loader, fragment.classLoader)
         val contract = loader.loadClass("dev.brikk.house.intellij.ColumnContract")
         assertSame("The embedded helper is product-owned, not borrowed from fixture core", loader, contract.classLoader)
-        assertTrue(contract.getResource("ColumnContract.class").toString().contains("brikk-engine-kotlin-intellij-support-0.2.0.jar"))
+        assertTrue(contract.getResource("ColumnContract.class").toString().contains("brikk-engine-kotlin-intellij-support-0.3.0-SNAPSHOT.jar"))
         val engineVersion = System.getProperty("test.brikkSqlVersion")
         assertNotNull(engineVersion)
         assertTrue(fragment.getResource("SqlFragment.class").toString().contains("brikk-sql-jvmMain-$engineVersion.jar"))

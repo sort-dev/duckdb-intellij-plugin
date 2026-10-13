@@ -424,3 +424,18 @@ tests; real-loader isolation passes both tests with all five plugins loaded.
 Census remains 226/226; corpus results remain 394 disagreements, five resolved
 and 132 passing native witnesses. No corpus expectations changed. No Plugin
 Verifier or publication ran.
+
+## Phase 5, step 1: dependency refresh
+
+Refreshed core/metadata/support/test-support from Maven Local brikk-sql `efd18f1`,
+published 2026-10-13 08:13, and Kotlin helper `0.3.0-SNAPSHOT`, published 06:24.
+The helper depends on core only. DuckDB compares `BrikkDialect` values with `==`
+and has no exhaustive enum `when` to repair. No files deleted; no consumer-visible
+behavior change in this dependency-only step.
+
+Support binary SHA-256 is
+`70993432a56864f5397dec0d12bc2ffaeb0d2ef8d885cace76ad077ee96ad48a`;
+helper binary SHA-256 is
+`70a84a80a40b93963e4d26999e0bc80d577eb94d5ed2fd0e6890ddc29c8c9445`.
+Default/present 261/262/263: 282 tests, nine skips. Absent: 213, nine skips.
+Brikk: 69; isolation: two; census: 226/226. No tests added or deleted.
