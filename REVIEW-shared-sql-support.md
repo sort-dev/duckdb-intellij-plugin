@@ -667,3 +667,33 @@ core's new search-path constructor. The owner republished helper `507fe04` at
 After refresh, full default/present 261/262/263 lanes pass 302 tests with nine
 skips; absent lanes pass 214 with nine skips; Brikk passes 88. The constructor
 failure is gone. No binary shim, library source edit or publication was done here.
+
+### Gate 2: ZIP and Plugin Verifier
+
+Built `build/distributions/duckdb-intellij-plugin.zip` with the rebuilt helper.
+ZIP SHA-256:
+`9860865fb962a19da6d11332413df2ff6f791a8a5c76311bd77c2fea6662c94f`.
+The embedded helper matches Maven Local SHA-256 `ad001826…34380e`.
+
+Plugin Verifier reports **Compatible** on every configured target:
+
+| IDE | Verdict |
+| --- | --- |
+| DataGrip 261.24374.56 / 2026.1.3 | Compatible |
+| IDEA 262.10968.63 | Compatible |
+| DataGrip 262.10315.132 / 2026.2.5 | Compatible |
+| IDEA 263.4732.28 | Compatible |
+| IDEA 263.5701.42 | Compatible |
+
+No compatibility, missing-dependency, structure, non-extendable or override-only
+failures. All 15 internal-API notices come from the bundled
+`GenericJdbcIntrospectorGate` implementing/delegating the platform's
+`DBIntrospector.Factory` extension contract, not DuckDB-owned internal calls.
+That existing introspector/fallback integration is a documented exception; the
+PostgreSQL-family inheritance remains intentional. There are two scheduled-removal
+notices for the connection-interceptor compatibility hook, four deprecated notices
+on 261 and five on newer targets, and 662 experimental-API notices, largely for
+the bundled Brikk APIs. No exclusion was added to hide a verifier problem.
+
+Reports are under `build/reports/pluginVerifier/<IDE>/plugins/dev.sort.duckdb-intellij-plugin/0.3.5`.
+No publication was performed.
