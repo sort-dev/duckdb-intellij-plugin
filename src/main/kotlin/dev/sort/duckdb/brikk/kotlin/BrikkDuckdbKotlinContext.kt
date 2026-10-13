@@ -10,13 +10,14 @@ import org.jetbrains.kotlin.psi.KtStringTemplateExpression
 
 /** Dialect projection only. All Brikk symbol/entry semantics live in the shared helper. */
 internal object BrikkDuckdbKotlinContext {
-    data class Context(val host: KtStringTemplateExpression, val shared: BrikkContext, val pending: Boolean = false)
+    data class Context(val host: KtStringTemplateExpression, val shared: BrikkContext, val pending: Boolean = false,
+                       val cause: BrikkPendingCause? = null)
     data class Template(val context: Context, val entries: HostSqlEntries, val profile: BrikkDuckdbProfile,
                         val diagnostics: List<Pair<TextRange, String>>)
 
     fun find(host: KtStringTemplateExpression): Context? = when (val state = BrikkHosts.state(host)) {
         is BrikkHostState.Recognized -> state.context.takeIf { it.dialect == BrikkDialect.DUCKDB }?.let { Context(host, it) }
-        is BrikkHostState.Pending -> state.projection?.takeIf { it.dialect == BrikkDialect.DUCKDB }?.let { Context(host, it, pending = true) }
+        is BrikkHostState.Pending -> state.projection?.takeIf { it.dialect == BrikkDialect.DUCKDB }?.let { Context(host, it, pending = true, cause = state.cause) }
         BrikkHostState.NotBrikk -> null
     }
 

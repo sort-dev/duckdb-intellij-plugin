@@ -13,7 +13,7 @@ class BrikkDuckdbHostAnnotator : Annotator {
         val context = BrikkDuckdbKotlinContext.find(host) ?: return
         val template = BrikkDuckdbKotlinContext.template(context)
         holder.newAnnotation(HighlightSeverity.INFORMATION,
-            if (context.pending) "DuckDB Brikk context: waiting for indexing. Inspection SQL is not executable."
+            if (context.pending) "DuckDB Brikk context: ${context.cause?.let(::pendingStatus) ?: "waiting for recognition"}. Inspection SQL is not executable."
             else "DuckDB Brikk context: PIPE editing enabled; scalar Kotlin references are named binds. Inspection SQL is not executable.")
             .range(host).create()
         template.diagnostics.forEach { (range, message) ->

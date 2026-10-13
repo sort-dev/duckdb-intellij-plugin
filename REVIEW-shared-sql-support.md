@@ -589,3 +589,33 @@ census 226/226; all 132 distinct native witnesses pass.
 Both corpus lanes ran twice, byte-identical on every generation. Native report
 SHA-256: `a25d2700ae19076544a0946842ea2b527f5f3cb3ea36ec0d08ba7e11ac47da84`.
 Injected report SHA-256: `cf87eff6aeb222f3454ef88457cb51e92df5b597e7148654ae8c3a8bdaa2cebb`.
+
+### Step 5 follow-up: typed helper actions
+
+Refreshed the helper published 2026-10-13 09:38 from `72157d0`.
+Helper JAR SHA-256:
+`7e5d080a6d97b33639f9aaab642c16519a6a8f2a478dfb973a12996181492805`.
+The optional `BrikkDuckdbActionBanner` uses the helper's cached typed actions,
+never text matching or fresh Kotlin analysis. Missing-dialect actions are shown
+only for DuckDB. Runtime/compiler actions open the nearest build file when it
+exists, otherwise their documentation URL. Recognition and fact discovery refresh
+editor notifications only when recorded relevant actions change. Healthy,
+indexing and write-action-pending hosts show no routine banner.
+
+Injected pending projections carry the typed cause to the gutter and INFO text.
+Indexing says `waiting for indexing`; write prohibition says `waiting for analysis`;
+resolution and generated-shape waits remain distinct from actionable runtime or
+compiler failures. Existing rename tests and a direct write-action test pass.
+
+One support API gap is reported, not worked around: a never-recognized
+`HostSqlClaim.Unavailable` carries only a reason string, and the gutter tooltip
+callback gets neither the host nor caller data. Its typed cause cannot reach the
+tooltip. It remains dimmed with the neutral `waiting for recognition`, rather than
+falsely claiming indexing. `Unavailable` needs caller data or the tooltip needs
+the host before this last path can use the typed cause.
+
+Added four tests, also inherited by the relation fixture, for eight new instances;
+no files/tests deleted. Full default/present 261/262/263 lanes pass 300 tests with
+nine skips. Absent passes 214 with nine skips; Brikk 86; isolation two; census
+226/226. The two corpus lanes still match the reasoned 79-entry ledger and retain
+167/167 logical passes and all 132 native witnesses.

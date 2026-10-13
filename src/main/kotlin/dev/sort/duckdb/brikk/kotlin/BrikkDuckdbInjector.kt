@@ -17,12 +17,13 @@ class BrikkDuckdbInjector : HostSqlInjector(DuckdbHostSql, DuckdbSqlDialect) {
     override fun claim(host: PsiLanguageInjectionHost): HostSqlClaim {
         if (host !is KtStringTemplateExpression) return HostSqlClaim.NotClaimed
         val state = BrikkHosts.state(host)
+        updateBrikkActionBanner(host.containingFile)
         if (state.dialect != BrikkDialect.DUCKDB) return HostSqlClaim.NotClaimed
         val context = BrikkDuckdbKotlinContext.find(host)
         if (context != null) {
             val template = BrikkDuckdbKotlinContext.template(context)
             return HostSqlClaim.Injected(DuckdbSqlDialect, template.entries, pending = context.pending,
-                inspectionOnly = true, colonBinds = true, data = DuckdbHostData(template.profile, host.project))
+                inspectionOnly = true, colonBinds = true, data = DuckdbHostData(template.profile, host.project, context.cause))
         }
         return if (state is BrikkHostState.Pending) HostSqlClaim.Unavailable(state.reason) else HostSqlClaim.NotClaimed
     }

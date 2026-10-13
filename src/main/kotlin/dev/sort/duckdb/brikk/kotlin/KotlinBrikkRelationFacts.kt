@@ -14,7 +14,9 @@ private fun adapter(): ExternalRelationFacts {
     val kind = if (labels.brikkColumnStyle) SqlLookupKind.BRIKK_COLUMN else SqlLookupKind.RELATION_COLUMN
     return ExternalRelationFacts.of(RelationColumnLabels(declared = labels.declared, contract = labels.contract,
         declaredKind = kind, contractKind = kind), navigationTarget = brikk::navigationTarget) { file ->
-        when (val result = brikk.facts(file)) {
+        val result = brikk.facts(file)
+        updateBrikkActionBanner(file)
+        when (result) {
             is BrikkRelationFactsResult.Available -> RelationFactsResult.Available(result.facts, result.revision)
             is BrikkRelationFactsResult.Pending -> RelationFactsResult.Pending(result.reason)
             null -> null

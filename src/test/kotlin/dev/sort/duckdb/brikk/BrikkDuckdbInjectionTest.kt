@@ -548,4 +548,65 @@ open class BrikkDuckdbInjectionTest : BasePlatformTestCase() {
             assertTrue(marker.createGutterRenderer().tooltipText!!.contains("waiting for indexing"))
         }
     }
+
+    fun testTypedWritePendingStatusDoesNotProduceARoutineBanner() {
+        val host = configure("@BrikkSql fun query(id: Int) = Sql.duckdb(\"SELECT \$id\")")
+        assertNotNull(BrikkDuckdbKotlinContext.find(host))
+        val banner = dev.sort.duckdb.brikk.kotlin.BrikkDuckdbActionBanner()
+        assertNull(banner.actionFor(host.containingFile))
+        WriteCommandAction.runWriteCommandAction(project) {
+            val pending = dev.brikk.house.intellij.BrikkHosts.state(host) as dev.brikk.house.intellij.BrikkHostState.Pending
+            assertEquals(dev.brikk.house.intellij.BrikkPendingCause.ANALYSIS_PROHIBITED, pending.cause)
+            assertEquals("waiting for analysis", dev.sort.duckdb.brikk.kotlin.pendingStatus(pending.cause))
+            assertNull(banner.actionFor(host.containingFile))
+        }
+        com.intellij.testFramework.DumbModeTestUtils.runInDumbModeSynchronously(project) {
+            assertNull(banner.actionFor(host.containingFile))
+        }
+    }
+
+    fun testRuntimeActionBannerUsesTheTypedActionAndOpensItsBuildFile() {
+        val build = myFixture.addFileToProject("module.yaml", "product: jvm/app\n")
+        val source = myFixture.addFileToProject("Banner.kt", """
+            import dev.brikk.house.sql.runtime.Sql
+            import dev.brikk.house.sql.runtime.BrikkSql
+            @BrikkSql fun query() = Sql.snowflake("SELECT 1")
+        """.trimIndent())
+        myFixture.configureFromExistingVirtualFile(source.virtualFile)
+        val host = PsiTreeUtil.findChildrenOfType(source, KtStringTemplateExpression::class.java).single()
+        val state = dev.brikk.house.intellij.BrikkHosts.state(host) as dev.brikk.house.intellij.BrikkHostState.Pending
+        assertEquals(dev.brikk.house.intellij.BrikkPendingCause.RUNTIME_ENTRY_MISSING, state.cause)
+        val action = requireNotNull(dev.brikk.house.intellij.BrikkHosts.actionNeeded(source))
+        assertEquals(dev.brikk.house.intellij.BrikkActionKind.RUNTIME_OUTDATED, action.kind)
+        assertEquals(build.virtualFile.url, action.buildFileUrl)
+        val banner = requireNotNull(dev.sort.duckdb.brikk.kotlin.BrikkDuckdbActionBanner().actionFor(source))
+        assertEquals(action.message, banner.message)
+        assertEquals(action.fixText, banner.fixText)
+        banner.fix.run()
+        assertTrue(com.intellij.openapi.fileEditor.FileEditorManager.getInstance(project).openFiles.contains(build.virtualFile))
+    }
+
+    fun testMissingDialectBannerIsRestrictedToDuckdb() {
+        fun action(dialect: dev.brikk.house.intellij.BrikkDialect) = dev.brikk.house.intellij.BrikkAction(
+            dev.brikk.house.intellij.BrikkActionKind.DIALECT_PLUGIN_MISSING, "Install dialect", "Install", "https://plugins.jetbrains.com", null, dialect)
+        assertTrue(dev.sort.duckdb.brikk.kotlin.relevantBrikkAction(action(dev.brikk.house.intellij.BrikkDialect.DUCKDB)))
+        assertFalse(dev.sort.duckdb.brikk.kotlin.relevantBrikkAction(action(dev.brikk.house.intellij.BrikkDialect.TRINO)))
+        assertFalse(dev.sort.duckdb.brikk.kotlin.relevantBrikkAction(action(dev.brikk.house.intellij.BrikkDialect.DORIS)))
+    }
+
+    fun testMissingCompilerActionAppearsOnlyAfterShapeDiscovery() {
+        val host = configure("""
+            @BrikkSql fun source() = Sql.duckdb("SELECT 1 AS id")
+            @BrikkSql fun query(rows: Rel<SourceOut>) = Sql.duckdb("SELECT id FROM ${'$'}rows()")
+        """.trimIndent())
+        val file = injected(host)
+        val banner = dev.sort.duckdb.brikk.kotlin.BrikkDuckdbActionBanner()
+        assertNull(banner.actionFor(host.containingFile))
+        val facts = dev.sort.duckdb.brikk.kotlin.KotlinBrikkRelationFacts().facts(file)
+        assertTrue(facts.toString(), facts is dev.brikk.house.sql.intellij.relation.RelationFactsResult.Pending)
+        val action = requireNotNull(dev.brikk.house.intellij.BrikkHosts.actionNeeded(host.containingFile))
+        assertEquals(dev.brikk.house.intellij.BrikkActionKind.COMPILER_PLUGIN_MISSING, action.kind)
+        assertEquals(action.message, requireNotNull(banner.actionFor(host.containingFile)).message)
+        assertNotNull(action.docsUrl)
+    }
 }

@@ -18,4 +18,5 @@ data class BrikkDuckdbProfile(val binds: List<String>, val slots: List<String>, 
 }
 
 /** Caller data for the shared channel's tooltip, with no Kotlin IDE types. */
-data class DuckdbHostData(val profile: BrikkDuckdbProfile, val project: com.intellij.openapi.project.Project)
+data class DuckdbHostData(val profile: BrikkDuckdbProfile, val project: com.intellij.openapi.project.Project,
+                          val pendingCause: dev.brikk.house.intellij.BrikkPendingCause? = null)

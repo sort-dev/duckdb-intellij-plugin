@@ -9,5 +9,6 @@
         <annotator language="kotlin" implementationClass="dev.sort.duckdb.brikk.kotlin.BrikkDuckdbHostAnnotator"/>
         <externalAnnotator language="kotlin" implementationClass="dev.sort.duckdb.validate.DuckdbErrorAnnotator"/>
         <codeInsight.lineMarkerProvider language="kotlin" implementationClass="dev.sort.duckdb.brikk.kotlin.BrikkDuckdbLineMarkerProvider"/>
+        <editorNotificationProvider implementation="dev.sort.duckdb.brikk.kotlin.BrikkDuckdbActionBanner"/>
     </extensions>
 </idea-plugin>
