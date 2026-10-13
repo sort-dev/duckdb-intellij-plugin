@@ -10,6 +10,15 @@ import com.intellij.testFramework.fixtures.BasePlatformTestCase
 class DuckdbPipesIsolationTest : BasePlatformTestCase() {
     fun testProductOwnsItsTranslatorAndCooperatesWithPeerActions() {
         if (System.getProperty("test.pluginIsolation") != "true") return
+        val requiredPeers = System.getProperty("test.siblingPlugins").orEmpty().split(',').filter(String::isNotBlank) +
+            listOfNotNull("sql-transpiler".takeIf { System.getProperty("test.sqlTranspiler") == "installed" })
+        for (peer in requiredPeers) {
+            val id = "dev.sort.$peer-intellij-plugin"
+            val installed = PluginManagerCore.getPlugin(PluginId.getId(id))
+            assertNotNull("Requested sibling $id must be installed", installed)
+            assertNotNull("Requested sibling $id must be loaded", installed!!.pluginClassLoader)
+        }
+        println("Isolation loaded plugins: ${listOf("duckdb") + requiredPeers}")
         val descriptor = PluginManagerCore.getPlugin(PluginId.getId("dev.sort.duckdb-intellij-plugin"))!!
         val loader = descriptor.pluginClassLoader!!
         assertEquals("com.intellij.ide.plugins.cl.PluginClassLoader", loader.javaClass.name)
@@ -109,7 +118,7 @@ class DuckdbPipesIsolationTest : BasePlatformTestCase() {
             assertNotNull("The product-owned core must contain the fix, not a fixture-core fallback",
                 statement.javaClass.getMethod("getBoundaryError").invoke(statement))
         }
-        for (peerId in listOf("dev.sort.doris-intellij-plugin", "dev.sort.trino-intellij-plugin", "dev.sort.sql-transpiler-intellij-plugin")) {
+        for (peerId in listOf("dev.sort.clickhouse-intellij-plugin", "dev.sort.doris-intellij-plugin", "dev.sort.trino-intellij-plugin", "dev.sort.sql-transpiler-intellij-plugin")) {
             val peer = PluginManagerCore.getPlugin(PluginId.getId(peerId)) ?: continue
             assertNotSame(fragment, peer.pluginClassLoader!!.loadClass(fragment.name))
         }
