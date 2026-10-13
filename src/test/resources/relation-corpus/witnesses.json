@@ -1,7 +1,6 @@
 {
   "duckdb:ordinary-alias": {
     "sql": "SELECT e.id FROM events e",
-    "error": null,
     "rows": [
       [
         1
@@ -9,11 +8,12 @@
       [
         2
       ]
-    ]
+    ],
+    "failure": null,
+    "verified": true
   },
   "trino:ordinary-alias": {
     "sql": "SELECT e.id FROM events e",
-    "error": null,
     "rows": [
       [
         1
@@ -21,22 +21,30 @@
       [
         2
       ]
-    ]
+    ],
+    "failure": null,
+    "verified": false
   },
   "duckdb:alias-hides-slot": {
     "sql": "SELECT src.id FROM events e",
-    "error": "Referenced table",
-    "rows": null
+    "rows": null,
+    "failure": {
+      "kind": "REJECTION",
+      "messageContains": "Referenced table"
+    },
+    "verified": true
   },
   "trino:alias-hides-slot": {
     "sql": "SELECT src.id FROM events e",
-    "error": null,
     "rows": null,
-    "expectFailure": true
+    "failure": {
+      "kind": "REJECTION",
+      "messageContains": null
+    },
+    "verified": false
   },
   "duckdb:qualified-column-case": {
     "sql": "SELECT e.ID FROM events e",
-    "error": null,
     "rows": [
       [
         1
@@ -44,11 +52,12 @@
       [
         2
       ]
-    ]
+    ],
+    "failure": null,
+    "verified": true
   },
   "trino:qualified-column-case": {
     "sql": "SELECT e.ID FROM events e",
-    "error": null,
     "rows": [
       [
         1
@@ -56,40 +65,50 @@
       [
         2
       ]
-    ]
+    ],
+    "failure": null,
+    "verified": false
   },
   "duckdb:ordinary-missing": {
     "sql": "SELECT missing FROM events",
-    "error": "not found",
-    "rows": null
+    "rows": null,
+    "failure": {
+      "kind": "REJECTION",
+      "messageContains": "not found"
+    },
+    "verified": true
   },
   "trino:ordinary-missing": {
     "sql": "SELECT missing FROM events",
-    "error": null,
     "rows": null,
-    "expectFailure": true
+    "failure": {
+      "kind": "REJECTION",
+      "messageContains": null
+    },
+    "verified": false
   },
   "duckdb:partial-missing": {
     "sql": "SELECT extra FROM events_partial",
-    "error": null,
     "rows": [
       [
         9
       ]
-    ]
+    ],
+    "failure": null,
+    "verified": true
   },
   "trino:partial-missing": {
     "sql": "SELECT extra FROM events_partial",
-    "error": null,
     "rows": [
       [
         9
       ]
-    ]
+    ],
+    "failure": null,
+    "verified": false
   },
   "duckdb:contract-origin": {
     "sql": "SELECT id FROM events",
-    "error": null,
     "rows": [
       [
         1
@@ -97,11 +116,12 @@
       [
         2
       ]
-    ]
+    ],
+    "failure": null,
+    "verified": true
   },
   "trino:contract-origin": {
     "sql": "SELECT id FROM events",
-    "error": null,
     "rows": [
       [
         1
@@ -109,39 +129,42 @@
       [
         2
       ]
-    ]
+    ],
+    "failure": null,
+    "verified": false
   },
   "duckdb:utf16-after-emoji-bind": {
-    "sql": "SELECT '😀', e.id FROM events e WHERE e.id > 0",
-    "error": null,
+    "sql": "SELECT '\ud83d\ude00', e.id FROM events e WHERE e.id > 0",
     "rows": [
       [
-        "😀",
+        "\ud83d\ude00",
         1
       ],
       [
-        "😀",
+        "\ud83d\ude00",
         2
       ]
-    ]
+    ],
+    "failure": null,
+    "verified": true
   },
   "trino:utf16-after-emoji-bind": {
-    "sql": "SELECT '😀', e.id FROM events e WHERE e.id > 0",
-    "error": null,
+    "sql": "SELECT '\ud83d\ude00', e.id FROM events e WHERE e.id > 0",
     "rows": [
       [
-        "😀",
+        "\ud83d\ude00",
         1
       ],
       [
-        "😀",
+        "\ud83d\ude00",
         2
       ]
-    ]
+    ],
+    "failure": null,
+    "verified": false
   },
   "duckdb:cte-flatten": {
     "sql": "WITH q AS (SELECT id, event_kind FROM events) SELECT q.id FROM q",
-    "error": null,
     "rows": [
       [
         1
@@ -149,11 +172,12 @@
       [
         2
       ]
-    ]
+    ],
+    "failure": null,
+    "verified": true
   },
   "trino:cte-flatten": {
     "sql": "WITH q AS (SELECT id, event_kind FROM events) SELECT q.id FROM q",
-    "error": null,
     "rows": [
       [
         1
@@ -161,22 +185,30 @@
       [
         2
       ]
-    ]
+    ],
+    "failure": null,
+    "verified": false
   },
   "duckdb:cte-projection": {
     "sql": "WITH q AS (SELECT id FROM events) SELECT q.event_kind FROM q",
-    "error": "does not have a column",
-    "rows": null
+    "rows": null,
+    "failure": {
+      "kind": "REJECTION",
+      "messageContains": "does not have a column"
+    },
+    "verified": true
   },
   "trino:cte-projection": {
     "sql": "WITH q AS (SELECT id FROM events) SELECT q.event_kind FROM q",
-    "error": null,
     "rows": null,
-    "expectFailure": true
+    "failure": {
+      "kind": "REJECTION",
+      "messageContains": null
+    },
+    "verified": false
   },
   "duckdb:cte-shadow-slot": {
     "sql": "WITH events AS (SELECT code FROM customers) SELECT code FROM events",
-    "error": null,
     "rows": [
       [
         "one"
@@ -184,11 +216,12 @@
       [
         "three"
       ]
-    ]
+    ],
+    "failure": null,
+    "verified": true
   },
   "trino:cte-shadow-slot": {
     "sql": "WITH events AS (SELECT code FROM customers) SELECT code FROM events",
-    "error": null,
     "rows": [
       [
         "one"
@@ -196,11 +229,12 @@
       [
         "three"
       ]
-    ]
+    ],
+    "failure": null,
+    "verified": false
   },
   "duckdb:nested-cte-shadow": {
     "sql": "WITH q AS (SELECT id FROM events) SELECT d.code FROM (WITH q AS (SELECT code FROM customers) SELECT code FROM q) d",
-    "error": null,
     "rows": [
       [
         "one"
@@ -208,11 +242,12 @@
       [
         "three"
       ]
-    ]
+    ],
+    "failure": null,
+    "verified": true
   },
   "trino:nested-cte-shadow": {
     "sql": "WITH q AS (SELECT id FROM events) SELECT d.code FROM (WITH q AS (SELECT code FROM customers) SELECT code FROM q) d",
-    "error": null,
     "rows": [
       [
         "one"
@@ -220,11 +255,12 @@
       [
         "three"
       ]
-    ]
+    ],
+    "failure": null,
+    "verified": false
   },
   "duckdb:subquery-flatten": {
     "sql": "SELECT d.id FROM (SELECT id FROM events) d",
-    "error": null,
     "rows": [
       [
         1
@@ -232,11 +268,12 @@
       [
         2
       ]
-    ]
+    ],
+    "failure": null,
+    "verified": true
   },
   "trino:subquery-flatten": {
     "sql": "SELECT d.id FROM (SELECT id FROM events) d",
-    "error": null,
     "rows": [
       [
         1
@@ -244,11 +281,12 @@
       [
         2
       ]
-    ]
+    ],
+    "failure": null,
+    "verified": false
   },
   "duckdb:parenthesized-lineage": {
     "sql": "SELECT d.id FROM (SELECT ((id)) FROM events) d",
-    "error": null,
     "rows": [
       [
         1
@@ -256,11 +294,12 @@
       [
         2
       ]
-    ]
+    ],
+    "failure": null,
+    "verified": true
   },
   "trino:parenthesized-lineage": {
     "sql": "SELECT d.id FROM (SELECT ((id)) FROM events) d",
-    "error": null,
     "rows": [
       [
         1
@@ -268,156 +307,134 @@
       [
         2
       ]
-    ]
+    ],
+    "failure": null,
+    "verified": false
   },
   "duckdb:correlated-qualified": {
     "sql": "SELECT id FROM events e WHERE EXISTS (SELECT 1 FROM physical p WHERE p.id=e.id)",
-    "error": null,
     "rows": [
       [
         1
       ]
-    ]
+    ],
+    "failure": null,
+    "verified": true
   },
   "trino:correlated-qualified": {
     "sql": "SELECT id FROM events e WHERE EXISTS (SELECT 1 FROM physical p WHERE p.id=e.id)",
-    "error": null,
     "rows": [
       [
         1
       ]
-    ]
+    ],
+    "failure": null,
+    "verified": false
   },
   "duckdb:local-alias-shadow": {
     "sql": "SELECT id FROM events e WHERE EXISTS (SELECT 1 FROM physical e WHERE e.label IS NULL)",
-    "error": null,
-    "rows": []
+    "rows": [],
+    "failure": null,
+    "verified": true
   },
   "trino:local-alias-shadow": {
     "sql": "SELECT id FROM events e WHERE EXISTS (SELECT 1 FROM physical e WHERE e.label IS NULL)",
-    "error": null,
-    "rows": []
+    "rows": [],
+    "failure": null,
+    "verified": false
   },
   "duckdb:ordinary-join-inner": {
     "sql": "SELECT e.id FROM events e INNER JOIN customers r ON e.id=r.id",
-    "error": null,
-    "rows": null
+    "rows": null,
+    "failure": null,
+    "verified": true
   },
   "trino:ordinary-join-inner": {
     "sql": "SELECT e.id FROM events e INNER JOIN customers r ON e.id=r.id",
-    "error": null,
-    "rows": null
+    "rows": null,
+    "failure": null,
+    "verified": false
   },
   "duckdb:ordinary-join-left": {
     "sql": "SELECT e.id FROM events e LEFT JOIN customers r ON e.id=r.id",
-    "error": null,
-    "rows": null
+    "rows": null,
+    "failure": null,
+    "verified": true
   },
   "trino:ordinary-join-left": {
     "sql": "SELECT e.id FROM events e LEFT JOIN customers r ON e.id=r.id",
-    "error": null,
-    "rows": null
+    "rows": null,
+    "failure": null,
+    "verified": false
   },
   "duckdb:ordinary-join-right": {
     "sql": "SELECT e.id FROM events e RIGHT JOIN customers r ON e.id=r.id",
-    "error": null,
-    "rows": null
+    "rows": null,
+    "failure": null,
+    "verified": true
   },
   "trino:ordinary-join-right": {
     "sql": "SELECT e.id FROM events e RIGHT JOIN customers r ON e.id=r.id",
-    "error": null,
-    "rows": null
+    "rows": null,
+    "failure": null,
+    "verified": false
   },
   "duckdb:ordinary-join-full": {
     "sql": "SELECT e.id FROM events e FULL JOIN customers r ON e.id=r.id",
-    "error": null,
-    "rows": null
+    "rows": null,
+    "failure": null,
+    "verified": true
   },
   "trino:ordinary-join-full": {
     "sql": "SELECT e.id FROM events e FULL JOIN customers r ON e.id=r.id",
-    "error": null,
-    "rows": null
+    "rows": null,
+    "failure": null,
+    "verified": false
   },
   "duckdb:ordinary-join-cross": {
     "sql": "SELECT e.id FROM events e CROSS JOIN customers r",
-    "error": null,
-    "rows": null
+    "rows": null,
+    "failure": null,
+    "verified": true
   },
   "trino:ordinary-join-cross": {
     "sql": "SELECT e.id FROM events e CROSS JOIN customers r",
-    "error": null,
-    "rows": null
+    "rows": null,
+    "failure": null,
+    "verified": false
   },
   "duckdb:ordinary-join-semi": {
     "sql": "SELECT e.id FROM events e SEMI JOIN customers r ON e.id=r.id",
-    "error": null,
-    "rows": null
-  },
-  "trino:ordinary-join-semi": {
-    "sql": "SELECT e.id FROM events e WHERE EXISTS (SELECT 1 FROM customers r WHERE e.id=r.id)",
-    "error": null,
-    "rows": null
+    "rows": null,
+    "failure": null,
+    "verified": true
   },
   "duckdb:ordinary-join-anti": {
     "sql": "SELECT e.id FROM events e ANTI JOIN customers r ON e.id=r.id",
-    "error": null,
-    "rows": null
-  },
-  "trino:ordinary-join-anti": {
-    "sql": "SELECT e.id FROM events e WHERE NOT EXISTS (SELECT 1 FROM customers r WHERE e.id=r.id)",
-    "error": null,
-    "rows": null
-  },
-  "duckdb:ordinary-join-right-semi": {
-    "sql": "SELECT r.code FROM customers r SEMI JOIN events e ON e.id=r.id",
-    "error": null,
-    "rows": [
-      [
-        "one"
-      ]
-    ]
-  },
-  "trino:ordinary-join-right-semi": {
-    "sql": "SELECT r.code FROM customers r WHERE EXISTS (SELECT 1 FROM events e WHERE e.id=r.id)",
-    "error": null,
-    "rows": [
-      [
-        "one"
-      ]
-    ]
-  },
-  "duckdb:ordinary-join-right-anti": {
-    "sql": "SELECT r.code FROM customers r ANTI JOIN events e ON e.id=r.id",
-    "error": null,
-    "rows": [
-      [
-        "three"
-      ]
-    ]
-  },
-  "trino:ordinary-join-right-anti": {
-    "sql": "SELECT r.code FROM customers r WHERE NOT EXISTS (SELECT 1 FROM events e WHERE e.id=r.id)",
-    "error": null,
-    "rows": [
-      [
-        "three"
-      ]
-    ]
+    "rows": null,
+    "failure": null,
+    "verified": true
   },
   "duckdb:join-ambiguous": {
     "sql": "SELECT id FROM events e JOIN customers r ON e.id=r.id",
-    "error": "Ambiguous reference",
-    "rows": null
+    "rows": null,
+    "failure": {
+      "kind": "REJECTION",
+      "messageContains": "Ambiguous reference"
+    },
+    "verified": true
   },
   "trino:join-ambiguous": {
     "sql": "SELECT id FROM events e JOIN customers r ON e.id=r.id",
-    "error": null,
     "rows": null,
-    "expectFailure": true
+    "failure": {
+      "kind": "REJECTION",
+      "messageContains": null
+    },
+    "verified": false
   },
   "duckdb:ordinary-order-alias": {
     "sql": "SELECT price*qty AS total FROM events ORDER BY total",
-    "error": null,
     "rows": [
       [
         6
@@ -425,11 +442,12 @@
       [
         20
       ]
-    ]
+    ],
+    "failure": null,
+    "verified": true
   },
   "trino:ordinary-order-alias": {
     "sql": "SELECT price*qty AS total FROM events ORDER BY total",
-    "error": null,
     "rows": [
       [
         6
@@ -437,108 +455,124 @@
       [
         20
       ]
-    ]
+    ],
+    "failure": null,
+    "verified": false
   },
   "duckdb:ordinary-group-alias": {
     "sql": "SELECT event_kind AS kind, count(*) AS n FROM events GROUP BY kind",
-    "error": null,
-    "rows": null
-  },
-  "trino:ordinary-group-alias": {
-    "sql": "SELECT event_kind AS kind, count(*) AS n FROM events GROUP BY kind",
-    "error": null,
-    "rows": null
+    "rows": null,
+    "failure": null,
+    "verified": true
   },
   "duckdb:ordinary-set-union-all": {
     "sql": "SELECT id FROM events UNION ALL SELECT id FROM customers ORDER BY id",
-    "error": null,
-    "rows": null
+    "rows": null,
+    "failure": null,
+    "verified": true
   },
   "trino:ordinary-set-union-all": {
     "sql": "SELECT id FROM events UNION ALL SELECT id FROM customers ORDER BY id",
-    "error": null,
-    "rows": null
+    "rows": null,
+    "failure": null,
+    "verified": false
   },
   "duckdb:ordinary-set-intersect": {
     "sql": "SELECT id FROM events INTERSECT SELECT id FROM customers ORDER BY id",
-    "error": null,
-    "rows": null
+    "rows": null,
+    "failure": null,
+    "verified": true
   },
   "trino:ordinary-set-intersect": {
     "sql": "SELECT id FROM events INTERSECT SELECT id FROM customers ORDER BY id",
-    "error": null,
-    "rows": null
+    "rows": null,
+    "failure": null,
+    "verified": false
   },
   "duckdb:ordinary-set-except": {
     "sql": "SELECT id FROM events EXCEPT SELECT id FROM customers ORDER BY id",
-    "error": null,
-    "rows": null
+    "rows": null,
+    "failure": null,
+    "verified": true
   },
   "trino:ordinary-set-except": {
     "sql": "SELECT id FROM events EXCEPT SELECT id FROM customers ORDER BY id",
-    "error": null,
-    "rows": null
+    "rows": null,
+    "failure": null,
+    "verified": false
   },
   "duckdb:bare-slot-is-physical": {
     "sql": "SELECT s.id FROM physical s",
-    "error": null,
     "rows": [
       [
         1
       ]
-    ]
+    ],
+    "failure": null,
+    "verified": true
   },
   "trino:bare-slot-is-physical": {
     "sql": "SELECT s.id FROM physical s",
-    "error": null,
     "rows": [
       [
         1
       ]
-    ]
+    ],
+    "failure": null,
+    "verified": false
   },
   "duckdb:pipe-where": {
     "sql": "SELECT * FROM events e WHERE e.id > 0",
-    "error": null,
-    "rows": null
+    "rows": null,
+    "failure": null,
+    "verified": true
   },
   "trino:pipe-where": {
     "sql": "SELECT * FROM events e WHERE e.id > 0",
-    "error": null,
-    "rows": null
+    "rows": null,
+    "failure": null,
+    "verified": false
   },
   "duckdb:pipe-select-rename-lineage": {
     "sql": "SELECT * FROM (SELECT event_kind AS kind FROM events) q WHERE kind IS NULL",
-    "error": null,
     "rows": [
       [
         null
       ]
-    ]
+    ],
+    "failure": null,
+    "verified": true
   },
   "trino:pipe-select-rename-lineage": {
     "sql": "SELECT * FROM (SELECT event_kind AS kind FROM events) q WHERE kind IS NULL",
-    "error": null,
     "rows": [
       [
         null
       ]
-    ]
+    ],
+    "failure": null,
+    "verified": false
   },
   "duckdb:pipe-select-hides-alias": {
     "sql": "SELECT * FROM (SELECT id FROM events) q WHERE e.id > 0",
-    "error": "Referenced table",
-    "rows": null
+    "rows": null,
+    "failure": {
+      "kind": "REJECTION",
+      "messageContains": "Referenced table"
+    },
+    "verified": true
   },
   "trino:pipe-select-hides-alias": {
     "sql": "SELECT * FROM (SELECT id FROM events) q WHERE e.id > 0",
-    "error": null,
     "rows": null,
-    "expectFailure": true
+    "failure": {
+      "kind": "REJECTION",
+      "messageContains": null
+    },
+    "verified": false
   },
   "duckdb:pipe-extend-computed": {
     "sql": "SELECT *, price*qty AS total FROM events",
-    "error": null,
     "rows": [
       [
         1,
@@ -554,11 +588,12 @@
         5,
         20
       ]
-    ]
+    ],
+    "failure": null,
+    "verified": true
   },
   "trino:pipe-extend-computed": {
     "sql": "SELECT *, price*qty AS total FROM events",
-    "error": null,
     "rows": [
       [
         1,
@@ -574,21 +609,24 @@
         5,
         20
       ]
-    ]
+    ],
+    "failure": null,
+    "verified": false
   },
   "duckdb:pipe-extend-passthrough": {
     "sql": "SELECT *, ((e.id)) AS copied FROM events e",
-    "error": null,
-    "rows": null
+    "rows": null,
+    "failure": null,
+    "verified": true
   },
   "trino:pipe-extend-passthrough": {
     "sql": "SELECT *, ((e.id)) AS copied FROM events e",
-    "error": null,
-    "rows": null
+    "rows": null,
+    "failure": null,
+    "verified": false
   },
   "duckdb:pipe-select-computed": {
     "sql": "SELECT price*qty AS total FROM events",
-    "error": null,
     "rows": [
       [
         6
@@ -596,11 +634,12 @@
       [
         20
       ]
-    ]
+    ],
+    "failure": null,
+    "verified": true
   },
   "trino:pipe-select-computed": {
     "sql": "SELECT price*qty AS total FROM events",
-    "error": null,
     "rows": [
       [
         6
@@ -608,391 +647,468 @@
       [
         20
       ]
-    ]
+    ],
+    "failure": null,
+    "verified": false
   },
   "duckdb:pipe-as": {
     "sql": "SELECT * FROM events e WHERE e.id > 0",
-    "error": null,
-    "rows": null
+    "rows": null,
+    "failure": null,
+    "verified": true
   },
   "trino:pipe-as": {
     "sql": "SELECT * FROM events e WHERE e.id > 0",
-    "error": null,
-    "rows": null
+    "rows": null,
+    "failure": null,
+    "verified": false
   },
   "duckdb:pipe-drop": {
     "sql": "SELECT * EXCLUDE(qty) FROM events",
-    "error": null,
-    "rows": null
+    "rows": null,
+    "failure": null,
+    "verified": true
   },
   "trino:pipe-drop": {
     "sql": "SELECT id, event_kind, price FROM events",
-    "error": null,
-    "rows": null
+    "rows": null,
+    "failure": null,
+    "verified": false
   },
   "duckdb:pipe-drop-missing": {
     "sql": "SELECT * FROM (SELECT * EXCLUDE(qty) FROM events) q WHERE qty>0",
-    "error": "not found",
-    "rows": null
+    "rows": null,
+    "failure": {
+      "kind": "REJECTION",
+      "messageContains": "not found"
+    },
+    "verified": true
   },
   "trino:pipe-drop-missing": {
     "sql": "SELECT * FROM (SELECT id, event_kind, price FROM events) q WHERE qty>0",
-    "error": null,
     "rows": null,
-    "expectFailure": true
+    "failure": {
+      "kind": "REJECTION",
+      "messageContains": null
+    },
+    "verified": false
   },
   "duckdb:pipe-set": {
     "sql": "SELECT * REPLACE(price*qty AS price) FROM events",
-    "error": null,
-    "rows": null
+    "rows": null,
+    "failure": null,
+    "verified": true
   },
   "trino:pipe-set": {
     "sql": "SELECT id, event_kind, price*qty AS price, qty FROM events",
-    "error": null,
-    "rows": null
+    "rows": null,
+    "failure": null,
+    "verified": false
   },
   "duckdb:pipe-rename": {
     "sql": "SELECT id, event_kind AS kind, price, qty FROM events",
-    "error": null,
-    "rows": null
+    "rows": null,
+    "failure": null,
+    "verified": true
   },
   "trino:pipe-rename": {
     "sql": "SELECT id, event_kind AS kind, price, qty FROM events",
-    "error": null,
-    "rows": null
+    "rows": null,
+    "failure": null,
+    "verified": false
   },
   "duckdb:pipe-aggregate": {
     "sql": "SELECT event_kind, count(*) AS n FROM events GROUP BY event_kind",
-    "error": null,
     "rows": null,
     "columns": [
       "event_kind",
       "n"
-    ]
+    ],
+    "failure": null,
+    "verified": true
   },
   "trino:pipe-aggregate": {
     "sql": "SELECT event_kind, count(*) AS n FROM events GROUP BY event_kind",
-    "error": null,
     "rows": null,
     "columns": [
       "event_kind",
       "n"
-    ]
+    ],
+    "failure": null,
+    "verified": false
   },
   "duckdb:pipe-aggregate-group-order": {
     "sql": "SELECT event_kind, count(*) AS n FROM events GROUP BY event_kind ORDER BY event_kind",
-    "error": null,
     "rows": null,
     "columns": [
       "event_kind",
       "n"
-    ]
+    ],
+    "failure": null,
+    "verified": true
   },
   "trino:pipe-aggregate-group-order": {
     "sql": "SELECT event_kind, count(*) AS n FROM events GROUP BY event_kind ORDER BY event_kind",
-    "error": null,
     "rows": null,
     "columns": [
       "event_kind",
       "n"
-    ]
+    ],
+    "failure": null,
+    "verified": false
   },
   "duckdb:pipe-order-by": {
     "sql": "SELECT * FROM events",
-    "error": null,
-    "rows": null
+    "rows": null,
+    "failure": null,
+    "verified": true
   },
   "trino:pipe-order-by": {
     "sql": "SELECT * FROM events",
-    "error": null,
-    "rows": null
+    "rows": null,
+    "failure": null,
+    "verified": false
   },
   "duckdb:pipe-limit": {
     "sql": "SELECT * FROM events",
-    "error": null,
-    "rows": null
+    "rows": null,
+    "failure": null,
+    "verified": true
   },
   "trino:pipe-limit": {
     "sql": "SELECT * FROM events",
-    "error": null,
-    "rows": null
+    "rows": null,
+    "failure": null,
+    "verified": false
   },
   "duckdb:pipe-offset": {
     "sql": "SELECT * FROM events",
-    "error": null,
-    "rows": null
+    "rows": null,
+    "failure": null,
+    "verified": true
   },
   "trino:pipe-offset": {
     "sql": "SELECT * FROM events",
-    "error": null,
-    "rows": null
+    "rows": null,
+    "failure": null,
+    "verified": false
   },
   "duckdb:pipe-distinct": {
     "sql": "SELECT * FROM events",
-    "error": null,
-    "rows": null
+    "rows": null,
+    "failure": null,
+    "verified": true
   },
   "trino:pipe-distinct": {
     "sql": "SELECT * FROM events",
-    "error": null,
-    "rows": null
+    "rows": null,
+    "failure": null,
+    "verified": false
   },
   "duckdb:pipe-tablesample": {
     "sql": "SELECT * FROM events",
-    "error": null,
-    "rows": null
+    "rows": null,
+    "failure": null,
+    "verified": true
   },
   "trino:pipe-tablesample": {
     "sql": "SELECT * FROM events TABLESAMPLE BERNOULLI (100)",
-    "error": null,
-    "rows": null
+    "rows": null,
+    "failure": null,
+    "verified": false
   },
   "duckdb:pipe-window": {
     "sql": "SELECT *, row_number() OVER (ORDER BY id) AS rn FROM events",
-    "error": null,
-    "rows": null
+    "rows": null,
+    "failure": null,
+    "verified": true
   },
   "trino:pipe-window": {
     "sql": "SELECT *, row_number() OVER (ORDER BY id) AS rn FROM events",
-    "error": null,
-    "rows": null
+    "rows": null,
+    "failure": null,
+    "verified": false
   },
   "duckdb:pipe-join-inner": {
     "sql": "SELECT e.id FROM events e INNER JOIN customers r ON e.id=r.id",
-    "error": null,
-    "rows": null
+    "rows": null,
+    "failure": null,
+    "verified": true
   },
   "trino:pipe-join-inner": {
     "sql": "SELECT e.id FROM events e INNER JOIN customers r ON e.id=r.id",
-    "error": null,
-    "rows": null
+    "rows": null,
+    "failure": null,
+    "verified": false
   },
   "duckdb:pipe-join-left": {
     "sql": "SELECT e.id FROM events e LEFT JOIN customers r ON e.id=r.id",
-    "error": null,
-    "rows": null
+    "rows": null,
+    "failure": null,
+    "verified": true
   },
   "trino:pipe-join-left": {
     "sql": "SELECT e.id FROM events e LEFT JOIN customers r ON e.id=r.id",
-    "error": null,
-    "rows": null
+    "rows": null,
+    "failure": null,
+    "verified": false
   },
   "duckdb:pipe-join-right": {
     "sql": "SELECT e.id FROM events e RIGHT JOIN customers r ON e.id=r.id",
-    "error": null,
-    "rows": null
+    "rows": null,
+    "failure": null,
+    "verified": true
   },
   "trino:pipe-join-right": {
     "sql": "SELECT e.id FROM events e RIGHT JOIN customers r ON e.id=r.id",
-    "error": null,
-    "rows": null
+    "rows": null,
+    "failure": null,
+    "verified": false
   },
   "duckdb:pipe-join-full": {
     "sql": "SELECT e.id FROM events e FULL JOIN customers r ON e.id=r.id",
-    "error": null,
-    "rows": null
+    "rows": null,
+    "failure": null,
+    "verified": true
   },
   "trino:pipe-join-full": {
     "sql": "SELECT e.id FROM events e FULL JOIN customers r ON e.id=r.id",
-    "error": null,
-    "rows": null
+    "rows": null,
+    "failure": null,
+    "verified": false
   },
   "duckdb:pipe-join-cross": {
     "sql": "SELECT e.id FROM events e CROSS JOIN customers r",
-    "error": null,
-    "rows": null
+    "rows": null,
+    "failure": null,
+    "verified": true
   },
   "trino:pipe-join-cross": {
     "sql": "SELECT e.id FROM events e CROSS JOIN customers r",
-    "error": null,
-    "rows": null
+    "rows": null,
+    "failure": null,
+    "verified": false
   },
   "duckdb:pipe-join-semi": {
     "sql": "SELECT e.id FROM events e SEMI JOIN customers r ON e.id=r.id",
-    "error": null,
-    "rows": null
+    "rows": null,
+    "failure": null,
+    "verified": true
   },
   "trino:pipe-join-semi": {
     "sql": "SELECT e.id FROM events e WHERE EXISTS (SELECT 1 FROM customers r WHERE e.id=r.id)",
-    "error": null,
-    "rows": null
+    "rows": null,
+    "failure": null,
+    "verified": false
   },
   "duckdb:pipe-join-anti": {
     "sql": "SELECT e.id FROM events e ANTI JOIN customers r ON e.id=r.id",
-    "error": null,
-    "rows": null
+    "rows": null,
+    "failure": null,
+    "verified": true
   },
   "trino:pipe-join-anti": {
     "sql": "SELECT e.id FROM events e WHERE NOT EXISTS (SELECT 1 FROM customers r WHERE e.id=r.id)",
-    "error": null,
-    "rows": null
+    "rows": null,
+    "failure": null,
+    "verified": false
   },
   "duckdb:pipe-join-right-semi": {
     "sql": "SELECT r.code FROM customers r SEMI JOIN events e ON e.id=r.id",
-    "error": null,
     "rows": [
       [
         "one"
       ]
-    ]
+    ],
+    "failure": null,
+    "verified": true
   },
   "trino:pipe-join-right-semi": {
     "sql": "SELECT r.code FROM customers r WHERE EXISTS (SELECT 1 FROM events e WHERE e.id=r.id)",
-    "error": null,
     "rows": [
       [
         "one"
       ]
-    ]
+    ],
+    "failure": null,
+    "verified": false
   },
   "duckdb:pipe-join-right-anti": {
     "sql": "SELECT r.code FROM customers r ANTI JOIN events e ON e.id=r.id",
-    "error": null,
     "rows": [
       [
         "three"
       ]
-    ]
+    ],
+    "failure": null,
+    "verified": true
   },
   "trino:pipe-join-right-anti": {
     "sql": "SELECT r.code FROM customers r WHERE NOT EXISTS (SELECT 1 FROM events e WHERE e.id=r.id)",
-    "error": null,
     "rows": [
       [
         "three"
       ]
-    ]
+    ],
+    "failure": null,
+    "verified": false
   },
   "duckdb:pipe-star-join": {
     "sql": "SELECT r.code FROM (SELECT * FROM events e LEFT JOIN customers r ON e.id=r.id) q",
-    "error": "Referenced table",
-    "rows": null
+    "rows": null,
+    "failure": {
+      "kind": "REJECTION",
+      "messageContains": "Referenced table"
+    },
+    "verified": true
   },
   "trino:pipe-star-join": {
     "sql": "SELECT r.code FROM (SELECT * FROM events e LEFT JOIN customers r ON e.id=r.id) q",
-    "expectFailure": true,
-    "error": null,
-    "rows": null
+    "rows": null,
+    "failure": {
+      "kind": "REJECTION",
+      "messageContains": null
+    },
+    "verified": false
   },
   "duckdb:pipe-qualified-star": {
     "sql": "SELECT e.* FROM events e",
-    "error": null,
-    "rows": null
+    "rows": null,
+    "failure": null,
+    "verified": true
   },
   "trino:pipe-qualified-star": {
     "sql": "SELECT e.* FROM events e",
-    "error": null,
-    "rows": null
+    "rows": null,
+    "failure": null,
+    "verified": false
   },
   "duckdb:pipe-partial-star": {
     "sql": "SELECT e.* FROM events_partial e",
-    "error": null,
-    "rows": null
+    "rows": null,
+    "failure": null,
+    "verified": true
   },
   "trino:pipe-partial-star": {
     "sql": "SELECT e.* FROM events_partial e",
-    "error": null,
-    "rows": null
+    "rows": null,
+    "failure": null,
+    "verified": false
   },
   "duckdb:pipe-set-union-all": {
     "sql": "SELECT id FROM events UNION ALL SELECT id FROM customers ORDER BY id",
-    "error": null,
-    "rows": null
+    "rows": null,
+    "failure": null,
+    "verified": true
   },
   "trino:pipe-set-union-all": {
     "sql": "SELECT id FROM events UNION ALL SELECT id FROM customers ORDER BY id",
-    "error": null,
-    "rows": null
+    "rows": null,
+    "failure": null,
+    "verified": false
   },
   "duckdb:pipe-set-union-distinct": {
     "sql": "SELECT id FROM events UNION DISTINCT SELECT id FROM customers ORDER BY id",
-    "error": null,
-    "rows": null
+    "rows": null,
+    "failure": null,
+    "verified": true
   },
   "trino:pipe-set-union-distinct": {
     "sql": "SELECT id FROM events UNION DISTINCT SELECT id FROM customers ORDER BY id",
-    "error": null,
-    "rows": null
+    "rows": null,
+    "failure": null,
+    "verified": false
   },
   "duckdb:pipe-set-intersect": {
     "sql": "SELECT id FROM events INTERSECT SELECT id FROM customers ORDER BY id",
-    "error": null,
-    "rows": null
+    "rows": null,
+    "failure": null,
+    "verified": true
   },
   "trino:pipe-set-intersect": {
     "sql": "SELECT id FROM events INTERSECT SELECT id FROM customers ORDER BY id",
-    "error": null,
-    "rows": null
+    "rows": null,
+    "failure": null,
+    "verified": false
   },
   "duckdb:pipe-set-except": {
     "sql": "SELECT id FROM events EXCEPT SELECT id FROM customers ORDER BY id",
-    "error": null,
-    "rows": null
+    "rows": null,
+    "failure": null,
+    "verified": true
   },
   "trino:pipe-set-except": {
     "sql": "SELECT id FROM events EXCEPT SELECT id FROM customers ORDER BY id",
-    "error": null,
-    "rows": null
+    "rows": null,
+    "failure": null,
+    "verified": false
   },
   "duckdb:pipe-pivot": {
     "sql": "SELECT * FROM (SELECT event_kind, qty FROM events) PIVOT (sum(qty) FOR event_kind IN ('a' AS a, 'b' AS b))",
-    "error": null,
-    "rows": null
+    "rows": null,
+    "failure": null,
+    "verified": true
   },
   "trino:pipe-pivot": {
     "sql": "SELECT SUM(CASE WHEN event_kind='a' THEN qty END) AS a, SUM(CASE WHEN event_kind='b' THEN qty END) AS b FROM events",
-    "error": null,
-    "rows": null
+    "rows": null,
+    "failure": null,
+    "verified": false
   },
   "duckdb:pipe-unpivot": {
     "sql": "SELECT * FROM (SELECT price, qty FROM events) UNPIVOT (value FOR metric IN (price, qty))",
-    "error": null,
-    "rows": null
+    "rows": null,
+    "failure": null,
+    "verified": true
   },
   "trino:pipe-unpivot": {
     "sql": "SELECT u.metric, u.value FROM events e CROSS JOIN LATERAL (VALUES ('price',e.price),('qty',e.qty)) AS u(metric,value)",
-    "error": null,
-    "rows": null
+    "rows": null,
+    "failure": null,
+    "verified": false
   },
   "duckdb:physical-ordinary": {
     "sql": "SELECT p.id FROM physical p",
-    "error": null,
     "rows": [
       [
         1
       ]
-    ]
+    ],
+    "failure": null,
+    "verified": true
   },
   "trino:physical-ordinary": {
     "sql": "SELECT p.id FROM physical p",
-    "error": null,
     "rows": [
       [
         1
       ]
-    ]
+    ],
+    "failure": null,
+    "verified": false
   },
   "duckdb:physical-pipe": {
     "sql": "SELECT p.id FROM physical p",
-    "error": null,
     "rows": [
       [
         1
       ]
-    ]
+    ],
+    "failure": null,
+    "verified": true
   },
   "trino:physical-pipe": {
     "sql": "SELECT p.id FROM physical p",
-    "error": null,
     "rows": [
       [
         1
       ]
-    ]
+    ],
+    "failure": null,
+    "verified": false
   },
   "duckdb:physical-mixed-pipe": {
     "sql": "SELECT p.label FROM events e LEFT JOIN physical p ON e.id=p.id",
-    "error": null,
     "rows": [
       [
         "x"
@@ -1000,11 +1116,12 @@
       [
         null
       ]
-    ]
+    ],
+    "failure": null,
+    "verified": true
   },
   "trino:physical-mixed-pipe": {
     "sql": "SELECT p.label FROM events e LEFT JOIN physical p ON e.id=p.id",
-    "error": null,
     "rows": [
       [
         "x"
@@ -1012,11 +1129,12 @@
       [
         null
       ]
-    ]
+    ],
+    "failure": null,
+    "verified": false
   },
   "duckdb:incomplete-empty-select": {
     "sql": "SELECT id FROM events",
-    "error": null,
     "rows": [
       [
         1
@@ -1024,11 +1142,12 @@
       [
         2
       ]
-    ]
+    ],
+    "failure": null,
+    "verified": true
   },
   "trino:incomplete-empty-select": {
     "sql": "SELECT id FROM events",
-    "error": null,
     "rows": [
       [
         1
@@ -1036,21 +1155,24 @@
       [
         2
       ]
-    ]
+    ],
+    "failure": null,
+    "verified": false
   },
   "duckdb:incomplete-empty-pipe": {
     "sql": "SELECT * FROM events WHERE TRUE",
-    "error": null,
-    "rows": null
+    "rows": null,
+    "failure": null,
+    "verified": true
   },
   "trino:incomplete-empty-pipe": {
     "sql": "SELECT * FROM events WHERE TRUE",
-    "error": null,
-    "rows": null
+    "rows": null,
+    "failure": null,
+    "verified": false
   },
   "duckdb:incomplete-after-dot": {
     "sql": "SELECT e.id FROM events e",
-    "error": null,
     "rows": [
       [
         1
@@ -1058,11 +1180,12 @@
       [
         2
       ]
-    ]
+    ],
+    "failure": null,
+    "verified": true
   },
   "trino:incomplete-after-dot": {
     "sql": "SELECT e.id FROM events e",
-    "error": null,
     "rows": [
       [
         1
@@ -1070,147 +1193,167 @@
       [
         2
       ]
-    ]
+    ],
+    "failure": null,
+    "verified": false
   },
   "duckdb:incomplete-prefix": {
     "sql": "SELECT * FROM events WHERE ev",
-    "error": "not found",
-    "rows": null
+    "rows": null,
+    "failure": {
+      "kind": "REJECTION",
+      "messageContains": "not found"
+    },
+    "verified": true
   },
   "trino:incomplete-prefix": {
     "sql": "SELECT * FROM events WHERE ev",
-    "error": null,
     "rows": null,
-    "expectFailure": true
+    "failure": {
+      "kind": "REJECTION",
+      "messageContains": null
+    },
+    "verified": false
   },
   "duckdb:string-no-columns": {
     "sql": "SELECT '' FROM events",
-    "error": null,
-    "rows": null
+    "rows": null,
+    "failure": null,
+    "verified": true
   },
   "trino:string-no-columns": {
     "sql": "SELECT '' FROM events",
-    "error": null,
-    "rows": null
-  },
-  "doris:ordinary-join-semi": {
-    "sql": "SELECT e.id FROM events e LEFT SEMI JOIN customers r ON e.id=r.id",
-    "error": null,
-    "rows": null
-  },
-  "doris:ordinary-join-anti": {
-    "sql": "SELECT e.id FROM events e LEFT ANTI JOIN customers r ON e.id=r.id",
-    "error": null,
-    "rows": null
+    "rows": null,
+    "failure": null,
+    "verified": false
   },
   "doris:ordinary-join-right-semi": {
     "sql": "SELECT r.code FROM customers r LEFT SEMI JOIN events e ON e.id=r.id",
-    "error": null,
     "rows": [
       [
         "one"
       ]
-    ]
+    ],
+    "failure": null,
+    "verified": false
   },
   "doris:ordinary-join-right-anti": {
     "sql": "SELECT r.code FROM customers r LEFT ANTI JOIN events e ON e.id=r.id",
-    "error": null,
     "rows": [
       [
         "three"
       ]
-    ]
+    ],
+    "failure": null,
+    "verified": false
   },
   "doris:pipe-join-semi": {
     "sql": "SELECT e.id FROM events e LEFT SEMI JOIN customers r ON e.id=r.id",
-    "error": null,
-    "rows": null
+    "rows": null,
+    "failure": null,
+    "verified": false
   },
   "doris:pipe-join-anti": {
     "sql": "SELECT e.id FROM events e LEFT ANTI JOIN customers r ON e.id=r.id",
-    "error": null,
-    "rows": null
+    "rows": null,
+    "failure": null,
+    "verified": false
   },
   "doris:pipe-join-right-semi": {
     "sql": "SELECT r.code FROM customers r LEFT SEMI JOIN events e ON e.id=r.id",
-    "error": null,
     "rows": [
       [
         "one"
       ]
-    ]
+    ],
+    "failure": null,
+    "verified": false
   },
   "doris:pipe-join-right-anti": {
     "sql": "SELECT r.code FROM customers r LEFT ANTI JOIN events e ON e.id=r.id",
-    "error": null,
     "rows": [
       [
         "three"
       ]
-    ]
+    ],
+    "failure": null,
+    "verified": false
   },
   "doris:pipe-drop": {
     "sql": "SELECT id, event_kind, price FROM events",
-    "error": null,
-    "rows": null
+    "rows": null,
+    "failure": null,
+    "verified": false
   },
   "doris:pipe-drop-missing": {
     "sql": "SELECT * FROM (SELECT id, event_kind, price FROM events) q WHERE qty>0",
-    "error": null,
     "rows": null,
-    "expectFailure": true
+    "failure": {
+      "kind": "REJECTION",
+      "messageContains": null
+    },
+    "verified": false
   },
   "doris:pipe-set": {
     "sql": "SELECT id, event_kind, price*qty AS price, qty FROM events",
-    "error": null,
-    "rows": null
+    "rows": null,
+    "failure": null,
+    "verified": false
   },
   "doris:pipe-unpivot": {
-    "sql": "SELECT u.metric, u.value FROM events e CROSS JOIN LATERAL (VALUES ('price',e.price),('qty',e.qty)) AS u(metric,value)",
-    "error": null,
-    "rows": null
+    "sql": "SELECT 'price' AS metric,price AS value FROM events UNION ALL SELECT 'qty' AS metric,qty AS value FROM events",
+    "rows": null,
+    "failure": null,
+    "verified": false,
+    "columns": [
+      "metric",
+      "value"
+    ]
   },
   "doris:pipe-pivot": {
     "sql": "SELECT SUM(CASE WHEN event_kind='a' THEN qty END) AS a, SUM(CASE WHEN event_kind='b' THEN qty END) AS b FROM events",
-    "error": null,
-    "rows": null
+    "rows": null,
+    "failure": null,
+    "verified": false
   },
   "duckdb:pipe-star-single": {
     "sql": "SELECT * FROM (SELECT * FROM events) q",
-    "error": null,
     "rows": null,
     "columns": [
       "id",
       "event_kind",
       "price",
       "qty"
-    ]
+    ],
+    "failure": null,
+    "verified": true
   },
   "trino:pipe-star-single": {
     "sql": "SELECT * FROM (SELECT * FROM events) q",
-    "error": null,
     "rows": null,
     "columns": [
       "id",
       "event_kind",
       "price",
       "qty"
-    ]
+    ],
+    "failure": null,
+    "verified": false
   },
   "doris:pipe-star-single": {
     "sql": "SELECT * FROM (SELECT * FROM events) q",
-    "error": null,
     "rows": null,
     "columns": [
       "id",
       "event_kind",
       "price",
       "qty"
-    ]
+    ],
+    "failure": null,
+    "verified": false
   },
   "duckdb:pipe-star-join-duckdb-dedup": {
     "sql": "SELECT * FROM (SELECT * FROM events e LEFT JOIN customers r ON e.id=r.id) q",
-    "error": null,
     "rows": null,
     "columns": [
       "id",
@@ -1219,11 +1362,12 @@
       "qty",
       "id_1",
       "code"
-    ]
+    ],
+    "failure": null,
+    "verified": true
   },
   "duckdb:pipe-as-new-alias": {
     "sql": "SELECT t.id FROM events t",
-    "error": null,
     "rows": [
       [
         1
@@ -1231,11 +1375,12 @@
       [
         2
       ]
-    ]
+    ],
+    "failure": null,
+    "verified": true
   },
   "trino:pipe-as-new-alias": {
     "sql": "SELECT t.id FROM events t",
-    "error": null,
     "rows": [
       [
         1
@@ -1243,11 +1388,12 @@
       [
         2
       ]
-    ]
+    ],
+    "failure": null,
+    "verified": false
   },
   "doris:pipe-as-new-alias": {
     "sql": "SELECT t.id FROM events t",
-    "error": null,
     "rows": [
       [
         1
@@ -1255,11 +1401,12 @@
       [
         2
       ]
-    ]
+    ],
+    "failure": null,
+    "verified": false
   },
   "duckdb:q13-keeps-where": {
     "sql": "SELECT e.id FROM events e",
-    "error": null,
     "rows": [
       [
         1
@@ -1267,11 +1414,12 @@
       [
         2
       ]
-    ]
+    ],
+    "failure": null,
+    "verified": true
   },
   "trino:q13-keeps-where": {
     "sql": "SELECT e.id FROM events e",
-    "error": null,
     "rows": [
       [
         1
@@ -1279,11 +1427,12 @@
       [
         2
       ]
-    ]
+    ],
+    "failure": null,
+    "verified": false
   },
   "doris:q13-keeps-where": {
     "sql": "SELECT e.id FROM events e",
-    "error": null,
     "rows": [
       [
         1
@@ -1291,11 +1440,12 @@
       [
         2
       ]
-    ]
+    ],
+    "failure": null,
+    "verified": false
   },
   "duckdb:q13-keeps-order-by": {
     "sql": "SELECT e.id FROM events e",
-    "error": null,
     "rows": [
       [
         1
@@ -1303,11 +1453,12 @@
       [
         2
       ]
-    ]
+    ],
+    "failure": null,
+    "verified": true
   },
   "trino:q13-keeps-order-by": {
     "sql": "SELECT e.id FROM events e",
-    "error": null,
     "rows": [
       [
         1
@@ -1315,11 +1466,12 @@
       [
         2
       ]
-    ]
+    ],
+    "failure": null,
+    "verified": false
   },
   "doris:q13-keeps-order-by": {
     "sql": "SELECT e.id FROM events e",
-    "error": null,
     "rows": [
       [
         1
@@ -1327,11 +1479,12 @@
       [
         2
       ]
-    ]
+    ],
+    "failure": null,
+    "verified": false
   },
   "duckdb:q13-keeps-limit": {
     "sql": "SELECT e.id FROM events e",
-    "error": null,
     "rows": [
       [
         1
@@ -1339,11 +1492,12 @@
       [
         2
       ]
-    ]
+    ],
+    "failure": null,
+    "verified": true
   },
   "trino:q13-keeps-limit": {
     "sql": "SELECT e.id FROM events e",
-    "error": null,
     "rows": [
       [
         1
@@ -1351,11 +1505,12 @@
       [
         2
       ]
-    ]
+    ],
+    "failure": null,
+    "verified": false
   },
   "doris:q13-keeps-limit": {
     "sql": "SELECT e.id FROM events e",
-    "error": null,
     "rows": [
       [
         1
@@ -1363,11 +1518,12 @@
       [
         2
       ]
-    ]
+    ],
+    "failure": null,
+    "verified": false
   },
   "duckdb:q13-keeps-offset": {
     "sql": "SELECT e.id FROM events e",
-    "error": null,
     "rows": [
       [
         1
@@ -1375,11 +1531,12 @@
       [
         2
       ]
-    ]
+    ],
+    "failure": null,
+    "verified": true
   },
   "trino:q13-keeps-offset": {
     "sql": "SELECT e.id FROM events e",
-    "error": null,
     "rows": [
       [
         1
@@ -1387,11 +1544,12 @@
       [
         2
       ]
-    ]
+    ],
+    "failure": null,
+    "verified": false
   },
   "doris:q13-keeps-offset": {
     "sql": "SELECT e.id FROM events e",
-    "error": null,
     "rows": [
       [
         1
@@ -1399,11 +1557,12 @@
       [
         2
       ]
-    ]
+    ],
+    "failure": null,
+    "verified": false
   },
   "duckdb:q13-keeps-tablesample": {
     "sql": "SELECT e.id FROM events e",
-    "error": null,
     "rows": [
       [
         1
@@ -1411,11 +1570,12 @@
       [
         2
       ]
-    ]
+    ],
+    "failure": null,
+    "verified": true
   },
   "trino:q13-keeps-tablesample": {
     "sql": "SELECT e.id FROM events e",
-    "error": null,
     "rows": [
       [
         1
@@ -1423,23 +1583,12 @@
       [
         2
       ]
-    ]
-  },
-  "doris:q13-keeps-tablesample": {
-    "sql": "SELECT e.id FROM events e",
-    "error": null,
-    "rows": [
-      [
-        1
-      ],
-      [
-        2
-      ]
-    ]
+    ],
+    "failure": null,
+    "verified": false
   },
   "duckdb:q13-keeps-distinct": {
     "sql": "SELECT e.id FROM events e",
-    "error": null,
     "rows": [
       [
         1
@@ -1447,11 +1596,12 @@
       [
         2
       ]
-    ]
+    ],
+    "failure": null,
+    "verified": true
   },
   "trino:q13-keeps-distinct": {
     "sql": "SELECT e.id FROM events e",
-    "error": null,
     "rows": [
       [
         1
@@ -1459,11 +1609,12 @@
       [
         2
       ]
-    ]
+    ],
+    "failure": null,
+    "verified": false
   },
   "doris:q13-keeps-distinct": {
     "sql": "SELECT e.id FROM events e",
-    "error": null,
     "rows": [
       [
         1
@@ -1471,11 +1622,12 @@
       [
         2
       ]
-    ]
+    ],
+    "failure": null,
+    "verified": false
   },
   "duckdb:left-using-merged-star": {
     "sql": "SELECT * FROM events e LEFT JOIN customers r USING (id)",
-    "error": null,
     "rows": null,
     "columns": [
       "id",
@@ -1483,11 +1635,12 @@
       "price",
       "qty",
       "code"
-    ]
+    ],
+    "failure": null,
+    "verified": true
   },
   "trino:left-using-merged-star": {
     "sql": "SELECT * FROM events e LEFT JOIN customers r USING (id)",
-    "error": null,
     "rows": null,
     "columns": [
       "id",
@@ -1495,12 +1648,15 @@
       "price",
       "qty",
       "code"
-    ]
+    ],
+    "failure": null,
+    "verified": false
   },
   "doris:left-using-merged-star": {
-    "sql": "SELECT * FROM events e LEFT JOIN customers r USING (id)",
-    "error": null,
+    "sql": "SELECT e.id,e.event_kind,e.price,e.qty,r.code FROM events e LEFT JOIN customers r ON e.id=r.id",
     "rows": null,
+    "failure": null,
+    "verified": false,
     "columns": [
       "id",
       "event_kind",
@@ -1511,7 +1667,6 @@
   },
   "duckdb:natural-merged-star": {
     "sql": "SELECT * FROM events NATURAL JOIN customers",
-    "error": null,
     "rows": null,
     "columns": [
       "id",
@@ -1519,11 +1674,12 @@
       "price",
       "qty",
       "code"
-    ]
+    ],
+    "failure": null,
+    "verified": true
   },
   "trino:natural-merged-star": {
     "sql": "SELECT * FROM events NATURAL JOIN customers",
-    "error": null,
     "rows": null,
     "columns": [
       "id",
@@ -1531,11 +1687,12 @@
       "price",
       "qty",
       "code"
-    ]
+    ],
+    "failure": null,
+    "verified": false
   },
   "doris:natural-merged-star": {
     "sql": "SELECT * FROM events NATURAL JOIN customers",
-    "error": null,
     "rows": null,
     "columns": [
       "id",
@@ -1543,11 +1700,12 @@
       "price",
       "qty",
       "code"
-    ]
+    ],
+    "failure": null,
+    "verified": false
   },
   "duckdb:pipe-left-using-merged-star": {
     "sql": "SELECT * FROM (SELECT * FROM events e LEFT JOIN customers r USING(id)) q",
-    "error": null,
     "rows": null,
     "columns": [
       "id",
@@ -1555,11 +1713,12 @@
       "price",
       "qty",
       "code"
-    ]
+    ],
+    "failure": null,
+    "verified": true
   },
   "trino:pipe-left-using-merged-star": {
     "sql": "SELECT * FROM (SELECT * FROM events e LEFT JOIN customers r USING(id)) q",
-    "error": null,
     "rows": null,
     "columns": [
       "id",
@@ -1567,11 +1726,12 @@
       "price",
       "qty",
       "code"
-    ]
+    ],
+    "failure": null,
+    "verified": false
   },
   "doris:pipe-left-using-merged-star": {
     "sql": "SELECT * FROM (SELECT * FROM events e LEFT JOIN customers r USING(id)) q",
-    "error": null,
     "rows": null,
     "columns": [
       "id",
@@ -1579,69 +1739,78 @@
       "price",
       "qty",
       "code"
-    ]
+    ],
+    "failure": null,
+    "verified": false
   },
   "doris:doris-left-semi": {
     "sql": "SELECT e.id FROM events e LEFT SEMI JOIN customers r ON e.id=r.id",
-    "error": null,
-    "rows": null
+    "rows": null,
+    "failure": null,
+    "verified": false
   },
   "doris:doris-left-anti": {
     "sql": "SELECT e.id FROM events e LEFT ANTI JOIN customers r ON e.id=r.id",
-    "error": null,
-    "rows": null
+    "rows": null,
+    "failure": null,
+    "verified": false
   },
   "duckdb:set-nullability-names-union-all": {
     "sql": "SELECT id AS first_name FROM events UNION ALL SELECT id AS other_name FROM nullable_events ORDER BY first_name",
-    "error": null,
     "rows": null,
     "columns": [
       "first_name"
-    ]
+    ],
+    "failure": null,
+    "verified": true
   },
   "trino:set-nullability-names-union-all": {
     "sql": "SELECT id AS first_name FROM events UNION ALL SELECT id AS other_name FROM nullable_events ORDER BY first_name",
-    "error": null,
     "rows": null,
     "columns": [
       "first_name"
-    ]
+    ],
+    "failure": null,
+    "verified": false
   },
   "duckdb:set-nullability-names-intersect": {
     "sql": "SELECT id AS first_name FROM events INTERSECT SELECT id AS other_name FROM nullable_events ORDER BY first_name",
-    "error": null,
     "rows": null,
     "columns": [
       "first_name"
-    ]
+    ],
+    "failure": null,
+    "verified": true
   },
   "trino:set-nullability-names-intersect": {
     "sql": "SELECT id AS first_name FROM events INTERSECT SELECT id AS other_name FROM nullable_events ORDER BY first_name",
-    "error": null,
     "rows": null,
     "columns": [
       "first_name"
-    ]
+    ],
+    "failure": null,
+    "verified": false
   },
   "duckdb:set-nullability-names-except": {
     "sql": "SELECT id AS first_name FROM events EXCEPT SELECT id AS other_name FROM nullable_events ORDER BY first_name",
-    "error": null,
     "rows": null,
     "columns": [
       "first_name"
-    ]
+    ],
+    "failure": null,
+    "verified": true
   },
   "trino:set-nullability-names-except": {
     "sql": "SELECT id AS first_name FROM events EXCEPT SELECT id AS other_name FROM nullable_events ORDER BY first_name",
-    "error": null,
     "rows": null,
     "columns": [
       "first_name"
-    ]
+    ],
+    "failure": null,
+    "verified": false
   },
   "duckdb:union-unanimous-origin": {
     "sql": "SELECT id FROM events UNION ALL SELECT id FROM events ORDER BY id",
-    "error": null,
     "rows": [
       [
         1
@@ -1658,11 +1827,12 @@
     ],
     "columns": [
       "id"
-    ]
+    ],
+    "failure": null,
+    "verified": true
   },
   "trino:union-unanimous-origin": {
     "sql": "SELECT id FROM events UNION ALL SELECT id FROM events ORDER BY id",
-    "error": null,
     "rows": [
       [
         1
@@ -1679,11 +1849,12 @@
     ],
     "columns": [
       "id"
-    ]
+    ],
+    "failure": null,
+    "verified": false
   },
   "doris:union-unanimous-origin": {
     "sql": "SELECT id FROM events UNION ALL SELECT id FROM events ORDER BY id",
-    "error": null,
     "rows": [
       [
         1
@@ -1700,26 +1871,32 @@
     ],
     "columns": [
       "id"
-    ]
+    ],
+    "failure": null,
+    "verified": false
   },
   "duckdb:union-by-name": {
     "sql": "SELECT id,event_kind FROM events UNION ALL BY NAME SELECT code FROM customers",
-    "error": null,
     "rows": null,
     "columns": [
       "id",
       "event_kind",
       "code"
-    ]
+    ],
+    "failure": null,
+    "verified": true
   },
   "duckdb:set-column-count-mismatch": {
     "sql": "SELECT id FROM events UNION ALL SELECT id,code FROM customers",
-    "error": "same number of result columns",
-    "rows": null
+    "rows": null,
+    "failure": {
+      "kind": "REJECTION",
+      "messageContains": "same number of result columns"
+    },
+    "verified": true
   },
   "duckdb:ordinary-star-join-cte-duckdb": {
     "sql": "WITH q AS (SELECT * FROM events e JOIN customers r ON e.id=r.id) SELECT * FROM q",
-    "error": null,
     "rows": null,
     "columns": [
       "id",
@@ -1728,11 +1905,12 @@
       "qty",
       "id_1",
       "code"
-    ]
+    ],
+    "failure": null,
+    "verified": true
   },
   "duckdb:ordinary-star-join-subquery-duckdb": {
     "sql": "SELECT * FROM (SELECT * FROM events e JOIN customers r ON e.id=r.id) q",
-    "error": null,
     "rows": null,
     "columns": [
       "id",
@@ -1741,11 +1919,12 @@
       "qty",
       "id_1",
       "code"
-    ]
+    ],
+    "failure": null,
+    "verified": true
   },
   "duckdb:select-first-pipe": {
     "sql": "SELECT * FROM (SELECT id FROM events) q WHERE id>0",
-    "error": null,
     "rows": [
       [
         1
@@ -1756,11 +1935,12 @@
     ],
     "columns": [
       "id"
-    ]
+    ],
+    "failure": null,
+    "verified": true
   },
   "trino:select-first-pipe": {
     "sql": "SELECT * FROM (SELECT id FROM events) q WHERE id>0",
-    "error": null,
     "rows": [
       [
         1
@@ -1771,11 +1951,12 @@
     ],
     "columns": [
       "id"
-    ]
+    ],
+    "failure": null,
+    "verified": false
   },
   "doris:select-first-pipe": {
     "sql": "SELECT * FROM (SELECT id FROM events) q WHERE id>0",
-    "error": null,
     "rows": [
       [
         1
@@ -1786,11 +1967,12 @@
     ],
     "columns": [
       "id"
-    ]
+    ],
+    "failure": null,
+    "verified": false
   },
   "duckdb:parenthesized-pipe-input": {
     "sql": "SELECT * FROM (SELECT id FROM events) q WHERE id>0",
-    "error": null,
     "rows": [
       [
         1
@@ -1801,11 +1983,12 @@
     ],
     "columns": [
       "id"
-    ]
+    ],
+    "failure": null,
+    "verified": true
   },
   "trino:parenthesized-pipe-input": {
     "sql": "SELECT * FROM (SELECT id FROM events) q WHERE id>0",
-    "error": null,
     "rows": [
       [
         1
@@ -1816,11 +1999,12 @@
     ],
     "columns": [
       "id"
-    ]
+    ],
+    "failure": null,
+    "verified": false
   },
   "doris:parenthesized-pipe-input": {
     "sql": "SELECT * FROM (SELECT id FROM events) q WHERE id>0",
-    "error": null,
     "rows": [
       [
         1
@@ -1831,11 +2015,12 @@
     ],
     "columns": [
       "id"
-    ]
+    ],
+    "failure": null,
+    "verified": false
   },
   "duckdb:pipe-in-cte": {
     "sql": "WITH q AS (SELECT id FROM events) SELECT q.id FROM q",
-    "error": null,
     "rows": [
       [
         1
@@ -1846,11 +2031,12 @@
     ],
     "columns": [
       "id"
-    ]
+    ],
+    "failure": null,
+    "verified": true
   },
   "trino:pipe-in-cte": {
     "sql": "WITH q AS (SELECT id FROM events) SELECT q.id FROM q",
-    "error": null,
     "rows": [
       [
         1
@@ -1861,11 +2047,12 @@
     ],
     "columns": [
       "id"
-    ]
+    ],
+    "failure": null,
+    "verified": false
   },
   "doris:pipe-in-cte": {
     "sql": "WITH q AS (SELECT id FROM events) SELECT q.id FROM q",
-    "error": null,
     "rows": [
       [
         1
@@ -1876,11 +2063,12 @@
     ],
     "columns": [
       "id"
-    ]
+    ],
+    "failure": null,
+    "verified": false
   },
   "duckdb:pipe-in-subquery": {
     "sql": "SELECT q.id FROM (SELECT id FROM events) q",
-    "error": null,
     "rows": [
       [
         1
@@ -1891,11 +2079,12 @@
     ],
     "columns": [
       "id"
-    ]
+    ],
+    "failure": null,
+    "verified": true
   },
   "trino:pipe-in-subquery": {
     "sql": "SELECT q.id FROM (SELECT id FROM events) q",
-    "error": null,
     "rows": [
       [
         1
@@ -1906,11 +2095,12 @@
     ],
     "columns": [
       "id"
-    ]
+    ],
+    "failure": null,
+    "verified": false
   },
   "doris:pipe-in-subquery": {
     "sql": "SELECT q.id FROM (SELECT id FROM events) q",
-    "error": null,
     "rows": [
       [
         1
@@ -1921,11 +2111,12 @@
     ],
     "columns": [
       "id"
-    ]
+    ],
+    "failure": null,
+    "verified": false
   },
   "duckdb:aggregate-no-group": {
     "sql": "SELECT count(*) AS n FROM events",
-    "error": null,
     "rows": [
       [
         2
@@ -1933,11 +2124,12 @@
     ],
     "columns": [
       "n"
-    ]
+    ],
+    "failure": null,
+    "verified": true
   },
   "trino:aggregate-no-group": {
     "sql": "SELECT count(*) AS n FROM events",
-    "error": null,
     "rows": [
       [
         2
@@ -1945,11 +2137,12 @@
     ],
     "columns": [
       "n"
-    ]
+    ],
+    "failure": null,
+    "verified": false
   },
   "doris:aggregate-no-group": {
     "sql": "SELECT count(*) AS n FROM events",
-    "error": null,
     "rows": [
       [
         2
@@ -1957,58 +2150,67 @@
     ],
     "columns": [
       "n"
-    ]
+    ],
+    "failure": null,
+    "verified": false
   },
   "duckdb:aggregate-group-expression-alias": {
     "sql": "SELECT price+qty AS bucket,count(*) AS n FROM events GROUP BY price+qty ORDER BY bucket",
-    "error": null,
     "rows": null,
     "columns": [
       "bucket",
       "n"
-    ]
+    ],
+    "failure": null,
+    "verified": true
   },
   "trino:aggregate-group-expression-alias": {
     "sql": "SELECT price+qty AS bucket,count(*) AS n FROM events GROUP BY price+qty ORDER BY bucket",
-    "error": null,
     "rows": null,
     "columns": [
       "bucket",
       "n"
-    ]
+    ],
+    "failure": null,
+    "verified": false
   },
   "doris:aggregate-group-expression-alias": {
     "sql": "SELECT price+qty AS bucket,count(*) AS n FROM events GROUP BY price+qty ORDER BY bucket",
-    "error": null,
     "rows": null,
     "columns": [
       "bucket",
       "n"
-    ]
+    ],
+    "failure": null,
+    "verified": false
   },
   "duckdb:self-join-same-slot": {
     "sql": "SELECT id FROM events e JOIN events f ON e.id=f.id",
-    "error": "Ambiguous reference",
-    "rows": null
+    "rows": null,
+    "failure": {
+      "kind": "REJECTION",
+      "messageContains": "Ambiguous reference"
+    },
+    "verified": true
   },
   "duckdb:called-slot-not-shadowed-by-cte": {
-    "sql": "WITH src AS (SELECT code FROM customers) SELECT id FROM events",
-    "error": null,
+    "sql": "WITH range AS (SELECT 99 AS x) SELECT * FROM range(2)",
     "rows": [
       [
-        1
+        0
       ],
       [
-        2
+        1
       ]
     ],
+    "failure": null,
+    "verified": true,
     "columns": [
-      "id"
+      "range"
     ]
   },
   "duckdb:quoted-source-alias": {
     "sql": "SELECT \"Odd Alias\".id FROM events AS \"Odd Alias\"",
-    "error": null,
     "rows": [
       [
         1
@@ -2019,11 +2221,12 @@
     ],
     "columns": [
       "id"
-    ]
+    ],
+    "failure": null,
+    "verified": true
   },
   "trino:quoted-source-alias": {
     "sql": "SELECT \"Odd Alias\".id FROM events AS \"Odd Alias\"",
-    "error": null,
     "rows": [
       [
         1
@@ -2034,11 +2237,12 @@
     ],
     "columns": [
       "id"
-    ]
+    ],
+    "failure": null,
+    "verified": false
   },
   "doris:quoted-source-alias": {
-    "sql": "SELECT \"Odd Alias\".id FROM events AS \"Odd Alias\"",
-    "error": null,
+    "sql": "SELECT `Odd Alias`.id FROM events AS `Odd Alias`",
     "rows": [
       [
         1
@@ -2047,58 +2251,67 @@
         2
       ]
     ],
+    "failure": null,
+    "verified": false,
     "columns": [
       "id"
     ]
   },
   "duckdb:pivot-surviving-key": {
     "sql": "SELECT * FROM (SELECT id,event_kind,qty FROM events) PIVOT(sum(qty) FOR event_kind IN ('a' AS a,'b' AS b))",
-    "error": null,
     "rows": null,
     "columns": [
       "id",
       "a",
       "b"
-    ]
+    ],
+    "failure": null,
+    "verified": true
   },
   "trino:pivot-surviving-key": {
     "sql": "SELECT id,SUM(CASE WHEN event_kind='a' THEN qty END) AS a,SUM(CASE WHEN event_kind='b' THEN qty END) AS b FROM events GROUP BY id",
-    "error": null,
     "rows": null,
     "columns": [
       "id",
       "a",
       "b"
-    ]
+    ],
+    "failure": null,
+    "verified": false
   },
   "duckdb:unpivot-include-nulls": {
     "sql": "SELECT * FROM nullable_measures UNPIVOT INCLUDE NULLS (value FOR metric IN (price,qty))",
-    "error": null,
     "rows": null,
     "columns": [
       "id",
       "metric",
       "value"
-    ]
+    ],
+    "failure": null,
+    "verified": true
   },
   "trino:unpivot-include-nulls": {
     "sql": "SELECT e.id,u.metric,u.value FROM nullable_measures e CROSS JOIN LATERAL (VALUES ('price',e.price),('qty',e.qty)) AS u(metric,value)",
-    "error": null,
     "rows": null,
     "columns": [
       "id",
       "metric",
       "value"
-    ]
+    ],
+    "failure": null,
+    "verified": false
   },
   "duckdb:unknown-table": {
     "sql": "SELECT id FROM not_here",
-    "error": "does not exist",
-    "rows": null
+    "rows": null,
+    "failure": {
+      "kind": "REJECTION",
+      "messageContains": "does not exist"
+    },
+    "verified": true
   },
   "duckdb:references-without-caret": {
     "sql": "SELECT e.id,e.event_kind FROM events e",
-    "error": null,
     "rows": [
       [
         1,
@@ -2112,11 +2325,12 @@
     "columns": [
       "id",
       "event_kind"
-    ]
+    ],
+    "failure": null,
+    "verified": true
   },
   "trino:references-without-caret": {
     "sql": "SELECT e.id,e.event_kind FROM events e",
-    "error": null,
     "rows": [
       [
         1,
@@ -2130,11 +2344,12 @@
     "columns": [
       "id",
       "event_kind"
-    ]
+    ],
+    "failure": null,
+    "verified": false
   },
   "doris:references-without-caret": {
     "sql": "SELECT e.id,e.event_kind FROM events e",
-    "error": null,
     "rows": [
       [
         1,
@@ -2148,33 +2363,252 @@
     "columns": [
       "id",
       "event_kind"
-    ]
+    ],
+    "failure": null,
+    "verified": false
   },
   "duckdb:portable-group-expression": {
     "sql": "SELECT event_kind AS kind,count(*) AS n FROM events GROUP BY event_kind",
-    "error": null,
     "rows": null,
     "columns": [
       "kind",
       "n"
-    ]
+    ],
+    "failure": null,
+    "verified": true
   },
   "trino:portable-group-expression": {
     "sql": "SELECT event_kind AS kind,count(*) AS n FROM events GROUP BY event_kind",
-    "error": null,
     "rows": null,
     "columns": [
       "kind",
       "n"
-    ]
+    ],
+    "failure": null,
+    "verified": false
   },
   "doris:portable-group-expression": {
     "sql": "SELECT event_kind AS kind,count(*) AS n FROM events GROUP BY event_kind",
-    "error": null,
     "rows": null,
     "columns": [
       "kind",
       "n"
+    ],
+    "failure": null,
+    "verified": false
+  },
+  "duckdb:mixed-case-column-folding": {
+    "sql": "SELECT e.eventkind FROM camel_events e",
+    "rows": [
+      [
+        "a"
+      ],
+      [
+        null
+      ]
+    ],
+    "failure": null,
+    "verified": true,
+    "columns": [
+      "eventKind"
+    ]
+  },
+  "trino:mixed-case-column-folding": {
+    "sql": "SELECT e.eventkind FROM camel_events e",
+    "rows": [
+      [
+        "a"
+      ],
+      [
+        null
+      ]
+    ],
+    "failure": null,
+    "verified": false,
+    "columns": [
+      "eventKind"
+    ]
+  },
+  "doris:mixed-case-column-folding": {
+    "sql": "SELECT e.eventkind FROM camel_events e",
+    "rows": [
+      [
+        "a"
+      ],
+      [
+        null
+      ]
+    ],
+    "failure": null,
+    "verified": false,
+    "columns": [
+      "eventKind"
+    ]
+  },
+  "duckdb:quoted-case-duckdb": {
+    "sql": "SELECT e.\"eventKind\" FROM camel_events e",
+    "rows": [
+      [
+        "a"
+      ],
+      [
+        null
+      ]
+    ],
+    "failure": null,
+    "verified": true,
+    "columns": [
+      "eventKind"
+    ]
+  },
+  "trino:quoted-case-sensitive": {
+    "sql": "SELECT e.\"eventKind\" FROM camel_events e",
+    "rows": [
+      [
+        "a"
+      ],
+      [
+        null
+      ]
+    ],
+    "failure": null,
+    "verified": false,
+    "columns": [
+      "eventKind"
+    ]
+  },
+  "duckdb:left-using-star-output-order": {
+    "sql": "SELECT * FROM (SELECT * FROM events e LEFT JOIN customers r USING (id)) q",
+    "rows": null,
+    "failure": null,
+    "verified": true,
+    "columns": [
+      "id",
+      "event_kind",
+      "price",
+      "qty",
+      "code"
+    ]
+  },
+  "trino:left-using-star-output-order": {
+    "sql": "SELECT * FROM (SELECT * FROM events e LEFT JOIN customers r USING (id)) q",
+    "rows": null,
+    "failure": null,
+    "verified": false,
+    "columns": [
+      "id",
+      "event_kind",
+      "price",
+      "qty",
+      "code"
+    ]
+  },
+  "duckdb:natural-star-output-order": {
+    "sql": "SELECT * FROM (SELECT * FROM events e NATURAL JOIN customers r) q",
+    "rows": null,
+    "failure": null,
+    "verified": true,
+    "columns": [
+      "id",
+      "event_kind",
+      "price",
+      "qty",
+      "code"
+    ]
+  },
+  "trino:natural-star-output-order": {
+    "sql": "SELECT * FROM (SELECT * FROM events e NATURAL JOIN customers r) q",
+    "rows": null,
+    "failure": null,
+    "verified": false,
+    "columns": [
+      "id",
+      "event_kind",
+      "price",
+      "qty",
+      "code"
+    ]
+  },
+  "duckdb:join-after-drop-without-as": {
+    "sql": "SELECT r.code FROM (SELECT id,event_kind,price FROM events) q JOIN customers r ON q.price=r.id",
+    "rows": null,
+    "failure": null,
+    "verified": true,
+    "columns": [
+      "code"
+    ]
+  },
+  "trino:join-after-drop-without-as": {
+    "sql": "SELECT r.code FROM (SELECT id,event_kind,price FROM events) q JOIN customers r ON q.price=r.id",
+    "rows": null,
+    "failure": null,
+    "verified": false,
+    "columns": [
+      "code"
+    ]
+  },
+  "duckdb:camel-case-upper-folding": {
+    "sql": "SELECT e.EVENTKIND FROM camel_events e",
+    "rows": [
+      [
+        "a"
+      ],
+      [
+        null
+      ]
+    ],
+    "failure": null,
+    "verified": true,
+    "columns": [
+      "eventKind"
+    ]
+  },
+  "trino:camel-case-upper-folding": {
+    "sql": "SELECT e.EVENTKIND FROM camel_events e",
+    "rows": [
+      [
+        "a"
+      ],
+      [
+        null
+      ]
+    ],
+    "failure": null,
+    "verified": false,
+    "columns": [
+      "eventKind"
+    ]
+  },
+  "doris:camel-case-upper-folding": {
+    "sql": "SELECT e.EVENTKIND FROM camel_events e",
+    "rows": [
+      [
+        "a"
+      ],
+      [
+        null
+      ]
+    ],
+    "failure": null,
+    "verified": false,
+    "columns": [
+      "eventKind"
+    ]
+  },
+  "duckdb:ordinary-slot-implicit-qualifier": {
+    "sql": "SELECT range.range FROM range(2)",
+    "rows": [
+      [
+        0
+      ],
+      [
+        1
+      ]
+    ],
+    "failure": null,
+    "verified": true,
+    "columns": [
+      "range"
     ]
   }
 }

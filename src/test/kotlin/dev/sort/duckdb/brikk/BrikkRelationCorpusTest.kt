@@ -36,6 +36,7 @@ import dev.brikk.house.sql.shape.SqlFragment
 import dev.brikk.house.sql.shape.ShapeCatalog
 import dev.brikk.house.sql.shape.Shape
 import dev.brikk.house.sql.shape.ColumnShape
+import dev.brikk.house.sql.generator.UnsupportedError
 import dev.sort.duckdb.DuckdbDbms
 import dev.sort.duckdb.sql.DuckdbSqlDialect
 import dev.sort.duckdb.pipes.DuckdbPipesSettings
@@ -107,14 +108,25 @@ class BrikkRelationCorpusTest : BasePlatformTestCase() {
     ).run()
 
     fun testCurrentRelationImplementationsAgainstAcceptanceCorpus() {
-        assertEquals(2, facts.int("version"))
+        assertEquals("2.1", facts.string("version"))
         assertEquals(cases.size, cases.map { it.string("id") }.toSet().size)
+        val usedWitnesses = cases.flatMap { case ->
+            assertTrue(case.string("id"), case.string("catalogKnowledge") in setOf("CLOSED", "UNKNOWN"))
+            case.getValue("engine").jsonObject.mapNotNull { (dialect, witness) ->
+                if (witness == JsonNull) null else {
+                    assertTrue(case.string("id"), JsonPrimitive(dialect) in case.array("dialects"))
+                    val key = witness.jsonPrimitive.content
+                    val oracle = witnesses.getValue(key).jsonObject
+                    assertFalse(key, "error" in oracle || "expectFailure" in oracle)
+                    assertEquals(key, dialect == "duckdb", oracle.getValue("verified").jsonPrimitive.boolean)
+                    key
+                }
+            }
+        }.toSet()
+        assertEquals("No orphan native witnesses", usedWitnesses, witnesses.keys)
         val baseline = Json.parseToJsonElement(resource("duckdb-disagreements.json")).jsonObject
         val shared = baseline.getValue("shared").jsonObject
-        val runtime = baseline.getValue("runtimes").jsonObject[ApplicationInfo.getInstance().build.baselineVersion.toString()]?.jsonObject.orEmpty()
-        val known = JsonObject((shared.keys + runtime.keys).associateWith { id ->
-            JsonArray((shared[id]?.jsonArray.orEmpty() + runtime[id]?.jsonArray.orEmpty()).distinct())
-        })
+        val known = shared
         assertTrue(known.keys.all { id -> cases.any { it.string("id") == id } })
         val differences = ArrayList<JsonObject>()
         val results = ArrayList<JsonObject>()
@@ -178,6 +190,14 @@ class BrikkRelationCorpusTest : BasePlatformTestCase() {
                 observed["completion"] = JsonArray(completions)
                 if (orders.isNotEmpty()) observed["order"] = JsonArray(orders)
                 case["coreOrder"]?.let { observed["coreOrder"] = coreOrder(case) }
+                case["coreRefusal"]?.let {
+                    observed["coreRefusal"] = JsonPrimitive(try {
+                        SqlFragment(sql, "duckdb").toExecutable("duckdb")
+                        false
+                    } catch (_: UnsupportedError) {
+                        true
+                    })
+                }
                 observed
             }
             val allowed = known[id]?.jsonArray?.map { it.jsonPrimitive.content }?.toSet().orEmpty()
@@ -205,6 +225,7 @@ class BrikkRelationCorpusTest : BasePlatformTestCase() {
                 put("dialects", case.getValue("dialects")); put("positions", JsonArray(case.array("carets").map { caret ->
                     buildJsonObject { put("offset", caret.jsonObject.int("offset")); put("kind", caret.jsonObject.string("positionKind")) }
                 }))
+                put("catalogKnowledge", case.getValue("catalogKnowledge"))
                 case.getValue("engine").jsonObject["duckdb"]?.takeUnless { it == JsonNull }?.let { witness ->
                     put("engine", engine(witnesses.getValue(witness.jsonPrimitive.content).jsonObject, id))
                 }
@@ -395,6 +416,7 @@ class BrikkRelationCorpusTest : BasePlatformTestCase() {
                 put("offset", caret.int("offset")); put("columns", strings(caret.array("columns").map { expectedColumn(it).string("name") }))
             } }))
             case["coreOrder"]?.let { put("coreOrder", it) }
+            case["coreRefusal"]?.let { put("coreRefusal", it) }
         }
     }
 
@@ -569,10 +591,10 @@ class BrikkRelationCorpusTest : BasePlatformTestCase() {
 
     private fun engine(oracle: JsonObject, id: String): JsonObject = DriverManager.getConnection("jdbc:duckdb:").use { connection ->
         facts.getValue("engineSetup").jsonObject.getValue("duckdb").jsonArray.forEach { sql -> connection.createStatement().use { it.execute(sql.jsonPrimitive.content) } }
-        val wantedError = oracle.stringOrNull("error")
+        val wantedFailure = oracle["failure"]?.takeUnless { it == JsonNull }?.jsonObject
         try {
             connection.createStatement().use { statement -> statement.executeQuery(oracle.string("sql")).use { rows ->
-                assertNull("$id engine must reject the authored SQL", wantedError)
+                assertNull("$id engine must reject the authored SQL", wantedFailure)
                 for (index in 1..rows.metaData.columnCount) {
                     columns["computed.${rows.metaData.getColumnLabel(index)}"]?.jsonObject?.stringOrNull("sqlType")?.let { type ->
                         assertEquals("$id native computed SQL type", type, rows.metaData.getColumnTypeName(index))
@@ -586,15 +608,21 @@ class BrikkRelationCorpusTest : BasePlatformTestCase() {
                 oracle["rows"]?.takeUnless { it == JsonNull }?.let { assertEquals("$id engine rows", sorted(it.jsonArray), sorted(data)) }
                 oracle["columns"]?.let { assertEquals("$id engine column order", it, strings((1..rows.metaData.columnCount).map(rows.metaData::getColumnLabel))) }
                 buildJsonObject {
+                    put("verified", true); put("failure", JsonNull)
                     put("sql", oracle.getValue("sql")); put("rows", JsonArray(data))
                     put("columns", strings((1..rows.metaData.columnCount).map(rows.metaData::getColumnLabel)))
                     put("types", strings((1..rows.metaData.columnCount).map(rows.metaData::getColumnTypeName)))
                 }
             } }
         } catch (failure: SQLException) {
-            assertNotNull("$id unexpected native failure: ${failure.message}", wantedError)
-            assertTrue("$id native failure: ${failure.message}", failure.message.orEmpty().contains(wantedError!!, ignoreCase = true))
-            buildJsonObject { put("sql", oracle.getValue("sql")); put("error", failure.message) }
+            assertNotNull("$id unexpected native failure: ${failure.message}", wantedFailure)
+            wantedFailure?.stringOrNull("messageContains")?.let { message ->
+                assertTrue("$id native failure: ${failure.message}", failure.message.orEmpty().contains(message, ignoreCase = true))
+            }
+            buildJsonObject {
+                put("sql", oracle.getValue("sql")); put("verified", true)
+                put("failure", buildJsonObject { put("kind", "REJECTION"); put("message", failure.message) })
+            }
         }
     }
 

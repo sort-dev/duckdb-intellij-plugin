@@ -20,6 +20,9 @@
       "resolve",
       "scope"
     ],
+    "camel-case-upper-folding": [
+      "completion"
+    ],
     "contract-origin": [
       "completion"
     ],
@@ -40,6 +43,10 @@
       "completion",
       "scope"
     ],
+    "join-after-drop-without-as": [
+      "diagnostics",
+      "scope"
+    ],
     "join-ambiguous": [
       "completion",
       "resolve"
@@ -48,9 +55,16 @@
       "completion",
       "diagnostics",
       "navigation",
-      "order",
       "references",
       "resolve",
+      "scope"
+    ],
+    "left-using-star-output-order": [
+      "completion",
+      "diagnostics",
+      "navigation",
+      "order",
+      "references",
       "scope"
     ],
     "local-alias-shadow": [
@@ -58,17 +72,22 @@
       "scope"
     ],
     "mixed-case-column-folding": [
-      "completion",
-      "navigation",
-      "resolve"
+      "completion"
     ],
     "natural-merged-star": [
       "completion",
       "diagnostics",
       "navigation",
-      "order",
       "references",
       "resolve",
+      "scope"
+    ],
+    "natural-star-output-order": [
+      "completion",
+      "diagnostics",
+      "navigation",
+      "order",
+      "references",
       "scope"
     ],
     "nested-cte-shadow": [
@@ -130,6 +149,9 @@
       "resolve",
       "scope"
     ],
+    "ordinary-slot-implicit-qualifier": [
+      "completion"
+    ],
     "ordinary-star-join-cte-duckdb": [
       "completion",
       "diagnostics",
@@ -149,6 +171,9 @@
       "scope"
     ],
     "parenthesized-lineage": [
+      "completion"
+    ],
+    "parenthesized-pipe-input": [
       "completion"
     ],
     "physical-mixed-pipe": [
@@ -186,6 +211,22 @@
       "diagnostics"
     ],
     "pipe-call-unknown-output": [
+      "scope"
+    ],
+    "pipe-distinct-multi-source-qualifier-refused": [
+      "completion",
+      "diagnostics",
+      "navigation",
+      "references",
+      "resolve",
+      "scope"
+    ],
+    "pipe-distinct-unaliased-qualifier-refused": [
+      "completion",
+      "diagnostics",
+      "navigation",
+      "references",
+      "resolve",
       "scope"
     ],
     "pipe-drop": [
@@ -236,6 +277,38 @@
       "resolve",
       "scope"
     ],
+    "pipe-limit-multi-source-qualifier-refused": [
+      "completion",
+      "diagnostics",
+      "navigation",
+      "references",
+      "resolve",
+      "scope"
+    ],
+    "pipe-limit-unaliased-qualifier-refused": [
+      "completion",
+      "diagnostics",
+      "navigation",
+      "references",
+      "resolve",
+      "scope"
+    ],
+    "pipe-offset-multi-source-qualifier-refused": [
+      "completion",
+      "diagnostics",
+      "navigation",
+      "references",
+      "resolve",
+      "scope"
+    ],
+    "pipe-offset-unaliased-qualifier-refused": [
+      "completion",
+      "diagnostics",
+      "navigation",
+      "references",
+      "resolve",
+      "scope"
+    ],
     "pipe-pivot": [
       "completion",
       "references",
@@ -255,7 +328,11 @@
       "scope"
     ],
     "pipe-select-hides-alias": [
+      "completion",
       "diagnostics"
+    ],
+    "pipe-select-rename-lineage": [
+      "completion"
     ],
     "pipe-semi-right-hidden": [
       "diagnostics"
@@ -361,6 +438,7 @@
       "completion"
     ],
     "q13-drops-aggregate": [
+      "completion",
       "diagnostics"
     ],
     "q13-drops-drop": [
@@ -392,6 +470,7 @@
       "scope"
     ],
     "q13-drops-select": [
+      "completion",
       "diagnostics"
     ],
     "q13-drops-set": [
@@ -421,15 +500,17 @@
       "completion"
     ],
     "quoted-case-duckdb": [
-      "navigation"
+      "resolve"
     ],
     "quoted-source-alias": [
       "completion",
       "resolve"
     ],
+    "select-first-pipe": [
+      "completion"
+    ],
     "self-join-same-slot": [
       "completion",
-      "navigation",
       "resolve"
     ],
     "set-column-count-mismatch": [
@@ -477,6 +558,9 @@
       "resolve",
       "scope"
     ],
+    "unknown-table-open-catalog": [
+      "diagnostics"
+    ],
     "unpivot-include-nulls": [
       "completion",
       "order",
@@ -486,39 +570,13 @@
     ],
     "utf16-after-emoji-bind": [
       "completion"
-    ],
-    "parenthesized-pipe-input": [
-      "completion"
-    ],
-    "pipe-select-hides-alias": [
-      "completion",
-      "diagnostics"
-    ],
-    "q13-drops-select": [
-      "completion",
-      "diagnostics"
-    ],
-    "select-first-pipe": [
-      "completion"
-    ],
-    "q13-drops-aggregate": [
-      "completion",
-      "diagnostics"
-    ],
-    "pipe-select-rename-lineage": [
-      "completion"
     ]
-  },
-  "runtimes": {
-    "261": {},
-    "262": {},
-    "263": {}
   },
   "prunedV1Flags": [
     "pipe-select-rename-lineage/completion",
     "pipe-select-hides-alias/completion"
   ],
   "notes": [
-    "After 67c74a6 adoption the six PIPE fallback/duplicate completion axes reproduce on all three runtimes, so they are shared known differences. Semantic expectations remain unchanged; v2.1 will disable completion auto-insert and prove repeatability."
+    "All completion observations disable auto-insert. Six former runtime-specific axes are shared known PIPE fallback/duplicate-entry differences; semantic expectations are not bypassed."
   ]
 }
