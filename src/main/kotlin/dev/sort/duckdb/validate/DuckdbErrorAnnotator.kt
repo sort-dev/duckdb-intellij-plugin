@@ -20,8 +20,7 @@ import dev.brikk.house.sql.parser.SyntacticRange
 import dev.brikk.house.sql.parser.TokenError
 import dev.brikk.house.sql.shape.ShapeError
 import dev.sort.duckdb.brikk.BrikkDuckdbProfile
-import dev.sort.duckdb.brikk.BrikkSqlEditorSupport
-import dev.sort.duckdb.brikk.BrikkSqlScopes
+import dev.brikk.house.sql.shape.SqlFragment
 import dev.sort.duckdb.pipes.DuckdbPipeDialect
 import dev.sort.duckdb.sql.DuckdbSqlDialect
 
@@ -52,7 +51,7 @@ internal object DuckdbNativeErrorProfile : NativeErrorProfile {
             it.copy(binds = it.binds.toList(), slots = it.slots.toList(), issues = it.issues.toList())
         }
         val state = State(DuckdbPipeDialect.isEditingEnabled(file), brikk,
-            if (brikk == null) emptySet() else BrikkSqlEditorSupport.contracts(file).keys.toSet())
+            brikk?.slots?.toSet().orEmpty())
         val previous = file.getUserData(stateKey)
         if (previous?.state == state) return previous
         return Revision(state, (previous?.count ?: 0) + 1).also { file.putUserData(stateKey, it) }
@@ -66,7 +65,7 @@ internal object DuckdbNativeErrorProfile : NativeErrorProfile {
             // Brikk fragments still require exactly one statement, checked once over the whole text.
             if (statement.start != 0 || state.brikk.issues.isNotEmpty()) return emptyList()
             val refusal = try {
-                BrikkSqlScopes.parse(script, state.slots)
+                SqlFragment(script, "duckdb").ast
                 null
             } catch (e: ParseError) {
                 val first = e.errors.firstOrNull()

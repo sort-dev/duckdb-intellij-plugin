@@ -48,13 +48,13 @@ class BrikkCompilerRelationTest : BrikkRelationEditingTest() {
             @BrikkSql fun query(rows: Rel<SourceOut>) = Sql.duckdb("SELECT r.code FROM ${'$'}rows() AS r")
         """.trimIndent())
         val file = injected(host)
-        val result = BrikkRelationProvider.forFile(file)["rows"]
+        val result = brikkContracts(file)["rows"]
         assertTrue(result.toString(), result is ShapeResult.Available)
         val shape = (result as ShapeResult.Available).shape
         assertEquals(ShapeKnowledge.FULL, shape.knowledge)
         assertEquals(setOf("id", "code"), shape.columns.map { it.name }.toSet())
         val reference = PsiTreeUtil.findChildrenOfType(file, SqlReferenceExpression::class.java).first { it.text == "r.code" }
-        val analysis = BrikkSqlEditorSupport.analysis(file)
+        val analysis = brikkScope(file)
         assertNotNull("Generated column resolution: range=${reference.reference.rangeInElement}, " +
             "element=${reference.reference.element.text}, analysis=$analysis, variants=${reference.reference.multiResolve(false).toList()}",
             reference.reference.resolve())
@@ -69,7 +69,7 @@ class BrikkCompilerRelationTest : BrikkRelationEditingTest() {
             @BrikkSql fun <T : HasId> extend(src: Rel<T>) = Sql.duckdb("FROM ${'$'}src() |> EXTEND 2 AS added")
             fun use() { val refined = extend(source()); println(refined) }
         """.trimIndent())
-        val genericShape = (BrikkRelationProvider.forFile(injected(host))["src"] as ShapeResult.Available).shape
+        val genericShape = (brikkContracts(injected(host))["src"] as ShapeResult.Available).shape
         assertEquals(setOf("id"), genericShape.columns.map { it.name }.toSet())
         assertEquals(ShapeKnowledge.PARTIAL, genericShape.knowledge)
         val expression = PsiTreeUtil.findChildrenOfType(myFixture.file, KtCallExpression::class.java)

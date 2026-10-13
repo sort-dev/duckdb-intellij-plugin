@@ -2,8 +2,8 @@ package dev.sort.duckdb.pipes
 
 import com.intellij.psi.PsiFile
 import dev.brikk.house.sql.intellij.pipe.PipeStageCompletionContributor
-import dev.brikk.house.sql.shape.ShapeCatalog
 
 class DuckdbPipesCompletionContributor : PipeStageCompletionContributor(DuckdbPipeDialect) {
-    override fun inputCatalog(file: PsiFile, input: String) = ShapeCatalog.EMPTY
+    // The shared relation contributor owns all columns, including offline computed outputs.
+    override fun inputCatalog(file: PsiFile, input: String) = null
 }

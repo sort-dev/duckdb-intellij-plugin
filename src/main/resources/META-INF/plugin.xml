@@ -131,7 +131,7 @@
     <depends>com.intellij.modules.platform</depends>
     <depends>com.intellij.database</depends>
     <extensionPoints>
-        <extensionPoint qualifiedName="dev.sort.duckdb.brikkRelations" interface="dev.sort.duckdb.brikk.BrikkRelationProvider" dynamic="true"/>
+        <extensionPoint qualifiedName="dev.sort.duckdb.relationFacts" interface="dev.brikk.house.sql.intellij.relation.ExternalRelationFacts" dynamic="true"/>
     </extensionPoints>
     <depends optional="true" config-file="duckdb-kotlin.xml">org.jetbrains.kotlin</depends>
     <extensions defaultExtensionNs="org.jetbrains.kotlin">
@@ -140,11 +140,11 @@
     <xi:include href="/META-INF/duckdb-pipes.xml" xpointer="xpointer(/idea-plugin/*)"/>
 
     <extensions defaultExtensionNs="com.intellij">
-        <sql.resolveExtension implementation="dev.sort.duckdb.brikk.BrikkSqlResolveExtension"/>
-        <sql.inspectionSuppressorDelegate implementation="dev.sort.duckdb.brikk.BrikkSqlInspectionSuppressor"/>
-        <completion.contributor language="DuckDBSQL" implementationClass="dev.sort.duckdb.brikk.BrikkSqlCompletionContributor" order="first"/>
-        <gotoDeclarationHandler implementation="dev.sort.duckdb.brikk.BrikkSqlGotoDeclarationHandler"/>
-        <annotator language="DuckDBSQL" implementationClass="dev.sort.duckdb.brikk.BrikkSqlContractAnnotator"/>
+        <sql.resolveExtension implementation="dev.sort.duckdb.brikk.DuckdbRelationResolveExtension"/>
+        <sql.inspectionSuppressorDelegate implementation="dev.sort.duckdb.brikk.DuckdbRelationInspectionSuppressor"/>
+        <completion.contributor language="DuckDBSQL" implementationClass="dev.sort.duckdb.brikk.DuckdbRelationCompletionContributor" order="first"/>
+        <gotoDeclarationHandler implementation="dev.sort.duckdb.brikk.DuckdbRelationGotoDeclarationHandler"/>
+        <annotator language="DuckDBSQL" implementationClass="dev.sort.duckdb.brikk.DuckdbRelationAnnotator"/>
         <lang.parserDefinition language="DuckDBSQL" implementationClass="dev.sort.duckdb.sql.DuckdbParserDefinition"/>
         <lang.commenter language="DuckDBSQL" implementationClass="com.intellij.database.sql.common.core.psi.impl.support.SqlNestedCommenter"/>
         <lang.quoteHandler language="DuckDBSQL" implementationClass="dev.sort.duckdb.sql.DuckdbQuoteHandler"/>

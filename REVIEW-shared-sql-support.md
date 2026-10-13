@@ -459,3 +459,32 @@ errors alone are filtered rather than marking the whole SQL Frankenstein.
 Added three injection tests, also inherited by the relation-editing fixture, for
 six new test instances; none deleted. Default/present-equivalent 261/262/263 lanes:
 288 tests, nine skips. Absent lanes: 213, nine skips. Isolation: two. Census: 226/226.
+
+### Step 3: shared relation features
+
+One `DuckdbRelationProfile` registers the five shared feature subclasses, with a
+stable helper adapter from `ExternalRelationFacts.of` before `DasRelationFacts`.
+The optional helper contributes Brikk labels and navigation, not a second SQL
+analyzer. The legacy PIPE contributor now offers stage phrases only, preventing
+duplicate column suggestions from its separate shape fallback.
+
+Deleted nine production files (522 lines): `BrikkRelationProvider` (16),
+`BrikkSqlScopes` (226), `BrikkSqlEditorSupport` (36), `BrikkSqlResolveExtension`
+(86), `BrikkSqlInspectionSuppressor` (18), `BrikkSqlCompletionContributor` (54),
+`BrikkSqlGotoDeclarationHandler` (31), `BrikkSqlContractAnnotator` (38) and
+`KotlinBrikkRelationProvider` (17). Deleted the old scope-test file (139 lines,
+15 tests), replaced by seven tests of core's analyzer. Added a physical PIPE
+completion test and a lineage/icon test. Helper-inventory tests now ask the helper
+directly. The corpus fixture is being moved to public core facts/analysis; its
+full observation assessment is step 6.
+
+Visible changes: physical table columns now complete in PIPE with `column
+(<table>)` labels and SQL types. Known renames retain Kotlin types, Brikk labels
+and bricks icons; computed columns use the column icon. Shared missing/partial
+messages are `Unknown column 'x'` and `Column 'x' is not in the partial relation
+contract`. Shared scope rules replace DuckDB's divergent alias/stage propagation.
+
+The targeted feature lane passes 53 tests. The first corpus observation drops
+from 394 to 179 differences, with new native-observation differences still rejected
+by its old ledger. No corpus expectations were changed; the ledger and complete
+repeatability assessment remain for step 6.

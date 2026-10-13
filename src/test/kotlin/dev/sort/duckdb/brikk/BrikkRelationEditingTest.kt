@@ -31,7 +31,7 @@ open class BrikkRelationEditingTest : BrikkDuckdbInjectionTest() {
 
     fun testInheritedInputColumnsAndNullableTypesComeFromSharedHelper() {
         val host = configure("$traits\n@BrikkSql fun <T : CleanEvent> query(events: Rel<T>) = Sql.duckdb(\"FROM \$events() |> WHERE id > 0\")")
-        val relations = BrikkRelationProvider.forFile(injected(host))
+        val relations = brikkContracts(injected(host))
         val shape = (relations["events"] as ShapeResult.Available).shape
         assertEquals(ShapeKnowledge.PARTIAL, shape.knowledge)
         assertEquals(setOf("id", "tenant", "event_at", "amount"), shape.columns.map { it.name }.toSet())
@@ -52,7 +52,7 @@ open class BrikkRelationEditingTest : BrikkDuckdbInjectionTest() {
     fun testInputTraitEditRefreshesWithoutEditingTheSqlString() {
         var host = configure("$traits\n@BrikkSql fun query(events: Rel<CleanEvent>) = Sql.duckdb(\"SELECT id FROM \$events()\")")
         val file = injected(host)
-        assertEquals(4, (BrikkRelationProvider.forFile(file)["events"] as ShapeResult.Available).shape.columns.size)
+        assertEquals(4, (brikkContracts(file)["events"] as ShapeResult.Available).shape.columns.size)
         WriteCommandAction.runWriteCommandAction(project) {
             val text = myFixture.editor.document.text
             val at = text.indexOf("val amount: BigDecimal?")
@@ -60,7 +60,7 @@ open class BrikkRelationEditingTest : BrikkDuckdbInjectionTest() {
         }
         PsiDocumentManager.getInstance(project).commitAllDocuments()
         host = PsiTreeUtil.findChildrenOfType(myFixture.file, KtStringTemplateExpression::class.java).last()
-        val shape = (BrikkRelationProvider.forFile(injected(host))["events"] as ShapeResult.Available).shape
+        val shape = (brikkContracts(injected(host))["events"] as ShapeResult.Available).shape
         assertTrue(shape.columns.any { it.name == "region" })
     }
     fun testPipeCompletionShowsContractColumnsAfterAFilter() {
@@ -69,7 +69,7 @@ open class BrikkRelationEditingTest : BrikkDuckdbInjectionTest() {
         myFixture.completeBasic()
         assertTrue("Expected amount completion, lookup=${myFixture.lookupElementStrings}; text=${myFixture.editor.document.text}",
             myFixture.lookupElementStrings.orEmpty().contains("amount") || myFixture.editor.document.text.contains("WHERE amount"))
-        assertTrue(BrikkSqlEditorSupport.contracts(file).containsKey("events"))
+        assertTrue(brikkContracts(file).containsKey("events"))
     }
     fun testOfflinePipeAliasesStillCompleteInBrikkFiles() {
         val host = configure("@BrikkSql fun query() = Sql.duckdb(\"FROM range(3) |> SELECT range AS my_output |> WHERE my_ou<caret>\")")
@@ -87,12 +87,12 @@ open class BrikkRelationEditingTest : BrikkDuckdbInjectionTest() {
     }
     fun testJoinScopesAndAmbiguousColumnsAreNotFlattenedToOneType() {
         val host = configure("$traits\n@BrikkSql fun query(events: Rel<CleanEvent>, customers: Rel<CustomerRow>) = " +
-            "Sql.duckdb(\"SELECT e.tenant, c.segment FROM \$events() e LEFT JOIN \$customers() c ON e.tenant=c.tenant\")")
+            "Sql.duckdb(\"SELECT tenant, c.segment FROM \$events() e LEFT JOIN \$customers() c ON e.tenant=c.tenant\")")
         val file = injected(host)
-        val analysis = BrikkSqlEditorSupport.analysis(file)!!
+        val analysis = brikkScope(file)
         val ref = analysis.references.first { it.name == "segment" }
-        assertEquals(ColumnNullability.NULLABLE, ref.scope.candidates("segment", "c").single().second.nullability)
-        assertEquals(2, ref.scope.candidates("tenant").size)
+        assertEquals(dev.brikk.house.sql.scope.Nullability.NULLABLE, ref.columns.single().nullability)
+        assertEquals(2, analysis.references.first { it.name == "tenant" }.columns.size)
     }
 
     fun testRichColumnPresentationFromTheRealContributor() {
@@ -108,6 +108,22 @@ open class BrikkRelationEditingTest : BrikkDuckdbInjectionTest() {
             assertTrue("Expected $name / $type / brikk column (src), got $presentations",
                 presentations.any { it.typeText == type && it.tailText == "  brikk column (src)" })
         }
+    }
+
+    fun testRenamedLineageKeepsBricksAndComputedColumnsUseColumnIcon() {
+        val host = configure("$traits\n@BrikkSql fun query(events: Rel<CleanEvent>) = " +
+            "Sql.duckdb(\"FROM \$events() |> SELECT id AS renamed, 1 AS computed |> WHERE <caret>\")")
+        injected(host)
+        val items = myFixture.completeBasic().orEmpty()
+        val renamed = items.single { it.lookupString == "renamed" }
+        val computed = items.single { it.lookupString == "computed" }
+        val declared = com.intellij.codeInsight.lookup.LookupElementPresentation().also(renamed::renderElement)
+        val calculated = com.intellij.codeInsight.lookup.LookupElementPresentation().also(computed::renderElement)
+        assertEquals("  brikk column (events)", declared.tailText)
+        assertEquals("Long", declared.typeText)
+        assertEquals(dev.brikk.house.sql.intellij.completion.SqlLookupIcons.BrikkColumn, declared.icon)
+        assertTrue(calculated.tailText.orEmpty(), calculated.tailText.orEmpty().contains("computed column"))
+        assertEquals(dev.brikk.house.sql.intellij.completion.SqlLookupStyles.DEFAULT[dev.brikk.house.sql.intellij.completion.SqlLookupKind.RELATION_COLUMN].icon, calculated.icon)
     }
 
     fun testSameNamedColumnsFromJoinAliasesRemainTwoSuggestions() {
@@ -137,8 +153,8 @@ open class BrikkRelationEditingTest : BrikkDuckdbInjectionTest() {
         injected(host)
         myFixture.enableInspections(dev.sort.duckdb.registeredSqlInspection("SqlResolveInspection"))
         val messages = myFixture.doHighlighting().mapNotNull { it.description }
-        assertTrue(messages.toString(), messages.any { it.contains("missing") && it.contains("full relation contract") })
-        assertTrue(messages.toString(), messages.any { it.contains("extra") && it.contains("not guaranteed") })
+        assertTrue(messages.toString(), messages.any { it == "Unknown column 'missing'" })
+        assertTrue(messages.toString(), messages.any { it == "Column 'extra' is not in the partial relation contract" })
     }
     fun testEqualColumnNamesOnTwoSlotsDoNotBecomeATautology() {
         val host = configure("$traits\n@BrikkSql fun query(left: Rel<CleanEvent>, right: Rel<CleanEvent>) = " +
@@ -157,7 +173,7 @@ open class BrikkRelationEditingTest : BrikkDuckdbInjectionTest() {
         """.trimIndent())
         val hosts = PsiTreeUtil.findChildrenOfType(myFixture.file, KtStringTemplateExpression::class.java)
             .filter { it.text.contains("SELECT") }
-        val columns = hosts.map { host -> (BrikkRelationProvider.forFile(injected(host))["src"] as ShapeResult.Available)
+        val columns = hosts.map { host -> (brikkContracts(injected(host))["src"] as ShapeResult.Available)
             .shape.columns.map { it.name } }
         assertEquals(listOf(listOf("first"), listOf("second")), columns)
     }

@@ -32,6 +32,8 @@ import com.intellij.testFramework.RunAll
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import com.intellij.testFramework.ExtensionTestUtil
 import dev.brikk.house.intellij.*
+import dev.brikk.house.sql.scope.*
+import dev.brikk.house.sql.intellij.relation.*
 import dev.brikk.house.sql.intellij.testing.BackgroundErrors
 import dev.brikk.house.sql.intellij.testing.setSqlDialectMapping
 import dev.brikk.house.sql.shape.SqlFragment
@@ -59,7 +61,7 @@ class BrikkRelationCorpusTest : BasePlatformTestCase() {
         .map { Json.parseToJsonElement(it).jsonObject }.toList() }
     private val witnesses by lazy { resource("witnesses.json").let(Json::parseToJsonElement).jsonObject }
     private lateinit var errors: BackgroundErrors
-    private var contracts = emptyMap<String, ShapeResult>()
+    private var relationFacts = RelationFacts()
     private val declarations = LinkedHashMap<String, PsiElement>()
     private val locations = LinkedHashMap<String, SourceLocation>()
     private var physicalColumns = emptySet<String>()
@@ -85,9 +87,11 @@ class BrikkRelationCorpusTest : BasePlatformTestCase() {
                     .addPlace(null, null, host, TextRange(3, host.textLength - 3)).doneInjecting()
             }
         }, testRootDisposable)
-        ExtensionTestUtil.maskExtensions(BrikkRelationProvider.EP, listOf(object : BrikkRelationProvider {
-            override fun relations(file: PsiFile) = contracts
-        }), testRootDisposable)
+        ExtensionTestUtil.maskExtensions(DuckdbRelationProfile.FACTS, listOf(ExternalRelationFacts.of(
+            labels = RelationColumnLabels(declared = "brikk column", declaredKind = dev.brikk.house.sql.intellij.completion.SqlLookupKind.BRIKK_COLUMN,
+                contractKind = dev.brikk.house.sql.intellij.completion.SqlLookupKind.BRIKK_COLUMN),
+            navigationTarget = { _, id -> columns[id]?.jsonObject?.stringOrNull("navigationId")?.let(declarations::get) },
+        ) { RelationFactsResult.Available(relationFacts.copy(tables = emptyMap()), relationFacts.hashCode().toLong()) }), testRootDisposable)
         val ids = columns.values.filter { it.jsonObject.string("origin") != "PHYSICAL_TABLE" }
             .mapNotNull { it.jsonObject.stringOrNull("navigationId") }.distinct()
         val navigationFile = myFixture.addFileToProject("corpus/Declarations.kt", ids.joinToString("\n") {
@@ -144,18 +148,22 @@ class BrikkRelationCorpusTest : BasePlatformTestCase() {
         for (case in applicable) {
             val id = case.string("id")
             val sql = case.string("sql")
-            contracts = (case.getValue("relations").jsonObject + case.getValue("callContracts").jsonObject)
-                .mapValues { (_, value) -> contract(value.jsonPrimitive.content) }
+            relationFacts = RelationFacts(
+                slots = case.getValue("relations").jsonObject.mapValues { fact(it.value.jsonPrimitive.content) },
+                calls = case.getValue("callContracts").jsonObject.mapValues { fact(it.value.jsonPrimitive.content) },
+                tables = case.getValue("physicalTables").jsonObject.mapValues { fact(it.value.jsonPrimitive.content) },
+                catalog = if (case.string("catalogKnowledge") == "CLOSED") CatalogKnowledge.CLOSED else CatalogKnowledge.OPEN,
+            )
             val expected = expected(case)
             val actual = withPhysicalTables(case) {
                 val file = configure(id, sql)
-                val analysis = BrikkSqlScopes.analyze(sql, contracts)
+                val analysis = RelationScope.analyze(sql, "duckdb", relationFacts)
                 val references = case.array("references").map { it.jsonObject }
                 val observed = linkedMapOf<String, JsonElement>(
                     "references" to JsonArray(references.map { reference ->
                         val start = reference.int("start")
-                        val scoped = analysis?.at(start)
-                        reference(reference, scoped?.let { targets(it.scope.candidates(it.name, it.qualifier)) }.orEmpty())
+                        val scoped = analysis.referenceAt(start)
+                        reference(reference, targets(scoped?.columns.orEmpty()))
                     }),
                     "resolve" to JsonArray(references.map { reference -> reference(reference, nativeTargets(file, reference.int("start"))) }),
                     "navigation" to JsonArray(references.map { reference -> navigationReference(reference, navigation(file, reference.int("start"))) }),
@@ -167,19 +175,15 @@ class BrikkRelationCorpusTest : BasePlatformTestCase() {
                 for (caret in case.array("carets").map { it.jsonObject }) {
                     val offset = caret.int("offset")
                     assertTrue("$id caret", offset in 0..sql.length)
-                    val marked = sql.substring(0, offset) + "__brikk_caret" + sql.substring(offset)
-                    val scoped = BrikkSqlScopes.analyze(marked, contracts)?.at(offset)
-                    val selected = scoped?.takeIf { it.kind == BrikkSqlScopes.Kind.COLUMN }?.let {
-                        if (it.qualifier.isBlank()) it.scope.columns else listOfNotNull(it.scope.relation(it.qualifier))
-                            .flatMap { relation -> relation.columns.map { column -> relation to column } }
-                    }.orEmpty()
+                    val scoped = RelationScope.complete(sql, "duckdb", relationFacts, offset)
+                    val selected = scoped.items.mapNotNull { it.column }
                     scopes += buildJsonObject {
                         put("offset", offset)
-                        put("knowledge", knowledge(scoped?.scope, caret.string("positionKind")))
-                        put("columns", sorted(selected.map { (relation, column) -> observedColumn(relation, column) }))
+                        put("knowledge", scoped.knowledge?.name ?: "NONE")
+                        put("columns", sorted(selected.map(::observedColumn)))
                     }
                     if (caret.string("order") == "SIGNIFICANT") orders += buildJsonObject {
-                        put("offset", offset); put("columns", strings(selected.map { it.second.name }))
+                        put("offset", offset); put("columns", strings(selected.map { it.name }))
                     }
                     configure(id, sql.substring(0, offset) + "<caret>" + sql.substring(offset))
                     val items = myFixture.completeBasic().orEmpty()
@@ -323,24 +327,19 @@ class BrikkRelationCorpusTest : BasePlatformTestCase() {
         }
     }
 
-    private fun contract(id: String): ShapeResult {
+    private fun fact(id: String): RelationFact {
         val shape = shapes.getValue(id).jsonObject
-        if (shape.string("knowledge") == "UNKNOWN") return ShapeResult.Unavailable("corpus unknown input")
         val copied = shape.array("columns").map { key ->
             val column = columns.getValue(key.jsonPrimitive.content).jsonObject
-            val navigation = column.stringOrNull("navigationId")?.let { target -> object : CorpusTarget {
-                override val identity = column.string("identity")
-                override val kind = if (column.string("origin") == "RELATION_CONTRACT") NavigationKind.RELATION_FALLBACK else NavigationKind.PROPERTY
-                override val location get() = locations.getValue(target)
-                override fun navigate(requestFocus: Boolean) {
-                    val declaration = declarations.getValue(target)
-                    OpenFileDescriptor(project, declaration.containingFile.virtualFile, declaration.textOffset).navigate(requestFocus)
-                }
-            } }
-            ColumnContract(column.string("name"), column.stringOrNull("kotlinType"),
-                ColumnNullability.valueOf(column.string("nullability")), BrikkTypeFamilies.forClassId(column.stringOrNull("kotlinType")), navigation)
+            ColumnFact(column.string("name"), column.stringOrNull("sqlType"), column.stringOrNull("kotlinType")?.substringAfterLast('.'),
+                Nullability.valueOf(column.string("nullability")), when (column.string("origin")) {
+                    "KOTLIN_RELATION" -> ColumnOrigin.DECLARED
+                    "RELATION_CONTRACT" -> ColumnOrigin.RELATION_CONTRACT
+                    "PHYSICAL_TABLE" -> ColumnOrigin.PHYSICAL_TABLE
+                    else -> ColumnOrigin.COMPUTED
+                }, key.jsonPrimitive.content)
         }
-        return ShapeResult.Available(RelationShape(ShapeKnowledge.valueOf(shape.string("knowledge")), copied, ShapeOrigin.DECLARED))
+        return RelationFact(copied, Knowledge.valueOf(shape.string("knowledge")))
     }
 
     private fun configure(id: String, sql: String): PsiFile {
@@ -348,7 +347,7 @@ class BrikkRelationCorpusTest : BasePlatformTestCase() {
         val manager = InjectedLanguageManager.getInstance(project)
         val host = requireNotNull(PsiTreeUtil.findChildOfType(manager.getTopLevelFile(hostFile), KtStringTemplateExpression::class.java))
         val file = requireNotNull(manager.getInjectedPsiFiles(host)?.single()).first.containingFile
-        file.putUserData(BrikkDuckdbProfile.KEY, BrikkDuckdbProfile(listOf("min_id"), contracts.keys.toList(), emptyList()))
+        file.putUserData(BrikkDuckdbProfile.KEY, BrikkDuckdbProfile(listOf("min_id"), relationFacts.slots.keys.toList(), emptyList()))
         assertEquals(id, sql.replace("<caret>", ""), file.text)
         return file
     }
@@ -446,34 +445,28 @@ class BrikkRelationCorpusTest : BasePlatformTestCase() {
         }
     }
 
-    private fun observedColumn(relation: BrikkSqlScopes.Relation, column: ColumnContract) = buildJsonObject {
-        put("name", column.name); put("relation", relation.alias)
-        put("origin", when (column.navigation?.kind) {
-            NavigationKind.PROPERTY -> "KOTLIN_RELATION"
-            NavigationKind.RELATION_FALLBACK -> "RELATION_CONTRACT"
-            null -> "COMPUTED"
+    private fun observedColumn(column: ScopeColumn) = buildJsonObject {
+        val source = column.source?.column?.provenance?.let { columns[it]?.jsonObject }
+        put("name", column.name); put("relation", column.relation)
+        put("origin", when (column.origin) {
+            ColumnOrigin.DECLARED -> "KOTLIN_RELATION"
+            ColumnOrigin.RELATION_CONTRACT -> "RELATION_CONTRACT"
+            ColumnOrigin.PHYSICAL_TABLE -> "PHYSICAL_TABLE"
+            ColumnOrigin.COMPUTED -> "COMPUTED"
         })
-        put("kotlinType", nullable(column.kotlinClassId)); put("sqlType", nullable(column.exactSqlType))
-        put("nullability", column.nullability.name); put("navigationId", nullable(idOf(column.navigation?.location)))
-        put("identity", identity(column))
+        put("kotlinType", nullable(source?.stringOrNull("kotlinType"))); put("sqlType", nullable(column.sqlType))
+        put("nullability", column.nullability.name); put("navigationId", nullable(source?.stringOrNull("navigationId")))
+        put("identity", source?.string("identity") ?: "computed.${column.name}")
     }
 
-    private fun targets(candidates: List<Pair<BrikkSqlScopes.Relation, ColumnContract>>): List<JsonObject> =
-        candidates.singleOrNull()?.let { (relation, column) ->
-            listOf(target(relation.alias, column.name, identity(column), idOf(column.navigation?.location)))
+    private fun targets(candidates: List<ScopeColumn>): List<JsonObject> =
+        candidates.singleOrNull()?.let { column ->
+            val source = column.source?.column?.provenance?.let { columns[it]?.jsonObject }
+            listOf(target(column.relation, column.name, source?.string("identity") ?: "computed.${column.name}", source?.stringOrNull("navigationId")))
         }.orEmpty()
 
     private fun target(relation: String, column: String, identity: String, navigation: String?) = buildJsonObject {
         put("relation", relation); put("column", column); put("identity", identity); put("navigationId", nullable(navigation))
-    }
-    private fun identity(column: ColumnContract) = (column.navigation as? CorpusTarget)?.identity ?: "computed.${column.name}"
-
-    private fun knowledge(scope: BrikkSqlScopes.Scope?, position: String): String = when {
-        position != "COLUMN" -> "NONE"
-        scope == null -> "UNKNOWN"
-        scope.complete -> "FULL"
-        scope.columns.isNotEmpty() || scope.relations.any { it.available } -> "PARTIAL"
-        else -> "UNKNOWN"
     }
 
     private fun coreOrder(case: JsonObject): JsonElement {
@@ -555,18 +548,19 @@ class BrikkRelationCorpusTest : BasePlatformTestCase() {
     })
 
     private fun nativeTargets(file: PsiFile, start: Int): List<JsonObject> {
-        val reference = nativeReference(file, start) ?: return file.findElementAt(start)?.let { element ->
-            BrikkSqlEditorSupport.reference(element, start)?.takeIf { it.kind == BrikkSqlScopes.Kind.COLUMN }
-                ?.let { targets(it.scope.candidates(it.name, it.qualifier)) }
-        }.orEmpty()
+        val reference = nativeReference(file, start) ?: return emptyList()
         val resolved = reference.reference.resolve() ?: return emptyList()
         val result = reference.resolveSingle() as? SqlResolveResult
         val qualifier = reference.qualifierExpression?.text
             ?: (result?.immediateQualifier as? SqlNameElement)?.name
             ?: (result?.qualifier as? SqlNameElement)?.name
         val symbol = resolved as? DasColumnSymbol ?: reference.resolveSymbol()
-        if (symbol is BrikkColumnSymbol) return listOf(target(qualifier ?: symbol.dasObject.table?.name.orEmpty(),
-            symbol.contract.name, identity(symbol.contract), idOf(symbol.contract.navigation?.location)))
+        val navigationId = idOf(resolved.navigationElement)
+        if (navigationId != null) {
+            val fact = columns.values.map { it.jsonObject }.firstOrNull { it.stringOrNull("navigationId") == navigationId }
+            if (fact != null) return listOf(target(qualifier ?: (symbol as? DasColumnSymbol)?.dasObject?.table?.name.orEmpty(),
+                (resolved as? PsiNamedElement)?.name.orEmpty(), fact.string("identity"), navigationId))
+        }
         if (symbol is DasColumnSymbol) return symbol.dasObject?.let { column ->
             val table = listOfNotNull(DasUtil.getSchema(column), column.table?.name).filter(String::isNotBlank).joinToString(".")
             val fact = physicalFacts[table to column.name]
@@ -579,7 +573,7 @@ class BrikkRelationCorpusTest : BasePlatformTestCase() {
 
     private fun navigation(file: PsiFile, start: Int): List<String> {
         val element = file.findElementAt(start) ?: return emptyList()
-        val targets = BrikkSqlGotoDeclarationHandler().getGotoDeclarationTargets(element, start, myFixture.editor)
+        val targets = DuckdbRelationGotoDeclarationHandler().getGotoDeclarationTargets(element, start, myFixture.editor)
             ?.mapNotNull { idOf(it) }.orEmpty()
         if (targets.isNotEmpty()) return targets.distinct()
         return nativeTargets(file, start).mapNotNull { it.stringOrNull("navigationId") }
@@ -587,16 +581,23 @@ class BrikkRelationCorpusTest : BasePlatformTestCase() {
 
     private fun diagnostics(file: PsiFile, case: JsonObject): JsonArray {
         val holder = AnnotationHolderImpl(AnnotationSession(file), false)
-        holder.runAnnotatorWithContext(file, BrikkSqlContractAnnotator())
+        holder.runAnnotatorWithContext(file, DuckdbRelationAnnotator())
         holder.assertAllAnnotationsCreated()
         val result = holder.map { annotation -> buildJsonObject {
             put("kind", when {
                 annotation.message.startsWith("Ambiguous") -> "AMBIGUOUS"
                 annotation.message.contains("partial relation contract") -> "PARTIAL_CONTRACT"
+                annotation.message.startsWith("Unknown relation") -> "UNKNOWN_QUALIFIER"
+                annotation.message.startsWith("Unknown table") -> "UNKNOWN_TABLE"
+                annotation.message.contains("cannot lower") -> "PIPE_UNSUPPORTED"
                 else -> "MISSING"
             })
             put("start", annotation.startOffset); put("end", annotation.endOffset)
-            put("subject", "COLUMN")
+            put("subject", when {
+                annotation.message.startsWith("Unknown relation") -> "QUALIFIER"
+                annotation.message.startsWith("Unknown table") -> "TABLE"
+                else -> "COLUMN"
+            })
         } }.toMutableList()
         val probes = case.array("references").map { it.jsonObject }.filter { it.string("kind") in setOf("QUALIFIER", "TABLE") }
         if (probes.isNotEmpty()) {
@@ -620,13 +621,11 @@ class BrikkRelationCorpusTest : BasePlatformTestCase() {
         val shown = LookupElementPresentation().also(item::renderElement)
         val tail = shown.tailText.orEmpty()
         val symbol = (item.`object` as? SqlResolveResult)?.targetSymbol ?: item.psiElement as? DasColumnSymbol
-        val contract = symbol as? BrikkColumnSymbol
-        val physical = (symbol as? DasColumnSymbol)?.takeUnless { it is BrikkColumnSymbol }?.dasObject
+        val physical = (symbol as? DasColumnSymbol)?.dasObject
         val origin = when {
             tail.contains("relation contract") -> "RELATION_CONTRACT"
-            contract?.contract?.navigation?.kind == NavigationKind.RELATION_FALLBACK -> "RELATION_CONTRACT"
-            contract != null && contract.contract.navigation == null -> "COMPUTED"
-            tail.contains("brikk column") || contract != null -> "KOTLIN_RELATION"
+            tail.contains("brikk column") -> "KOTLIN_RELATION"
+            tail.contains("computed column") -> "COMPUTED"
             physical != null && physical.kind == ObjectKind.COLUMN && item.lookupString == physical.name && physical.name in physicalColumns -> "PHYSICAL_TABLE"
             shown.typeText == "PIPE input column" -> "COMPUTED"
             else -> return null
@@ -636,7 +635,6 @@ class BrikkRelationCorpusTest : BasePlatformTestCase() {
         return completionColumn(item.lookupString, relation, origin, shown.typeText.orEmpty().let {
             if (origin == "PHYSICAL_TABLE") it.uppercase() else it
         }, when {
-            contract != null -> contract.contract.nullability.name
             origin == "PHYSICAL_TABLE" -> if (physical?.isNotNull == true) "NON_NULL" else "NULLABLE"
             shown.typeText.orEmpty().contains("nullability unknown") || shown.typeText == "PIPE input column" -> "UNKNOWN"
             shown.typeText.orEmpty().endsWith('?') -> "NULLABLE"
