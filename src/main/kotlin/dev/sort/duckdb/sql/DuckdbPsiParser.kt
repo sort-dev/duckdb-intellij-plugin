@@ -19,7 +19,7 @@ import dev.brikk.house.sql.intellij.parser.wordAt
 import dev.brikk.house.sql.intellij.parser.wordThenToken
 import dev.brikk.house.sql.intellij.parser.wordThenWord
 import dev.brikk.house.sql.intellij.pipe.PipeStatementGate
-import dev.sort.duckdb.brikk.BrikkDuckdbProfile
+import dev.sort.duckdb.brikk.DuckdbHostSql
 import dev.sort.duckdb.pipes.DuckdbPipeDialect
 
 class DuckdbPsiParser : PgParser(false) {
@@ -84,7 +84,7 @@ class DuckdbPsiParser : PgParser(false) {
 
     override fun parseParameterOrVariableReference(builder: PsiBuilder, allowVariable: Boolean): Boolean {
         val file = builder.getUserData(FileContextUtil.CONTAINING_FILE_KEY)
-        if (BrikkDuckdbProfile.forFile(file) != null && builder.parseColonParameter()) return true
+        if (DuckdbHostSql.parsesColonBinds(file) && builder.parseColonParameter()) return true
         return super.parseParameterOrVariableReference(builder, allowVariable)
     }
 }

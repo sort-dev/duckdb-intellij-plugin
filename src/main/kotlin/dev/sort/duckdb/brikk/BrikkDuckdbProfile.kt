@@ -8,7 +8,12 @@ import com.intellij.psi.PsiFile
 data class BrikkDuckdbProfile(val binds: List<String>, val slots: List<String>, val issues: List<String>) {
     companion object {
         val KEY: Key<BrikkDuckdbProfile> = Key.create("dev.sort.duckdb.brikk.editingProfile")
-        fun forFile(file: PsiFile?): BrikkDuckdbProfile? = file?.getUserData(KEY)
+        fun forFile(file: PsiFile?): BrikkDuckdbProfile? {
+            file ?: return null
+            file.getUserData(KEY)?.let { return it }
+            val host = InjectedLanguageManager.getInstance(file.project).getInjectionHost(file.originalFile) ?: return null
+            return (DuckdbHostSql.state(host)?.claim as? dev.brikk.house.sql.intellij.host.HostSqlClaim.Injected)?.data as? BrikkDuckdbProfile
+        }
     }
 }
 

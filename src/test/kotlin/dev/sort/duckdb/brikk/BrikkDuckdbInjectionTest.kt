@@ -10,7 +10,7 @@ import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.refactoring.rename.RenameProcessor
 import com.intellij.sql.psi.SqlTokens
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
-import dev.sort.duckdb.brikk.kotlin.BrikkDuckdbInjectionPerformer
+import dev.brikk.house.sql.intellij.host.HostSqlInjection
 import dev.sort.duckdb.brikk.kotlin.BrikkDuckdbKotlinContext
 import dev.sort.duckdb.pipes.DuckdbPipeDialect
 import dev.brikk.house.sql.intellij.pipe.PipeExecuteInterceptor
@@ -69,7 +69,7 @@ open class BrikkDuckdbInjectionTest : BasePlatformTestCase() {
     fun testScalarReferenceIsANamedBindOnInitialInjection() {
         val performers = com.intellij.lang.injection.general.LanguageInjectionPerformer.INJECTOR_EXTENSION
             .allForLanguage(org.jetbrains.kotlin.idea.KotlinLanguage.INSTANCE).map { it.javaClass.name }
-        assertTrue(performers.toString(), performers.first().contains("BrikkDuckdbInjectionPerformer"))
+        assertTrue(performers.toString(), performers.first().contains("BrikkDuckdbInjector"))
         val host = configure("@BrikkSql fun customers(tenant: String) = Sql.duckdb(\"SELECT tenant FROM customers WHERE tenant = \$tenant\")")
         val context = BrikkDuckdbKotlinContext.find(host)
         assertNotNull("Resolved entry point/annotation", context)
@@ -157,7 +157,7 @@ open class BrikkDuckdbInjectionTest : BasePlatformTestCase() {
         val actual = InjectedLanguageManager.getInstance(project).injectedToHost(file, offset)
         assertEquals(host.textRange.startOffset + host.text.indexOf("payload"), actual)
         val context = BrikkDuckdbKotlinContext.find(host)!!
-        val places = BrikkDuckdbInjectionPerformer().injectionPlaces(BrikkDuckdbKotlinContext.template(context))
+        val places = HostSqlInjection.places(host, BrikkDuckdbKotlinContext.template(context).entries)
         assertTrue(places.isNotEmpty())
     }
 
@@ -444,6 +444,48 @@ open class BrikkDuckdbInjectionTest : BasePlatformTestCase() {
             annotations.runAnnotatorWithContext(hostFile, com.intellij.lang.annotation.Annotator { _, holder -> annotator.apply(hostFile, result, holder) })
             annotations.assertAllAnnotationsCreated()
             assertEmpty(annotations)
+        }
+    }
+
+    fun testCustomMarginPrefixUsesSharedRuntimeTrimming() {
+        val host = configure("""
+            @BrikkSql fun query(id: Int) = Sql.duckdb(""${'"'}
+                #SELECT id
+                #FROM customers WHERE id = ${'$'}id
+            ""${'"'}.trimMargin("#"))
+        """.trimIndent())
+        val file = injected(host)
+        val text = InjectedLanguageManager.getInstance(project).getUnescapedText(file)
+        assertTrue(text, text.endsWith("SELECT id\nFROM customers WHERE id = :id"))
+        assertFalse(text, text.contains("#"))
+        assertTrue(DuckdbHostSql.parsesColonBinds(file))
+        assertTrue(DuckdbHostSql.isInspectionOnly(file))
+    }
+
+    fun testRememberedContextUsesHelperPlaceholderProjectionWhileIndexing() {
+        val host = configure("@BrikkSql fun query(id: Int) = Sql.duckdb(\"SELECT \$id\")")
+        assertNotNull(BrikkDuckdbKotlinContext.find(host))
+        com.intellij.testFramework.DumbModeTestUtils.runInDumbModeSynchronously(project) {
+            val context = requireNotNull(BrikkDuckdbKotlinContext.find(host))
+            assertTrue(context.pending)
+            val template = BrikkDuckdbKotlinContext.template(context)
+            assertTrue(template.entries.entries.any { it.placeholder })
+            assertEmpty(template.diagnostics)
+            assertEmpty(template.profile.binds)
+            assertEmpty(template.profile.slots)
+        }
+    }
+
+    fun testNeverRecognizedStrongPendingHostClaimsWithoutNativeInjection() {
+        com.intellij.testFramework.DumbModeTestUtils.runInDumbModeSynchronously(project) {
+            val host = configure("""
+                import dev.brikk.house.sql.runtime.Sql
+                import dev.brikk.house.sql.runtime.BrikkSql
+                @BrikkSql fun query(id: Int) = Sql.duckdb("SELECT ${'$'}id")
+            """.trimIndent())
+            val injections = InjectedLanguageManager.getInstance(project).getInjectedPsiFiles(host).orEmpty()
+            assertEmpty("Pending host must not fall through to @Language", injections)
+            assertTrue(DuckdbHostSql.state(host)?.claim is dev.brikk.house.sql.intellij.host.HostSqlClaim.Unavailable)
         }
     }
 }

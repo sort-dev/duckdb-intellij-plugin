@@ -439,3 +439,23 @@ helper binary SHA-256 is
 `70a84a80a40b93963e4d26999e0bc80d577eb94d5ed2fd0e6890ddc29c8c9445`.
 Default/present 261/262/263: 282 tests, nine skips. Absent: 213, nine skips.
 Brikk: 69; isolation: two; census: 226/226. No tests added or deleted.
+
+### Step 2: shared host injection
+
+`BrikkDuckdbInjector` is the first contributor and performer over `DuckdbHostSql`.
+The helper's `BrikkHosts.state` replaces DuckDB's remembered context and pending
+projection. Shared layout replaces places, character-origin tracking, trims and
+retries. Deleted `BrikkDuckdbInjectionContributor.kt` (22 lines) and
+`BrikkDuckdbInjectionPerformer.kt` (101 lines); the context adapter also loses its
+local projection. Colon-bind parsing uses the channel; a placeholder error filter
+is registered. INFO annotations follow the helper's remembered pending projection.
+
+Visible changes: literal custom `trimMargin` prefixes now work. Remembered SQL
+keeps an inspection-only placeholder projection during indexing, without pending
+errors. Never-recognized strongly evidenced Brikk strings are claimed without an
+injection, instead of falling through to native `@Language` injection. Placeholder
+errors alone are filtered rather than marking the whole SQL Frankenstein.
+
+Added three injection tests, also inherited by the relation-editing fixture, for
+six new test instances; none deleted. Default/present-equivalent 261/262/263 lanes:
+288 tests, nine skips. Absent lanes: 213, nine skips. Isolation: two. Census: 226/226.
