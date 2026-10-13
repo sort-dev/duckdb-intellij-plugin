@@ -16,6 +16,3 @@ data class BrikkDuckdbProfile(val binds: List<String>, val slots: List<String>, 
         }
     }
 }
-
-internal fun isBrikkInjectedSql(file: PsiFile): Boolean = BrikkDuckdbProfile.forFile(file) != null &&
-    InjectedLanguageManager.getInstance(file.project).isInjectedFragment(file)

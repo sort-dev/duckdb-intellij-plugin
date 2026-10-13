@@ -488,3 +488,18 @@ The targeted feature lane passes 53 tests. The first corpus observation drops
 from 394 to 179 differences, with new native-observation differences still rejected
 by its old ledger. No corpus expectations were changed; the ledger and complete
 repeatability assessment remain for step 6.
+
+### Step 4: shared inspection-only execution
+
+`PipeDialect.hostSql` and `NativeErrorProfile.hostSql` now use the channel.
+Its optional `claimsHost` adapter calls `BrikkInspectionView`, including pending,
+foreign-dialect and externally injected Brikk strings. Deleted the old injected-
+profile-only guard (three lines); no files deleted. Added two host tests, inherited
+by the relation fixture, for four test instances. The targeted injection/execution,
+native-error and parse-only-safety lane passes 51 tests.
+
+Visible change: Execute from the real Kotlin host editor is refused inside an
+inspection-only string and still delegates outside strings. Pending/claimed strings
+are protected even when this plugin has no injected profile. Run-to-stage is not
+offered there. Native checks skip statements containing placeholders and suppress
+placeholder-caused diagnostics through the shared marker policy.

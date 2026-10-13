@@ -324,7 +324,7 @@ open class BrikkDuckdbInjectionTest : BasePlatformTestCase() {
                 .add(com.intellij.openapi.actionSystem.CommonDataKeys.PSI_FILE, file).build())
         assertEquals(dev.brikk.house.sql.intellij.ExecutionClaim.HANDLED,
             PipeExecuteInterceptor(DuckdbPipeDialect).execute(event, com.intellij.database.settings.DatabaseSettings.ExecOption()))
-        assertTrue(isBrikkInjectedSql(file))
+        assertTrue(DuckdbHostSql.isInspectionOnly(file))
         assertFalse(dev.sort.duckdb.pipes.RunPipesToStageIntention().isAvailable(project, myFixture.editor, file))
         assertTrue(DuckdbPipeDialect.enablesPreview(file))
         val previous = System.getProperty(DuckdbPipeDialect.vetoProperty)
@@ -486,6 +486,26 @@ open class BrikkDuckdbInjectionTest : BasePlatformTestCase() {
             val injections = InjectedLanguageManager.getInstance(project).getInjectedPsiFiles(host).orEmpty()
             assertEmpty("Pending host must not fall through to @Language", injections)
             assertTrue(DuckdbHostSql.state(host)?.claim is dev.brikk.house.sql.intellij.host.HostSqlClaim.Unavailable)
+        }
+    }
+
+    fun testSharedExecutionContractRefusesSqlFromTheRealKotlinHostEditor() {
+        dev.brikk.house.sql.intellij.testing.HostSqlExecutionContract(DuckdbPipeDialect) {
+            val host = configure("@BrikkSql fun query(id: Int) = Sql.duckdb(\"FROM customers |> WHERE id > <caret>\$id\")")
+            injected(host)
+            com.intellij.psi.impl.source.tree.injected.InjectedLanguageUtil.getTopLevelEditor(myFixture.editor)
+        }.refusesInspectionOnlySqlFromTheHostEditor()
+    }
+
+    fun testInspectionViewClaimsPendingHostWithoutAnInjection() {
+        com.intellij.testFramework.DumbModeTestUtils.runInDumbModeSynchronously(project) {
+            val host = configure("""
+                import dev.brikk.house.sql.runtime.Sql
+                import dev.brikk.house.sql.runtime.BrikkSql
+                @BrikkSql fun query(id: Int) = Sql.duckdb("SELECT ${'$'}id")
+            """.trimIndent())
+            assertTrue(DuckdbInspectionHost.EP.extensionList.single().claims(host))
+            assertTrue(dev.brikk.house.intellij.BrikkInspectionView.isInspectionOnly(host.containingFile, host.textOffset + 2))
         }
     }
 }

@@ -132,6 +132,7 @@
     <depends>com.intellij.database</depends>
     <extensionPoints>
         <extensionPoint qualifiedName="dev.sort.duckdb.relationFacts" interface="dev.brikk.house.sql.intellij.relation.ExternalRelationFacts" dynamic="true"/>
+        <extensionPoint qualifiedName="dev.sort.duckdb.inspectionHost" interface="dev.sort.duckdb.brikk.DuckdbInspectionHost" dynamic="true"/>
     </extensionPoints>
     <depends optional="true" config-file="duckdb-kotlin.xml">org.jetbrains.kotlin</depends>
     <extensions defaultExtensionNs="org.jetbrains.kotlin">

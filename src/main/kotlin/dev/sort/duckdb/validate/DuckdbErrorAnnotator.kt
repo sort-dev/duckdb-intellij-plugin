@@ -20,6 +20,7 @@ import dev.brikk.house.sql.parser.SyntacticRange
 import dev.brikk.house.sql.parser.TokenError
 import dev.brikk.house.sql.shape.ShapeError
 import dev.sort.duckdb.brikk.BrikkDuckdbProfile
+import dev.sort.duckdb.brikk.DuckdbHostSql
 import dev.brikk.house.sql.shape.SqlFragment
 import dev.sort.duckdb.pipes.DuckdbPipeDialect
 import dev.sort.duckdb.sql.DuckdbSqlDialect
@@ -33,6 +34,7 @@ internal object DuckdbNativeErrorProfile : NativeErrorProfile {
     override val dialect = "duckdb"
     override val label = "DuckDB"
     override val sizeCap = 100_000
+    override val hostSql get() = DuckdbHostSql
 
     private data class State(val pipes: Boolean, val brikk: BrikkDuckdbProfile?, val slots: Set<String>)
     private data class Revision(val state: State, val count: Long)

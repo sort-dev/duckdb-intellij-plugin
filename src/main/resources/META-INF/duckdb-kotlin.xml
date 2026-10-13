@@ -1,6 +1,7 @@
 <idea-plugin>
     <extensions defaultExtensionNs="dev.sort.duckdb">
         <relationFacts implementation="dev.sort.duckdb.brikk.kotlin.KotlinBrikkRelationFacts"/>
+        <inspectionHost implementation="dev.sort.duckdb.brikk.kotlin.KotlinBrikkInspectionHost"/>
     </extensions>
     <extensions defaultExtensionNs="com.intellij">
         <languageInjectionContributor language="kotlin" implementationClass="dev.sort.duckdb.brikk.kotlin.BrikkDuckdbInjector" order="first"/>

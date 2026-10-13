@@ -12,7 +12,7 @@ import dev.brikk.house.sql.parser.ColumnUnit
 import dev.brikk.house.sql.verify.VerifyResult
 import dev.sort.duckdb.DuckdbDbms
 import dev.sort.duckdb.brikk.BrikkDuckdbProfile
-import dev.sort.duckdb.brikk.isBrikkInjectedSql
+import dev.sort.duckdb.brikk.DuckdbHostSql
 import dev.sort.duckdb.sql.DuckdbSqlDialect
 import dev.sort.duckdb.validate.DuckdbEngineLocator
 import dev.sort.duckdb.validate.DuckdbEngineValidator
@@ -22,10 +22,10 @@ object DuckdbPipeDialect : PipeDialect {
     override val label = "DuckDB PIPE"
     override val vetoProperty = "duckdb.pipes"
     override val language get() = DuckdbSqlDialect
+    override val hostSql get() = DuckdbHostSql
     override val serverColumnUnit = ColumnUnit.UTF16
     override fun isProjectEnabled(project: Project) = project.service<DuckdbPipesSettings>().enabled
     override fun enablesEditing(file: PsiFile) = BrikkDuckdbProfile.forFile(file) != null
-    override fun isInspectionHost(file: PsiFile) = isBrikkInjectedSql(file)
     override fun ownsSession(session: DatabaseSession) = session.connectionPoint.dbms === DuckdbDbms.DUCKDB_BRIKK
     override val validator get() = object : NativeSqlValidator {
         override val timing = ValidationTiming.Submission
