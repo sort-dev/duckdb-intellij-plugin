@@ -85,6 +85,19 @@ open class BrikkRelationEditingTest : BrikkDuckdbInjectionTest() {
         assertTrue("Expected qualified amount completion: ${myFixture.lookupElementStrings}",
             myFixture.lookupElementStrings.orEmpty().contains("amount") || myFixture.editor.document.text.contains("SELECT e.amount"))
     }
+
+    fun testOptionalSlotTypesDoNotReplaceStockScalarTyping() {
+        val host = configure("$traits\n@BrikkSql fun query(events: Rel<CleanEvent>) = " +
+            "Sql.duckdb(\"SELECT lower('X'), e.id FROM \$events() AS e\")")
+        val file = injected(host)
+        val calls = PsiTreeUtil.findChildrenOfType(file, com.intellij.sql.psi.SqlFunctionCallExpression::class.java)
+        val slot = calls.single { it.nameElement?.name == "events" }
+        val scalar = calls.single { it.nameElement?.name == "lower" }
+        assertNotNull(dev.brikk.house.sql.intellij.relation.RelationTableTypes.of(slot, DuckdbRelationProfile))
+        assertEquals("com.intellij.sql.psi.impl.SqlFunctionCallExpressionImpl", scalar.javaClass.name)
+        assertFalse(scalar.dasType is com.intellij.sql.psi.SqlTableType)
+        assertEquals("text", scalar.dasType.specification)
+    }
     fun testJoinScopesAndAmbiguousColumnsAreNotFlattenedToOneType() {
         val host = configure("$traits\n@BrikkSql fun query(events: Rel<CleanEvent>, customers: Rel<CustomerRow>) = " +
             "Sql.duckdb(\"SELECT tenant, c.segment FROM \$events() e LEFT JOIN \$customers() c ON e.tenant=c.tenant\")")

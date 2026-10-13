@@ -1,0 +1,1012 @@
+{
+  "factsFile": "facts.json",
+  "reproducers": [
+    {
+      "issue": "computed-merged-key-native-management",
+      "classification": "b",
+      "component": "ExternalRelationResolveExtension / RelationAnalysis.manages",
+      "caseId": "full-using-key-non-null-non-null",
+      "sql": "SELECT q.id FROM (SELECT id FROM src() FULL JOIN rhs() USING (id)) q",
+      "relations": {
+        "src": "single-id",
+        "rhs": "single-right-id"
+      },
+      "physicalTables": {},
+      "calls": {},
+      "catalogKnowledge": "UNKNOWN",
+      "referenceOffsets": [
+        9
+      ],
+      "caretOffsets": [
+        9
+      ],
+      "axis": "resolve",
+      "expected": [
+        {
+          "start": 9,
+          "end": 11,
+          "targets": [
+            {
+              "relation": "q",
+              "column": "id",
+              "identity": "computed",
+              "navigationId": null
+            }
+          ]
+        }
+      ],
+      "actual": [
+        {
+          "start": 9,
+          "end": 11,
+          "targets": []
+        }
+      ],
+      "resolveEvidence": [
+        {
+          "start": 9,
+          "nativeReference": true,
+          "symbolClass": "com.intellij.sql.symbols.DasInlineSymbol",
+          "symbolName": null,
+          "nativeReferenceStart": 9,
+          "identifierStart": 9,
+          "variants": [
+            {
+              "class": "com.intellij.sql.psi.impl.SqlReferenceExpressionImpl",
+              "name": null,
+              "text": "id",
+              "offset": 25,
+              "navigation": null,
+              "table": null,
+              "column": null
+            }
+          ],
+          "logicalStart": 9,
+          "logicalEnd": 11,
+          "logicalResolution": "RESOLVED"
+        }
+      ],
+      "presentationEvidence": [
+        {
+          "offset": 9,
+          "items": [
+            {
+              "name": "id",
+              "type": "Long",
+              "tail": "  computed column (USING)"
+            }
+          ]
+        }
+      ],
+      "reason": "Core computes one merged FULL USING key with no single-provider provenance. Native resolution is not that computed column; the shared resolver manages provider columns only and supplies no native symbol for this output."
+    },
+    {
+      "issue": "flat-pipe-native-reference",
+      "classification": "b",
+      "component": "PipeStatementGate / ExternalRelationResolveExtension",
+      "caseId": "pipe-where",
+      "sql": "FROM src() e |> WHERE e.id > 0",
+      "relations": {
+        "src": "full"
+      },
+      "physicalTables": {},
+      "calls": {},
+      "catalogKnowledge": "UNKNOWN",
+      "referenceOffsets": [
+        24
+      ],
+      "caretOffsets": [
+        24
+      ],
+      "axis": "resolve",
+      "expected": [
+        {
+          "start": 24,
+          "end": 26,
+          "targets": [
+            {
+              "relation": "e",
+              "column": "id",
+              "identity": "src.id",
+              "navigationId": "decl:src.id"
+            }
+          ]
+        }
+      ],
+      "actual": [
+        {
+          "start": 24,
+          "end": 26,
+          "targets": []
+        }
+      ],
+      "resolveEvidence": [
+        {
+          "start": 24,
+          "nativeReference": false,
+          "logicalStart": 24,
+          "logicalEnd": 26,
+          "logicalResolution": "RESOLVED"
+        }
+      ],
+      "presentationEvidence": [
+        {
+          "offset": 24,
+          "items": [
+            {
+              "name": "event_kind",
+              "type": "EventKind?",
+              "tail": "  brikk column (e)"
+            },
+            {
+              "name": "id",
+              "type": "Long",
+              "tail": "  brikk column (e)"
+            },
+            {
+              "name": "price",
+              "type": "Int",
+              "tail": "  brikk column (e)"
+            },
+            {
+              "name": "qty",
+              "type": "Int",
+              "tail": "  brikk column (e)"
+            }
+          ]
+        }
+      ],
+      "reason": "Core resolves the authored name, but the shared statement gate leaves flat PSI without a SqlReferenceExpression. The native resolve extension is never called. A shared flat-PIPE reference bridge is needed; no plugin analyzer substitution is made."
+    },
+    {
+      "issue": "merged-key-native-management",
+      "classification": "b",
+      "component": "RelationAnalysis.manages / ExternalRelationResolveExtension",
+      "caseId": "left-using-merged-star",
+      "sql": "SELECT * FROM src() e LEFT JOIN rhs() r USING (id) WHERE id > 0",
+      "relations": {
+        "src": "full",
+        "rhs": "right"
+      },
+      "physicalTables": {},
+      "calls": {},
+      "catalogKnowledge": "UNKNOWN",
+      "referenceOffsets": [
+        57
+      ],
+      "caretOffsets": [
+        57
+      ],
+      "axis": "resolve",
+      "expected": [
+        {
+          "start": 57,
+          "end": 59,
+          "targets": [
+            {
+              "relation": "",
+              "column": "id",
+              "identity": "src.id",
+              "navigationId": "decl:src.id"
+            }
+          ]
+        }
+      ],
+      "actual": [
+        {
+          "start": 57,
+          "end": 59,
+          "targets": []
+        }
+      ],
+      "resolveEvidence": [
+        {
+          "start": 57,
+          "nativeReference": true,
+          "symbolClass": null,
+          "symbolName": null,
+          "nativeReferenceStart": 57,
+          "identifierStart": 57,
+          "variants": [],
+          "logicalStart": 57,
+          "logicalEnd": 59,
+          "logicalResolution": "RESOLVED"
+        }
+      ],
+      "presentationEvidence": [
+        {
+          "offset": 57,
+          "items": [
+            {
+              "name": "code",
+              "type": "String?",
+              "tail": "  brikk column (r)"
+            },
+            {
+              "name": "e",
+              "type": "unknown",
+              "tail": " (e)"
+            },
+            {
+              "name": "event_kind",
+              "type": "EventKind?",
+              "tail": "  brikk column (e)"
+            },
+            {
+              "name": "id",
+              "type": "Long",
+              "tail": "  brikk column (e)"
+            },
+            {
+              "name": "id",
+              "type": "Long",
+              "tail": "  brikk column (src)"
+            },
+            {
+              "name": "id",
+              "type": "Long?",
+              "tail": "  brikk column (r)"
+            },
+            {
+              "name": "price",
+              "type": "Int",
+              "tail": "  brikk column (e)"
+            },
+            {
+              "name": "qty",
+              "type": "Int",
+              "tail": "  brikk column (e)"
+            },
+            {
+              "name": "r",
+              "type": "unknown",
+              "tail": " (r)"
+            }
+          ]
+        }
+      ],
+      "reason": "Core selects the left provider's merged key, but native resolution disagrees or remains ambiguous. The shared layer does not make the core's merged/star-derived key authoritative over the stock table-type result."
+    },
+    {
+      "issue": "projection-lineage-native-management",
+      "classification": "b",
+      "component": "RelationAnalysis.manages / ExternalRelationResolveExtension",
+      "caseId": "ordinary-group-alias",
+      "sql": "SELECT event_kind AS kind, count(*) AS n FROM src() GROUP BY kind",
+      "relations": {
+        "src": "full"
+      },
+      "physicalTables": {},
+      "calls": {},
+      "catalogKnowledge": "UNKNOWN",
+      "referenceOffsets": [
+        61
+      ],
+      "caretOffsets": [
+        61
+      ],
+      "axis": "resolve",
+      "expected": [
+        {
+          "start": 61,
+          "end": 65,
+          "targets": [
+            {
+              "relation": "",
+              "column": "kind",
+              "identity": "src.event_kind",
+              "navigationId": "decl:src.event_kind"
+            }
+          ]
+        }
+      ],
+      "actual": [
+        {
+          "start": 61,
+          "end": 65,
+          "targets": []
+        }
+      ],
+      "resolveEvidence": [
+        {
+          "start": 61,
+          "nativeReference": true,
+          "symbolClass": null,
+          "symbolName": null,
+          "nativeReferenceStart": 61,
+          "identifierStart": 61,
+          "variants": [],
+          "logicalStart": 61,
+          "logicalEnd": 65,
+          "logicalResolution": "RESOLVED"
+        }
+      ],
+      "presentationEvidence": [
+        {
+          "offset": 61,
+          "items": [
+            {
+              "name": "event_kind",
+              "type": "EventKind?",
+              "tail": "  brikk column (src)"
+            },
+            {
+              "name": "id",
+              "type": "Long",
+              "tail": "  brikk column (src)"
+            },
+            {
+              "name": "kind",
+              "type": "EventKind?",
+              "tail": "  brikk column (src)"
+            },
+            {
+              "name": "price",
+              "type": "Int",
+              "tail": "  brikk column (src)"
+            },
+            {
+              "name": "qty",
+              "type": "Int",
+              "tail": "  brikk column (src)"
+            },
+            {
+              "name": "src",
+              "type": "unknown",
+              "tail": " (src)"
+            }
+          ]
+        }
+      ],
+      "reason": "Core preserves the provider column's lineage through the GROUP BY projection alias, but native resolve returns no candidate. The shared resolver excludes the unqualified projection output from its managed provider-column cases."
+    },
+    {
+      "issue": "quoted-column-case-bridge",
+      "classification": "b",
+      "component": "ExternalRelationResolveExtension / RelationColumnSymbol",
+      "caseId": "quoted-case-duckdb",
+      "sql": "SELECT e.\"eventKind\" FROM src() e",
+      "relations": {
+        "src": "camel-case"
+      },
+      "physicalTables": {},
+      "calls": {},
+      "catalogKnowledge": "UNKNOWN",
+      "referenceOffsets": [
+        9
+      ],
+      "caretOffsets": [
+        9
+      ],
+      "axis": "resolve",
+      "expected": [
+        {
+          "start": 9,
+          "end": 20,
+          "targets": [
+            {
+              "relation": "e",
+              "column": "eventKind",
+              "identity": "src.eventKind",
+              "navigationId": "decl:src.eventKind"
+            }
+          ]
+        }
+      ],
+      "actual": [
+        {
+          "start": 9,
+          "end": 20,
+          "targets": []
+        }
+      ],
+      "resolveEvidence": [
+        {
+          "start": 9,
+          "nativeReference": true,
+          "symbolClass": null,
+          "symbolName": null,
+          "nativeReferenceStart": 9,
+          "identifierStart": 9,
+          "variants": [],
+          "logicalStart": 9,
+          "logicalEnd": 20,
+          "logicalResolution": "RESOLVED"
+        }
+      ],
+      "presentationEvidence": [
+        {
+          "offset": 9,
+          "items": [
+            {
+              "name": "e",
+              "type": "unknown",
+              "tail": " (e)"
+            },
+            {
+              "name": "eventKind",
+              "type": "EventKind?",
+              "tail": "  brikk column (e)"
+            }
+          ]
+        }
+      ],
+      "reason": "Native and core start offsets agree, but no native variant survives for DuckDB's case-insensitive quoted column. The provider symbol's native name/quote matching needs to preserve the core verdict."
+    },
+    {
+      "issue": "renamed-set-lineage-native-management",
+      "classification": "b",
+      "component": "RelationAnalysis.manages / ExternalRelationGotoDeclarationHandler",
+      "caseId": "set-nullability-names-intersect",
+      "sql": "SELECT id AS first_name FROM src() INTERSECT SELECT id AS other_name FROM nullable() ORDER BY first_name",
+      "relations": {
+        "src": "single-id",
+        "nullable": "nullable-right"
+      },
+      "physicalTables": {},
+      "calls": {},
+      "catalogKnowledge": "UNKNOWN",
+      "referenceOffsets": [
+        94
+      ],
+      "caretOffsets": [
+        94
+      ],
+      "axis": "resolve",
+      "expected": [
+        {
+          "start": 94,
+          "end": 104,
+          "targets": [
+            {
+              "relation": "",
+              "column": "first_name",
+              "identity": "src.id",
+              "navigationId": "decl:src.id"
+            }
+          ]
+        }
+      ],
+      "actual": [
+        {
+          "start": 94,
+          "end": 104,
+          "targets": [
+            {
+              "relation": "",
+              "column": "first_name",
+              "identity": "computed",
+              "navigationId": null
+            }
+          ]
+        }
+      ],
+      "resolveEvidence": [
+        {
+          "start": 94,
+          "nativeReference": true,
+          "symbolClass": "com.intellij.sql.dialects.postgres.psi.PgTypedAliasDefinitionImpl",
+          "symbolName": "first_name",
+          "nativeReferenceStart": 94,
+          "identifierStart": 94,
+          "variants": [
+            {
+              "class": "com.intellij.sql.dialects.postgres.psi.PgTypedAliasDefinitionImpl",
+              "name": "first_name",
+              "text": "id AS first_name",
+              "offset": 13,
+              "navigation": null,
+              "table": null,
+              "column": null
+            }
+          ],
+          "logicalStart": 94,
+          "logicalEnd": 104,
+          "logicalResolution": "RESOLVED"
+        }
+      ],
+      "presentationEvidence": [
+        {
+          "offset": 94,
+          "items": [
+            {
+              "name": "first_name",
+              "type": "Long",
+              "tail": "  brikk column (src)"
+            }
+          ]
+        }
+      ],
+      "reason": "Core retains the left input's provider provenance through the renamed set output. The native result is a SQL alias declaration, not that provider column; the shared management/deference policy loses the retained lineage."
+    },
+    {
+      "issue": "self-join-occurrence-identity",
+      "classification": "b",
+      "component": "RelationColumnSymbol / ExternalRelationResolveExtension",
+      "caseId": "self-join-same-slot",
+      "sql": "SELECT id FROM src() e JOIN src() f ON e.id=f.id",
+      "relations": {
+        "src": "full"
+      },
+      "physicalTables": {},
+      "calls": {},
+      "catalogKnowledge": "UNKNOWN",
+      "referenceOffsets": [
+        7
+      ],
+      "caretOffsets": [
+        7
+      ],
+      "axis": "resolve",
+      "expected": [
+        {
+          "start": 7,
+          "end": 9,
+          "targets": []
+        }
+      ],
+      "actual": [
+        {
+          "start": 7,
+          "end": 9,
+          "targets": [
+            {
+              "relation": "src",
+              "column": "id",
+              "identity": "src.id",
+              "navigationId": "decl:src.id"
+            }
+          ]
+        }
+      ],
+      "resolveEvidence": [
+        {
+          "start": 7,
+          "nativeReference": true,
+          "symbolClass": "dev.brikk.house.sql.intellij.relation.RelationColumnSymbol",
+          "symbolName": "id",
+          "nativeReferenceStart": 7,
+          "identifierStart": 7,
+          "variants": [
+            {
+              "class": "dev.brikk.house.sql.intellij.relation.RelationColumnSymbol",
+              "name": "id",
+              "text": "id",
+              "offset": -1,
+              "navigation": "decl:src.id",
+              "table": "src",
+              "column": "id"
+            }
+          ],
+          "logicalStart": 7,
+          "logicalEnd": 9,
+          "logicalResolution": "AMBIGUOUS"
+        }
+      ],
+      "presentationEvidence": [
+        {
+          "offset": 7,
+          "items": [
+            {
+              "name": "e",
+              "type": "unknown",
+              "tail": " (e)"
+            },
+            {
+              "name": "event_kind",
+              "type": "EventKind?",
+              "tail": "  brikk column (e)"
+            },
+            {
+              "name": "event_kind",
+              "type": "EventKind?",
+              "tail": "  brikk column (f)"
+            },
+            {
+              "name": "f",
+              "type": "unknown",
+              "tail": " (f)"
+            },
+            {
+              "name": "id",
+              "type": "Long",
+              "tail": "  brikk column (e)"
+            },
+            {
+              "name": "id",
+              "type": "Long",
+              "tail": "  brikk column (f)"
+            },
+            {
+              "name": "price",
+              "type": "Int",
+              "tail": "  brikk column (e)"
+            },
+            {
+              "name": "price",
+              "type": "Int",
+              "tail": "  brikk column (f)"
+            },
+            {
+              "name": "qty",
+              "type": "Int",
+              "tail": "  brikk column (e)"
+            },
+            {
+              "name": "qty",
+              "type": "Int",
+              "tail": "  brikk column (f)"
+            }
+          ]
+        }
+      ],
+      "reason": "Core finds two alias occurrences and reports AMBIGUOUS. The native variants are equal provider-column symbols, so native resolve picks that declaration and loses occurrence ambiguity. Declaration identity must not erase reference-occurrence ambiguity."
+    },
+    {
+      "issue": "set-output-native-deference",
+      "classification": "b",
+      "component": "ExternalRelationResolveExtension / ExternalRelationGotoDeclarationHandler",
+      "caseId": "ordinary-set-union-all",
+      "sql": "SELECT id FROM src() UNION ALL SELECT id FROM rhs() ORDER BY id",
+      "relations": {
+        "src": "full",
+        "rhs": "right"
+      },
+      "physicalTables": {},
+      "calls": {},
+      "catalogKnowledge": "UNKNOWN",
+      "referenceOffsets": [
+        61
+      ],
+      "caretOffsets": [
+        61
+      ],
+      "axis": "resolve",
+      "expected": [
+        {
+          "start": 61,
+          "end": 63,
+          "targets": [
+            {
+              "relation": "",
+              "column": "id",
+              "identity": "computed",
+              "navigationId": null
+            }
+          ]
+        }
+      ],
+      "actual": [
+        {
+          "start": 61,
+          "end": 63,
+          "targets": [
+            {
+              "relation": "src",
+              "column": "id",
+              "identity": "src.id",
+              "navigationId": "decl:src.id"
+            }
+          ]
+        }
+      ],
+      "resolveEvidence": [
+        {
+          "start": 61,
+          "nativeReference": true,
+          "symbolClass": "dev.brikk.house.sql.intellij.relation.RelationColumnSymbol",
+          "symbolName": "id",
+          "nativeReferenceStart": 61,
+          "identifierStart": 61,
+          "variants": [
+            {
+              "class": "dev.brikk.house.sql.intellij.relation.RelationColumnSymbol",
+              "name": "id",
+              "text": "id",
+              "offset": -1,
+              "navigation": "decl:src.id",
+              "table": "src",
+              "column": "id"
+            }
+          ],
+          "logicalStart": 61,
+          "logicalEnd": 63,
+          "logicalResolution": "RESOLVED"
+        }
+      ],
+      "presentationEvidence": [
+        {
+          "offset": 61,
+          "items": [
+            {
+              "name": "id",
+              "type": "<Injected DuckDB (sort.dev) file>",
+              "tail": " (src)"
+            },
+            {
+              "name": "id",
+              "type": "unknown type",
+              "tail": "  computed column (UNION ALL)"
+            }
+          ]
+        }
+      ],
+      "reason": "The native result retains a left-input declaration after core made the output computed or rejected the branch column count. The shared native/declaration deference policy leaves that stale input result visible."
+    },
+    {
+      "issue": "star-output-native-management",
+      "classification": "b",
+      "component": "RelationAnalysis.manages / ExternalRelationResolveExtension",
+      "caseId": "ordinary-star-join-cte-duckdb",
+      "sql": "WITH q AS (SELECT * FROM src() e JOIN rhs() r ON e.id=r.id) SELECT q.id_1 FROM q",
+      "relations": {
+        "src": "full",
+        "rhs": "right"
+      },
+      "physicalTables": {},
+      "calls": {},
+      "catalogKnowledge": "UNKNOWN",
+      "referenceOffsets": [
+        69
+      ],
+      "caretOffsets": [
+        69
+      ],
+      "axis": "resolve",
+      "expected": [
+        {
+          "start": 69,
+          "end": 73,
+          "targets": [
+            {
+              "relation": "q",
+              "column": "id_1",
+              "identity": "rhs.id",
+              "navigationId": "decl:rhs.id"
+            }
+          ]
+        }
+      ],
+      "actual": [
+        {
+          "start": 69,
+          "end": 73,
+          "targets": []
+        }
+      ],
+      "resolveEvidence": [
+        {
+          "start": 69,
+          "nativeReference": true,
+          "symbolClass": null,
+          "symbolName": null,
+          "nativeReferenceStart": 69,
+          "identifierStart": 69,
+          "variants": [],
+          "logicalStart": 69,
+          "logicalEnd": 73,
+          "logicalResolution": "RESOLVED"
+        }
+      ],
+      "presentationEvidence": [
+        {
+          "offset": 69,
+          "items": [
+            {
+              "name": "code",
+              "type": "String",
+              "tail": "  brikk column (q)"
+            },
+            {
+              "name": "e",
+              "type": "unknown",
+              "tail": " (q)"
+            },
+            {
+              "name": "e, r",
+              "type": null,
+              "tail": " (src, rhs)"
+            },
+            {
+              "name": "event_kind",
+              "type": "EventKind?",
+              "tail": "  brikk column (q)"
+            },
+            {
+              "name": "id",
+              "type": "Long",
+              "tail": "  brikk column (q)"
+            },
+            {
+              "name": "id_1",
+              "type": "Long",
+              "tail": "  brikk column (q)"
+            },
+            {
+              "name": "price",
+              "type": "Int",
+              "tail": "  brikk column (q)"
+            },
+            {
+              "name": "qty",
+              "type": "Int",
+              "tail": "  brikk column (q)"
+            },
+            {
+              "name": "r",
+              "type": "unknown",
+              "tail": " (q)"
+            }
+          ]
+        }
+      ],
+      "reason": "Core exposes the DuckDB de-duplicated star column id_1. The native resolver has no candidate. Management of star-derived provider columns must not be lost because the inner join predicate also references their source facts."
+    },
+    {
+      "issue": "stock-computed-alias-rules",
+      "classification": "c",
+      "component": "Pg native SQL resolver",
+      "caseId": "duckdb-where-projection-alias",
+      "sql": "SELECT price+qty AS total FROM src() WHERE total > 5",
+      "relations": {
+        "src": "full"
+      },
+      "physicalTables": {},
+      "calls": {},
+      "catalogKnowledge": "UNKNOWN",
+      "referenceOffsets": [
+        43
+      ],
+      "caretOffsets": [
+        43
+      ],
+      "axis": "resolve",
+      "expected": [
+        {
+          "start": 43,
+          "end": 48,
+          "targets": [
+            {
+              "relation": "",
+              "column": "total",
+              "identity": "computed",
+              "navigationId": null
+            }
+          ]
+        }
+      ],
+      "actual": [
+        {
+          "start": 43,
+          "end": 48,
+          "targets": []
+        }
+      ],
+      "resolveEvidence": [
+        {
+          "start": 43,
+          "nativeReference": true,
+          "symbolClass": null,
+          "symbolName": null,
+          "nativeReferenceStart": 43,
+          "identifierStart": 43,
+          "variants": [],
+          "logicalStart": 43,
+          "logicalEnd": 48,
+          "logicalResolution": "RESOLVED"
+        }
+      ],
+      "presentationEvidence": [
+        {
+          "offset": 43,
+          "items": [
+            {
+              "name": "event_kind",
+              "type": "EventKind?",
+              "tail": "  brikk column (src)"
+            },
+            {
+              "name": "id",
+              "type": "Long",
+              "tail": "  brikk column (src)"
+            },
+            {
+              "name": "price",
+              "type": "Int",
+              "tail": "  brikk column (src)"
+            },
+            {
+              "name": "qty",
+              "type": "Int",
+              "tail": "  brikk column (src)"
+            },
+            {
+              "name": "src",
+              "type": "unknown",
+              "tail": " (src)"
+            },
+            {
+              "name": "total",
+              "type": "unknown type",
+              "tail": "  computed column (SELECT)"
+            }
+          ]
+        }
+      ],
+      "reason": "The native reference exists but has no variants for DuckDB's computed projection-alias rules. Core and shared completion are correct; stock PostgreSQL-family alias behavior is retained, not replaced with a plugin resolver."
+    },
+    {
+      "issue": "stock-open-catalog-inspection",
+      "classification": "c",
+      "component": "SqlResolveInspection",
+      "caseId": "unknown-table-open-catalog",
+      "sql": "SELECT id FROM not_here",
+      "relations": {
+        "src": "full"
+      },
+      "physicalTables": {},
+      "calls": {},
+      "catalogKnowledge": "UNKNOWN",
+      "referenceOffsets": [
+        7,
+        15
+      ],
+      "caretOffsets": [
+        7
+      ],
+      "axis": "diagnostics",
+      "expected": [],
+      "actual": [
+        {
+          "kind": "UNKNOWN_TABLE",
+          "subject": "TABLE",
+          "start": 15,
+          "end": 23
+        }
+      ],
+      "resolveEvidence": [
+        {
+          "start": 7,
+          "nativeReference": true,
+          "symbolClass": "com.intellij.sql.symbols.DasInlineSymbol",
+          "symbolName": null,
+          "nativeReferenceStart": 7,
+          "identifierStart": 7,
+          "variants": [
+            {
+              "class": "com.intellij.sql.psi.impl.SqlReferenceExpressionImpl",
+              "name": null,
+              "text": "id",
+              "offset": 7,
+              "navigation": null,
+              "table": null,
+              "column": null
+            }
+          ],
+          "logicalStart": 7,
+          "logicalEnd": 9,
+          "logicalResolution": "UNRESOLVED"
+        },
+        {
+          "start": 15,
+          "nativeReference": true,
+          "symbolClass": null,
+          "symbolName": null,
+          "nativeReferenceStart": 15,
+          "identifierStart": 15,
+          "variants": [],
+          "logicalStart": 15,
+          "logicalEnd": 23,
+          "logicalResolution": "UNRESOLVED"
+        }
+      ],
+      "presentationEvidence": [
+        {
+          "offset": 7,
+          "items": []
+        }
+      ],
+      "reason": "The shared open-catalog analysis reports nothing. The separately enabled stock inspection still reports an unresolved table; there is no provider fact or closed-catalog proof that would let the shared suppressor own it."
+    }
+  ]
+}

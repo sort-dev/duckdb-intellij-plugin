@@ -517,3 +517,75 @@ caller data supplies the project for that last check; no message parsing is used
 Two new gutter tests pass in the 31-test injection lane, also adding two inherited
 instances to the relation-editing fixture. No files deleted. The action-needed
 banner remains deferred pending the helper's typed status publication.
+
+### Step 6: corpus observer triage
+
+Native SQL files and genuine Kotlin injections now run independently against the
+unchanged v2.2 inputs. Both get 167/167 logical cases right, with zero scope,
+logical-reference, completion, order or execution differences. The corrected
+native-PSI ledger has 79 differences: resolve 74, navigation four, diagnostics one.
+Each entry has a classified reason and a lane-specific fingerprint. Unexpected
+axes or changed known observations fail; resolved entries may improve naturally.
+Input SHA-256 checks protect facts, cases and witnesses from expectation rewrites.
+
+| Axis | Previous count | Triage |
+| --- | ---: | --- |
+| Scope | 8 | Harness artifacts: use core's type equivalence, unspecified computed-type comparison, display type and computed identity contracts. Now zero. |
+| References | 1 | Harness artifact: a computed output's identity is not its current alias name. Now zero. |
+| Completion | 53 | Harness artifacts: origin/source labels are not visible SQL qualifiers; observe real items and match actual presentation to shared candidates. Supply physical facts for real SQL-file source fixtures. Now zero. |
+| Resolve | 81 | Normalize duplicate equivalent variants and visible aliases only after native identity/provenance independently agree. Never substitute core for missing native PSI. 74 remain. |
+| Navigation | 6 | Physical fixture targets now come from the real DAS source. Native set-output/declaration deference still loses or fabricates provenance in four cases. |
+| Diagnostics | 2 | Harness artifact: recognize the shared branch-count diagnostic as an operator problem. The stock open-catalog inspection remains separately visible. |
+
+The 76 support-layer entries are grouped into nine minimal reproducer families
+in `src/test/resources/relation-corpus/duckdb-support-reproducers.json`:
+
+- `pipe-where`, reference/caret 24: core resolves `src.id`; no native reference
+  exists. `PipeStatementGate` and `ExternalRelationResolveExtension` need a shared
+  flat-PIPE reference bridge. This family accounts for 57 resolve entries.
+- `self-join-same-slot`, reference/caret 7: core is ambiguous between two alias
+  occurrences; native equal provider-column symbols collapse that distinction.
+  `RelationColumnSymbol` / `ExternalRelationResolveExtension`.
+- `quoted-case-duckdb`, reference/caret 9: native and core offsets agree, core
+  resolves the quoted case-insensitive name, but native accepts no candidate.
+  `ExternalRelationResolveExtension` / `RelationColumnSymbol` quote/case bridge.
+- `ordinary-star-join-cte-duckdb`, reference/caret 69: core exposes `q.id_1`; native
+  has none. `RelationAnalysis.manages` must not reject star-derived columns merely
+  because an inner join predicate also mentions their source facts.
+- `ordinary-group-alias`, reference/caret 61: core retains `src.event_kind`
+  through `kind`; no native candidate. Projection lineage is excluded by
+  `RelationAnalysis.manages` / `ExternalRelationResolveExtension`.
+- `left-using-merged-star`, reference/caret 57: core picks the left merged key;
+  the stock result disagrees. Shared merged-key management needs to retain it.
+- `full-using-key-non-null-non-null`, reference/caret 9: core computes one merged
+  key with no single-provider provenance; the shared native resolver supplies no
+  corresponding computed symbol.
+- `set-nullability-names-intersect`, reference/caret 94: core retains left-input
+  provenance through `first_name`; native sees a SQL alias instead.
+  `RelationAnalysis.manages` / `ExternalRelationGotoDeclarationHandler`.
+- `ordinary-set-union-all`, reference/caret 61: core has computed/no provider
+  provenance; native still resolves/navigates to the left input. The resolve/goto
+  deference policy also retains an input after branch-count mismatch.
+
+Three platform entries remain with evidence: computed WHERE/lateral projection
+aliases have native PSI but no stock candidates, and `SqlResolveInspection` still
+reports a table while the shared open-catalog analysis has no absence proof.
+The JSON reproducers retain expected/actual cells, SQL, fact keys, offsets, raw
+native variants and presentation. No support workaround was added.
+
+Required feature/provider wiring was checked. The optional native slot table-type
+bridge was evaluated separately, with stock scalar typing preserved. It introduced
+additional lineage/navigation conflicts and a shadowed native completion item, so
+it is not enabled. A consumer test pins that unchanged default. The production
+parser and its scalar typing remain unchanged.
+
+The ledger generator is `tools/triage_relation_corpus.py --write`; it writes only
+the observed ledger and reproducer resources, never facts/cases/witnesses. Added
+the independent native corpus test and optional-type/default-policy test; no
+tests or files deleted. Full default/present 261/262/263 lanes pass 292 tests with
+nine skips; absent lanes pass 214 with nine skips. Brikk passes 78; isolation two;
+census 226/226; all 132 distinct native witnesses pass.
+
+Both corpus lanes ran twice, byte-identical on every generation. Native report
+SHA-256: `a25d2700ae19076544a0946842ea2b527f5f3cb3ea36ec0d08ba7e11ac47da84`.
+Injected report SHA-256: `cf87eff6aeb222f3454ef88457cb51e92df5b597e7148654ae8c3a8bdaa2cebb`.

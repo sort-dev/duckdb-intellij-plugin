@@ -1,661 +1,1907 @@
 {
   "shared": {
     "aggregate-group-expression-alias": [
-      "completion",
-      "order",
-      "scope"
+      "resolve"
     ],
     "aggregate-no-group": [
-      "completion",
-      "scope"
-    ],
-    "bare-slot-is-physical": [
-      "references",
-      "scope"
+      "resolve"
     ],
     "call-known-output-contract": [
-      "completion",
-      "navigation",
-      "references",
-      "resolve",
-      "scope"
+      "resolve"
     ],
-    "camel-case-upper-folding": [
-      "completion"
-    ],
-    "contract-origin": [
-      "completion"
-    ],
-    "correlated-qualified": [
-      "completion",
-      "scope"
-    ],
-    "cte-flatten": [
-      "completion"
-    ],
-    "cte-projection": [
-      "completion"
-    ],
-    "cte-shadow-slot": [
-      "completion"
+    "called-slot-not-shadowed-by-cte": [
+      "resolve"
     ],
     "duckdb-lateral-select-alias": [
-      "completion",
-      "references",
-      "resolve",
-      "scope"
+      "resolve"
     ],
     "duckdb-where-projection-alias": [
-      "completion",
-      "diagnostics",
-      "references",
-      "resolve",
-      "scope"
-    ],
-    "exec-extend-window-after-limit": [
-      "coreExecution"
-    ],
-    "exec-full-join-after-where": [
-      "coreExecution"
-    ],
-    "exec-order-after-limit": [
-      "coreExecution"
-    ],
-    "exec-right-join-after-where": [
-      "coreExecution"
-    ],
-    "exec-set-input-alias": [
-      "coreExecution"
+      "resolve"
     ],
     "full-using-key-non-null-non-null": [
-      "completion",
-      "diagnostics",
-      "navigation",
-      "resolve",
-      "scope"
+      "resolve"
     ],
     "full-using-key-non-null-nullable": [
-      "completion",
-      "diagnostics",
-      "navigation",
-      "resolve",
-      "scope"
+      "resolve"
     ],
     "full-using-key-nullable-non-null": [
-      "completion",
-      "diagnostics",
-      "navigation",
-      "resolve",
-      "scope"
+      "resolve"
     ],
     "full-using-key-nullable-nullable": [
-      "completion",
-      "diagnostics",
-      "navigation",
-      "resolve",
-      "scope"
-    ],
-    "incomplete-parenthesis": [
-      "completion",
-      "scope"
+      "resolve"
     ],
     "join-after-drop-without-as": [
-      "diagnostics",
-      "scope"
-    ],
-    "join-ambiguous": [
-      "completion",
       "resolve"
     ],
     "left-using-merged-star": [
-      "completion",
-      "diagnostics",
-      "navigation",
-      "references",
-      "resolve",
-      "scope"
-    ],
-    "left-using-star-output-order": [
-      "completion",
-      "diagnostics",
-      "navigation",
-      "order",
-      "references",
-      "scope"
-    ],
-    "local-alias-shadow": [
-      "references",
-      "scope"
-    ],
-    "mixed-case-column-folding": [
-      "completion"
-    ],
-    "multipart-same-table-name": [
-      "references",
-      "scope"
+      "resolve"
     ],
     "natural-merged-star": [
-      "completion",
-      "diagnostics",
-      "navigation",
-      "references",
-      "resolve",
-      "scope"
-    ],
-    "natural-star-output-order": [
-      "completion",
-      "diagnostics",
-      "navigation",
-      "order",
-      "references",
-      "scope"
-    ],
-    "nested-cte-shadow": [
-      "completion"
-    ],
-    "ordinary-alias": [
-      "completion"
+      "resolve"
     ],
     "ordinary-group-alias": [
-      "completion",
-      "diagnostics",
-      "navigation",
-      "references",
-      "resolve",
-      "scope"
-    ],
-    "ordinary-join-anti": [
-      "completion"
-    ],
-    "ordinary-join-cross": [
-      "completion"
-    ],
-    "ordinary-join-full": [
-      "completion"
-    ],
-    "ordinary-join-inner": [
-      "completion"
-    ],
-    "ordinary-join-left": [
-      "completion"
-    ],
-    "ordinary-join-right": [
-      "completion"
-    ],
-    "ordinary-join-semi": [
-      "completion"
-    ],
-    "ordinary-order-alias": [
-      "completion",
-      "scope"
-    ],
-    "ordinary-set-except": [
-      "completion",
-      "navigation",
-      "references",
-      "resolve",
-      "scope"
-    ],
-    "ordinary-set-intersect": [
-      "completion",
-      "navigation",
-      "references",
-      "resolve",
-      "scope"
+      "resolve"
     ],
     "ordinary-set-union-all": [
-      "completion",
-      "references",
-      "resolve",
-      "scope"
-    ],
-    "ordinary-slot-implicit-qualifier": [
-      "completion"
+      "navigation",
+      "resolve"
     ],
     "ordinary-star-join-cte-duckdb": [
-      "completion",
-      "diagnostics",
-      "navigation",
-      "order",
-      "references",
-      "resolve",
-      "scope"
+      "resolve"
     ],
     "ordinary-star-join-subquery-duckdb": [
-      "completion",
-      "diagnostics",
-      "navigation",
-      "order",
-      "references",
-      "resolve",
-      "scope"
-    ],
-    "parenthesized-lineage": [
-      "completion"
+      "resolve"
     ],
     "parenthesized-pipe-input": [
-      "completion"
+      "resolve"
     ],
     "physical-mixed-pipe": [
-      "completion",
-      "navigation",
-      "references",
-      "resolve",
-      "scope"
-    ],
-    "physical-ordinary": [
-      "references",
-      "scope"
+      "resolve"
     ],
     "physical-pipe": [
-      "completion",
-      "navigation",
-      "references",
-      "resolve",
-      "scope"
+      "resolve"
     ],
     "pipe-aggregate": [
-      "completion",
-      "order",
-      "scope"
+      "resolve"
     ],
     "pipe-aggregate-group-order": [
-      "completion",
-      "order",
-      "scope"
+      "resolve"
     ],
-    "pipe-anti-right-hidden": [
-      "diagnostics"
+    "pipe-as": [
+      "resolve"
     ],
-    "pipe-as-replaces-old-alias": [
-      "diagnostics"
+    "pipe-as-new-alias": [
+      "resolve"
     ],
     "pipe-distinct": [
-      "completion",
-      "references",
-      "resolve",
-      "scope"
-    ],
-    "pipe-distinct-multi-source-qualifier-refused": [
-      "completion",
-      "diagnostics",
-      "navigation",
-      "references",
-      "resolve",
-      "scope"
-    ],
-    "pipe-distinct-unaliased-qualifier-refused": [
-      "completion",
-      "diagnostics",
-      "navigation",
-      "references",
-      "resolve",
-      "scope"
+      "resolve"
     ],
     "pipe-drop": [
-      "completion",
-      "navigation",
-      "order",
-      "references",
-      "resolve",
-      "scope"
-    ],
-    "pipe-drop-missing": [
-      "completion",
-      "diagnostics",
-      "scope"
+      "resolve"
     ],
     "pipe-extend-computed": [
-      "completion",
-      "scope"
+      "resolve"
     ],
     "pipe-extend-passthrough": [
-      "completion",
-      "scope"
+      "resolve"
     ],
     "pipe-extend-unknown": [
-      "completion",
-      "scope"
+      "resolve"
+    ],
+    "pipe-in-cte": [
+      "resolve"
+    ],
+    "pipe-in-subquery": [
+      "resolve"
+    ],
+    "pipe-join-anti": [
+      "resolve"
+    ],
+    "pipe-join-cross": [
+      "resolve"
+    ],
+    "pipe-join-full": [
+      "resolve"
+    ],
+    "pipe-join-inner": [
+      "resolve"
+    ],
+    "pipe-join-left": [
+      "resolve"
+    ],
+    "pipe-join-right": [
+      "resolve"
     ],
     "pipe-join-right-anti": [
-      "completion",
-      "navigation",
-      "references",
-      "resolve",
-      "scope"
+      "resolve"
     ],
     "pipe-join-right-semi": [
-      "completion",
-      "navigation",
-      "references",
-      "resolve",
-      "scope"
+      "resolve"
+    ],
+    "pipe-join-semi": [
+      "resolve"
     ],
     "pipe-left-using-merged-star": [
-      "completion",
-      "diagnostics",
-      "navigation",
-      "order",
-      "references",
-      "resolve",
-      "scope"
+      "resolve"
     ],
     "pipe-limit": [
-      "completion",
-      "references",
-      "resolve",
-      "scope"
-    ],
-    "pipe-limit-multi-source-qualifier-refused": [
-      "completion",
-      "diagnostics",
-      "navigation",
-      "references",
-      "resolve",
-      "scope"
-    ],
-    "pipe-limit-unaliased-qualifier-refused": [
-      "completion",
-      "diagnostics",
-      "navigation",
-      "references",
-      "resolve",
-      "scope"
+      "resolve"
     ],
     "pipe-offset": [
-      "completion",
-      "references",
-      "resolve",
-      "scope"
+      "resolve"
     ],
-    "pipe-offset-multi-source-qualifier-refused": [
-      "completion",
-      "diagnostics",
-      "navigation",
-      "references",
-      "resolve",
-      "scope"
-    ],
-    "pipe-offset-unaliased-qualifier-refused": [
-      "completion",
-      "diagnostics",
-      "navigation",
-      "references",
-      "resolve",
-      "scope"
+    "pipe-order-by": [
+      "resolve"
     ],
     "pipe-pivot": [
-      "completion",
-      "references",
-      "resolve",
-      "scope"
+      "resolve"
+    ],
+    "pipe-qualified-star": [
+      "resolve"
     ],
     "pipe-rename": [
-      "completion",
-      "navigation",
-      "order",
-      "references",
-      "resolve",
-      "scope"
+      "resolve"
     ],
     "pipe-select-computed": [
-      "completion",
-      "scope"
-    ],
-    "pipe-select-hides-alias": [
-      "completion",
-      "diagnostics"
+      "resolve"
     ],
     "pipe-select-rename-lineage": [
-      "completion"
-    ],
-    "pipe-semi-right-hidden": [
-      "diagnostics"
+      "resolve"
     ],
     "pipe-set": [
-      "completion",
-      "references",
-      "resolve",
-      "scope"
+      "resolve"
     ],
     "pipe-set-except": [
-      "completion",
-      "navigation",
-      "references",
-      "resolve",
-      "scope"
+      "resolve"
     ],
     "pipe-set-intersect": [
-      "completion",
-      "navigation",
-      "references",
-      "resolve",
-      "scope"
+      "resolve"
     ],
     "pipe-set-union-all": [
-      "completion",
-      "references",
-      "resolve",
-      "scope"
+      "resolve"
     ],
     "pipe-set-union-distinct": [
-      "completion",
-      "references",
-      "resolve",
-      "scope"
-    ],
-    "pipe-star-join": [
-      "completion",
-      "diagnostics",
-      "navigation",
-      "references",
-      "resolve",
-      "scope"
+      "resolve"
     ],
     "pipe-star-join-duckdb-dedup": [
-      "completion",
-      "diagnostics",
-      "navigation",
-      "order",
-      "references",
-      "resolve",
-      "scope"
+      "resolve"
     ],
     "pipe-star-single": [
-      "completion",
-      "references",
-      "resolve",
-      "scope"
-    ],
-    "pipe-star-single-hidden-alias": [
-      "completion",
-      "diagnostics",
-      "navigation",
-      "references",
-      "resolve",
-      "scope"
+      "resolve"
     ],
     "pipe-tablesample": [
-      "completion",
-      "navigation",
-      "references",
-      "resolve",
-      "scope"
-    ],
-    "pipe-unknown-star": [
-      "diagnostics",
-      "scope"
+      "resolve"
     ],
     "pipe-unpivot": [
-      "completion",
-      "references",
-      "resolve",
-      "scope"
+      "resolve"
+    ],
+    "pipe-where": [
+      "resolve"
     ],
     "pipe-window": [
-      "completion",
-      "references",
-      "resolve",
-      "scope"
+      "resolve"
     ],
     "pivot-surviving-key": [
-      "completion",
-      "navigation",
-      "order",
-      "references",
-      "resolve",
-      "scope"
+      "resolve"
     ],
-    "portable-group-expression": [
-      "completion",
-      "scope"
+    "q13-keeps-distinct": [
+      "resolve"
     ],
-    "provider-case-exact-match": [
-      "completion"
+    "q13-keeps-limit": [
+      "resolve"
     ],
-    "q13-drops-aggregate": [
-      "completion",
-      "diagnostics"
+    "q13-keeps-offset": [
+      "resolve"
     ],
-    "q13-drops-drop": [
-      "diagnostics",
-      "scope"
-    ],
-    "q13-drops-except": [
-      "diagnostics",
-      "scope"
-    ],
-    "q13-drops-extend": [
-      "completion",
-      "diagnostics",
-      "navigation",
-      "references",
-      "resolve",
-      "scope"
-    ],
-    "q13-drops-intersect": [
-      "diagnostics",
-      "scope"
-    ],
-    "q13-drops-pivot": [
-      "diagnostics",
-      "scope"
-    ],
-    "q13-drops-rename": [
-      "diagnostics",
-      "scope"
-    ],
-    "q13-drops-select": [
-      "completion",
-      "diagnostics"
-    ],
-    "q13-drops-set": [
-      "diagnostics",
-      "scope"
-    ],
-    "q13-drops-union": [
-      "diagnostics",
-      "scope"
-    ],
-    "q13-drops-unpivot": [
-      "diagnostics",
-      "scope"
-    ],
-    "q13-drops-window": [
-      "diagnostics",
-      "scope"
+    "q13-keeps-order-by": [
+      "resolve"
     ],
     "q13-keeps-tablesample": [
-      "completion",
-      "navigation",
-      "references",
-      "resolve",
-      "scope"
+      "resolve"
     ],
-    "qualified-column-case": [
-      "completion"
+    "q13-keeps-where": [
+      "resolve"
     ],
     "quoted-case-duckdb": [
       "resolve"
     ],
-    "quoted-source-alias": [
-      "completion",
+    "select-first-pipe": [
       "resolve"
     ],
-    "select-first-pipe": [
-      "completion"
-    ],
     "self-join-same-slot": [
-      "completion",
       "resolve"
     ],
     "set-column-count-mismatch": [
-      "diagnostics"
+      "navigation",
+      "resolve"
     ],
     "set-nullability-names-except": [
-      "completion",
       "navigation",
-      "order",
-      "references",
-      "resolve",
-      "scope"
+      "resolve"
     ],
     "set-nullability-names-intersect": [
-      "completion",
       "navigation",
-      "order",
-      "references",
-      "resolve",
-      "scope"
-    ],
-    "set-nullability-names-union-all": [
-      "completion",
-      "order",
-      "references",
-      "resolve",
-      "scope"
-    ],
-    "subquery-flatten": [
-      "completion"
-    ],
-    "union-by-name": [
-      "completion",
-      "navigation",
-      "order",
-      "references",
-      "resolve",
-      "scope"
-    ],
-    "union-unanimous-origin": [
-      "completion",
-      "navigation",
-      "order",
-      "references",
-      "resolve",
-      "scope"
+      "resolve"
     ],
     "unknown-table-open-catalog": [
       "diagnostics"
     ],
     "unpivot-include-nulls": [
-      "completion",
-      "order",
-      "references",
-      "resolve",
-      "scope"
-    ],
-    "utf16-after-emoji-bind": [
-      "completion"
+      "resolve"
     ]
+  },
+  "reasons": {
+    "aggregate-group-expression-alias": {
+      "resolve": {
+        "classification": "b",
+        "issue": "flat-pipe-native-reference",
+        "component": "PipeStatementGate / ExternalRelationResolveExtension",
+        "reason": "Core resolves the authored name, but the shared statement gate leaves flat PSI without a SqlReferenceExpression. The native resolve extension is never called. A shared flat-PIPE reference bridge is needed; no plugin analyzer substitution is made.",
+        "category": "ordering",
+        "references": [
+          79
+        ],
+        "carets": [
+          79
+        ]
+      }
+    },
+    "aggregate-no-group": {
+      "resolve": {
+        "classification": "b",
+        "issue": "flat-pipe-native-reference",
+        "component": "PipeStatementGate / ExternalRelationResolveExtension",
+        "reason": "Core resolves the authored name, but the shared statement gate leaves flat PSI without a SqlReferenceExpression. The native resolve extension is never called. A shared flat-PIPE reference bridge is needed; no plugin analyzer substitution is made.",
+        "category": "ordering",
+        "references": [
+          47
+        ],
+        "carets": [
+          47
+        ]
+      }
+    },
+    "call-known-output-contract": {
+      "resolve": {
+        "classification": "b",
+        "issue": "flat-pipe-native-reference",
+        "component": "PipeStatementGate / ExternalRelationResolveExtension",
+        "reason": "Core resolves the authored name, but the shared statement gate leaves flat PSI without a SqlReferenceExpression. The native resolve extension is never called. A shared flat-PIPE reference bridge is needed; no plugin analyzer substitution is made.",
+        "category": "knowledge",
+        "references": [
+          49
+        ],
+        "carets": [
+          49
+        ]
+      }
+    },
+    "called-slot-not-shadowed-by-cte": {
+      "resolve": {
+        "classification": "b",
+        "issue": "flat-pipe-native-reference",
+        "component": "PipeStatementGate / ExternalRelationResolveExtension",
+        "reason": "Core resolves the authored name, but the shared statement gate leaves flat PSI without a SqlReferenceExpression. The native resolve extension is never called. A shared flat-PIPE reference bridge is needed; no plugin analyzer substitution is made.",
+        "category": "ctes",
+        "references": [
+          57
+        ],
+        "carets": [
+          57
+        ]
+      }
+    },
+    "duckdb-lateral-select-alias": {
+      "resolve": {
+        "classification": "c",
+        "issue": "stock-computed-alias-rules",
+        "component": "Pg native SQL resolver",
+        "reason": "The native reference exists but has no variants for DuckDB's computed projection-alias rules. Core and shared completion are correct; stock PostgreSQL-family alias behavior is retained, not replaced with a plugin resolver.",
+        "category": "clauses",
+        "references": [
+          15
+        ],
+        "carets": [
+          15
+        ]
+      }
+    },
+    "duckdb-where-projection-alias": {
+      "resolve": {
+        "classification": "c",
+        "issue": "stock-computed-alias-rules",
+        "component": "Pg native SQL resolver",
+        "reason": "The native reference exists but has no variants for DuckDB's computed projection-alias rules. Core and shared completion are correct; stock PostgreSQL-family alias behavior is retained, not replaced with a plugin resolver.",
+        "category": "clauses",
+        "references": [
+          43
+        ],
+        "carets": [
+          43
+        ]
+      }
+    },
+    "full-using-key-non-null-non-null": {
+      "resolve": {
+        "classification": "b",
+        "issue": "computed-merged-key-native-management",
+        "component": "ExternalRelationResolveExtension / RelationAnalysis.manages",
+        "reason": "Core computes one merged FULL USING key with no single-provider provenance. Native resolution is not that computed column; the shared resolver manages provider columns only and supplies no native symbol for this output.",
+        "category": "joins",
+        "references": [
+          9
+        ],
+        "carets": [
+          9
+        ]
+      }
+    },
+    "full-using-key-non-null-nullable": {
+      "resolve": {
+        "classification": "b",
+        "issue": "computed-merged-key-native-management",
+        "component": "ExternalRelationResolveExtension / RelationAnalysis.manages",
+        "reason": "Core computes one merged FULL USING key with no single-provider provenance. Native resolution is not that computed column; the shared resolver manages provider columns only and supplies no native symbol for this output.",
+        "category": "joins",
+        "references": [
+          9
+        ],
+        "carets": [
+          9
+        ]
+      }
+    },
+    "full-using-key-nullable-non-null": {
+      "resolve": {
+        "classification": "b",
+        "issue": "computed-merged-key-native-management",
+        "component": "ExternalRelationResolveExtension / RelationAnalysis.manages",
+        "reason": "Core computes one merged FULL USING key with no single-provider provenance. Native resolution is not that computed column; the shared resolver manages provider columns only and supplies no native symbol for this output.",
+        "category": "joins",
+        "references": [
+          9
+        ],
+        "carets": [
+          9
+        ]
+      }
+    },
+    "full-using-key-nullable-nullable": {
+      "resolve": {
+        "classification": "b",
+        "issue": "computed-merged-key-native-management",
+        "component": "ExternalRelationResolveExtension / RelationAnalysis.manages",
+        "reason": "Core computes one merged FULL USING key with no single-provider provenance. Native resolution is not that computed column; the shared resolver manages provider columns only and supplies no native symbol for this output.",
+        "category": "joins",
+        "references": [
+          9
+        ],
+        "carets": [
+          9
+        ]
+      }
+    },
+    "join-after-drop-without-as": {
+      "resolve": {
+        "classification": "b",
+        "issue": "flat-pipe-native-reference",
+        "component": "PipeStatementGate / ExternalRelationResolveExtension",
+        "reason": "Core resolves the authored name, but the shared statement gate leaves flat PSI without a SqlReferenceExpression. The native resolve extension is never called. A shared flat-PIPE reference bridge is needed; no plugin analyzer substitution is made.",
+        "category": "joins",
+        "references": [
+          66,
+          87,
+          89
+        ],
+        "carets": [
+          66
+        ]
+      }
+    },
+    "left-using-merged-star": {
+      "resolve": {
+        "classification": "b",
+        "issue": "merged-key-native-management",
+        "component": "RelationAnalysis.manages / ExternalRelationResolveExtension",
+        "reason": "Core selects the left provider's merged key, but native resolution disagrees or remains ambiguous. The shared layer does not make the core's merged/star-derived key authoritative over the stock table-type result.",
+        "category": "joins",
+        "references": [
+          57
+        ],
+        "carets": [
+          57
+        ]
+      }
+    },
+    "natural-merged-star": {
+      "resolve": {
+        "classification": "b",
+        "issue": "merged-key-native-management",
+        "component": "RelationAnalysis.manages / ExternalRelationResolveExtension",
+        "reason": "Core selects the left provider's merged key, but native resolution disagrees or remains ambiguous. The shared layer does not make the core's merged/star-derived key authoritative over the stock table-type result.",
+        "category": "joins",
+        "references": [
+          49
+        ],
+        "carets": [
+          49
+        ]
+      }
+    },
+    "ordinary-group-alias": {
+      "resolve": {
+        "classification": "b",
+        "issue": "projection-lineage-native-management",
+        "component": "RelationAnalysis.manages / ExternalRelationResolveExtension",
+        "reason": "Core preserves the provider column's lineage through the GROUP BY projection alias, but native resolve returns no candidate. The shared resolver excludes the unqualified projection output from its managed provider-column cases.",
+        "category": "clauses",
+        "references": [
+          61
+        ],
+        "carets": [
+          61
+        ]
+      }
+    },
+    "ordinary-set-union-all": {
+      "resolve": {
+        "classification": "b",
+        "issue": "set-output-native-deference",
+        "component": "ExternalRelationResolveExtension / ExternalRelationGotoDeclarationHandler",
+        "reason": "The native result retains a left-input declaration after core made the output computed or rejected the branch column count. The shared native/declaration deference policy leaves that stale input result visible.",
+        "category": "set-operations",
+        "references": [
+          61
+        ],
+        "carets": [
+          61
+        ]
+      },
+      "navigation": {
+        "classification": "b",
+        "issue": "set-output-native-deference",
+        "component": "ExternalRelationResolveExtension / ExternalRelationGotoDeclarationHandler",
+        "reason": "The native result retains a left-input declaration after core made the output computed or rejected the branch column count. The shared native/declaration deference policy leaves that stale input result visible.",
+        "category": "set-operations",
+        "references": [
+          61
+        ],
+        "carets": [
+          61
+        ]
+      }
+    },
+    "ordinary-star-join-cte-duckdb": {
+      "resolve": {
+        "classification": "b",
+        "issue": "star-output-native-management",
+        "component": "RelationAnalysis.manages / ExternalRelationResolveExtension",
+        "reason": "Core exposes the DuckDB de-duplicated star column id_1. The native resolver has no candidate. Management of star-derived provider columns must not be lost because the inner join predicate also references their source facts.",
+        "category": "stars",
+        "references": [
+          69
+        ],
+        "carets": [
+          69
+        ]
+      }
+    },
+    "ordinary-star-join-subquery-duckdb": {
+      "resolve": {
+        "classification": "b",
+        "issue": "star-output-native-management",
+        "component": "RelationAnalysis.manages / ExternalRelationResolveExtension",
+        "reason": "Core exposes the DuckDB de-duplicated star column id_1. The native resolver has no candidate. Management of star-derived provider columns must not be lost because the inner join predicate also references their source facts.",
+        "category": "stars",
+        "references": [
+          9
+        ],
+        "carets": [
+          9
+        ]
+      }
+    },
+    "parenthesized-pipe-input": {
+      "resolve": {
+        "classification": "b",
+        "issue": "flat-pipe-native-reference",
+        "component": "PipeStatementGate / ExternalRelationResolveExtension",
+        "reason": "Core resolves the authored name, but the shared statement gate leaves flat PSI without a SqlReferenceExpression. The native resolve extension is never called. A shared flat-PIPE reference bridge is needed; no plugin analyzer substitution is made.",
+        "category": "pipeline-shapes",
+        "references": [
+          32
+        ],
+        "carets": [
+          32
+        ]
+      }
+    },
+    "physical-mixed-pipe": {
+      "resolve": {
+        "classification": "b",
+        "issue": "flat-pipe-native-reference",
+        "component": "PipeStatementGate / ExternalRelationResolveExtension",
+        "reason": "Core resolves the authored name, but the shared statement gate leaves flat PSI without a SqlReferenceExpression. The native resolve extension is never called. A shared flat-PIPE reference bridge is needed; no plugin analyzer substitution is made.",
+        "category": "physical",
+        "references": [
+          61
+        ],
+        "carets": [
+          61
+        ]
+      }
+    },
+    "physical-pipe": {
+      "resolve": {
+        "classification": "b",
+        "issue": "flat-pipe-native-reference",
+        "component": "PipeStatementGate / ExternalRelationResolveExtension",
+        "reason": "Core resolves the authored name, but the shared statement gate leaves flat PSI without a SqlReferenceExpression. The native resolve extension is never called. A shared flat-PIPE reference bridge is needed; no plugin analyzer substitution is made.",
+        "category": "physical",
+        "references": [
+          27
+        ],
+        "carets": [
+          27
+        ]
+      }
+    },
+    "pipe-aggregate": {
+      "resolve": {
+        "classification": "b",
+        "issue": "flat-pipe-native-reference",
+        "component": "PipeStatementGate / ExternalRelationResolveExtension",
+        "reason": "Core resolves the authored name, but the shared statement gate leaves flat PSI without a SqlReferenceExpression. The native resolve extension is never called. A shared flat-PIPE reference bridge is needed; no plugin analyzer substitution is made.",
+        "category": "computed",
+        "references": [
+          70
+        ],
+        "carets": [
+          70
+        ]
+      }
+    },
+    "pipe-aggregate-group-order": {
+      "resolve": {
+        "classification": "b",
+        "issue": "flat-pipe-native-reference",
+        "component": "PipeStatementGate / ExternalRelationResolveExtension",
+        "reason": "Core resolves the authored name, but the shared statement gate leaves flat PSI without a SqlReferenceExpression. The native resolve extension is never called. A shared flat-PIPE reference bridge is needed; no plugin analyzer substitution is made.",
+        "category": "computed",
+        "references": [
+          77
+        ],
+        "carets": [
+          77
+        ]
+      }
+    },
+    "pipe-as": {
+      "resolve": {
+        "classification": "b",
+        "issue": "flat-pipe-native-reference",
+        "component": "PipeStatementGate / ExternalRelationResolveExtension",
+        "reason": "Core resolves the authored name, but the shared statement gate leaves flat PSI without a SqlReferenceExpression. The native resolve extension is never called. A shared flat-PIPE reference bridge is needed; no plugin analyzer substitution is made.",
+        "category": "aliases",
+        "references": [
+          30
+        ],
+        "carets": [
+          30
+        ]
+      }
+    },
+    "pipe-as-new-alias": {
+      "resolve": {
+        "classification": "b",
+        "issue": "flat-pipe-native-reference",
+        "component": "PipeStatementGate / ExternalRelationResolveExtension",
+        "reason": "Core resolves the authored name, but the shared statement gate leaves flat PSI without a SqlReferenceExpression. The native resolve extension is never called. A shared flat-PIPE reference bridge is needed; no plugin analyzer substitution is made.",
+        "category": "aliases",
+        "references": [
+          32
+        ],
+        "carets": [
+          32
+        ]
+      }
+    },
+    "pipe-distinct": {
+      "resolve": {
+        "classification": "b",
+        "issue": "flat-pipe-native-reference",
+        "component": "PipeStatementGate / ExternalRelationResolveExtension",
+        "reason": "Core resolves the authored name, but the shared statement gate leaves flat PSI without a SqlReferenceExpression. The native resolve extension is never called. A shared flat-PIPE reference bridge is needed; no plugin analyzer substitution is made.",
+        "category": "pipe-preserving",
+        "references": [
+          32
+        ],
+        "carets": [
+          32
+        ]
+      }
+    },
+    "pipe-drop": {
+      "resolve": {
+        "classification": "b",
+        "issue": "flat-pipe-native-reference",
+        "component": "PipeStatementGate / ExternalRelationResolveExtension",
+        "reason": "Core resolves the authored name, but the shared statement gate leaves flat PSI without a SqlReferenceExpression. The native resolve extension is never called. A shared flat-PIPE reference bridge is needed; no plugin analyzer substitution is made.",
+        "category": "pipe-changing",
+        "references": [
+          32
+        ],
+        "carets": [
+          32
+        ]
+      }
+    },
+    "pipe-extend-computed": {
+      "resolve": {
+        "classification": "b",
+        "issue": "flat-pipe-native-reference",
+        "component": "PipeStatementGate / ExternalRelationResolveExtension",
+        "reason": "Core resolves the authored name, but the shared statement gate leaves flat PSI without a SqlReferenceExpression. The native resolve extension is never called. A shared flat-PIPE reference bridge is needed; no plugin analyzer substitution is made.",
+        "category": "computed",
+        "references": [
+          51
+        ],
+        "carets": [
+          51
+        ]
+      }
+    },
+    "pipe-extend-passthrough": {
+      "resolve": {
+        "classification": "b",
+        "issue": "flat-pipe-native-reference",
+        "component": "PipeStatementGate / ExternalRelationResolveExtension",
+        "reason": "Core resolves the authored name, but the shared statement gate leaves flat PSI without a SqlReferenceExpression. The native resolve extension is never called. A shared flat-PIPE reference bridge is needed; no plugin analyzer substitution is made.",
+        "category": "lineage",
+        "references": [
+          51
+        ],
+        "carets": [
+          51
+        ]
+      }
+    },
+    "pipe-extend-unknown": {
+      "resolve": {
+        "classification": "b",
+        "issue": "flat-pipe-native-reference",
+        "component": "PipeStatementGate / ExternalRelationResolveExtension",
+        "reason": "Core resolves the authored name, but the shared statement gate leaves flat PSI without a SqlReferenceExpression. The native resolve extension is never called. A shared flat-PIPE reference bridge is needed; no plugin analyzer substitution is made.",
+        "category": "knowledge",
+        "references": [
+          55
+        ],
+        "carets": [
+          55
+        ]
+      }
+    },
+    "pipe-in-cte": {
+      "resolve": {
+        "classification": "b",
+        "issue": "flat-pipe-native-reference",
+        "component": "PipeStatementGate / ExternalRelationResolveExtension",
+        "reason": "Core resolves the authored name, but the shared statement gate leaves flat PSI without a SqlReferenceExpression. The native resolve extension is never called. A shared flat-PIPE reference bridge is needed; no plugin analyzer substitution is made.",
+        "category": "pipeline-shapes",
+        "references": [
+          47
+        ],
+        "carets": [
+          47
+        ]
+      }
+    },
+    "pipe-in-subquery": {
+      "resolve": {
+        "classification": "b",
+        "issue": "flat-pipe-native-reference",
+        "component": "PipeStatementGate / ExternalRelationResolveExtension",
+        "reason": "Core resolves the authored name, but the shared statement gate leaves flat PSI without a SqlReferenceExpression. The native resolve extension is never called. A shared flat-PIPE reference bridge is needed; no plugin analyzer substitution is made.",
+        "category": "pipeline-shapes",
+        "references": [
+          9
+        ],
+        "carets": [
+          9
+        ]
+      }
+    },
+    "pipe-join-anti": {
+      "resolve": {
+        "classification": "b",
+        "issue": "flat-pipe-native-reference",
+        "component": "PipeStatementGate / ExternalRelationResolveExtension",
+        "reason": "Core resolves the authored name, but the shared statement gate leaves flat PSI without a SqlReferenceExpression. The native resolve extension is never called. A shared flat-PIPE reference bridge is needed; no plugin analyzer substitution is made.",
+        "category": "joins",
+        "references": [
+          58
+        ],
+        "carets": [
+          58
+        ]
+      }
+    },
+    "pipe-join-cross": {
+      "resolve": {
+        "classification": "b",
+        "issue": "flat-pipe-native-reference",
+        "component": "PipeStatementGate / ExternalRelationResolveExtension",
+        "reason": "Core resolves the authored name, but the shared statement gate leaves flat PSI without a SqlReferenceExpression. The native resolve extension is never called. A shared flat-PIPE reference bridge is needed; no plugin analyzer substitution is made.",
+        "category": "joins",
+        "references": [
+          46
+        ],
+        "carets": [
+          46
+        ]
+      }
+    },
+    "pipe-join-full": {
+      "resolve": {
+        "classification": "b",
+        "issue": "flat-pipe-native-reference",
+        "component": "PipeStatementGate / ExternalRelationResolveExtension",
+        "reason": "Core resolves the authored name, but the shared statement gate leaves flat PSI without a SqlReferenceExpression. The native resolve extension is never called. A shared flat-PIPE reference bridge is needed; no plugin analyzer substitution is made.",
+        "category": "joins",
+        "references": [
+          58
+        ],
+        "carets": [
+          58
+        ]
+      }
+    },
+    "pipe-join-inner": {
+      "resolve": {
+        "classification": "b",
+        "issue": "flat-pipe-native-reference",
+        "component": "PipeStatementGate / ExternalRelationResolveExtension",
+        "reason": "Core resolves the authored name, but the shared statement gate leaves flat PSI without a SqlReferenceExpression. The native resolve extension is never called. A shared flat-PIPE reference bridge is needed; no plugin analyzer substitution is made.",
+        "category": "joins",
+        "references": [
+          59
+        ],
+        "carets": [
+          59
+        ]
+      }
+    },
+    "pipe-join-left": {
+      "resolve": {
+        "classification": "b",
+        "issue": "flat-pipe-native-reference",
+        "component": "PipeStatementGate / ExternalRelationResolveExtension",
+        "reason": "Core resolves the authored name, but the shared statement gate leaves flat PSI without a SqlReferenceExpression. The native resolve extension is never called. A shared flat-PIPE reference bridge is needed; no plugin analyzer substitution is made.",
+        "category": "joins",
+        "references": [
+          58
+        ],
+        "carets": [
+          58
+        ]
+      }
+    },
+    "pipe-join-right": {
+      "resolve": {
+        "classification": "b",
+        "issue": "flat-pipe-native-reference",
+        "component": "PipeStatementGate / ExternalRelationResolveExtension",
+        "reason": "Core resolves the authored name, but the shared statement gate leaves flat PSI without a SqlReferenceExpression. The native resolve extension is never called. A shared flat-PIPE reference bridge is needed; no plugin analyzer substitution is made.",
+        "category": "joins",
+        "references": [
+          59
+        ],
+        "carets": [
+          59
+        ]
+      }
+    },
+    "pipe-join-right-anti": {
+      "resolve": {
+        "classification": "b",
+        "issue": "flat-pipe-native-reference",
+        "component": "PipeStatementGate / ExternalRelationResolveExtension",
+        "reason": "Core resolves the authored name, but the shared statement gate leaves flat PSI without a SqlReferenceExpression. The native resolve extension is never called. A shared flat-PIPE reference bridge is needed; no plugin analyzer substitution is made.",
+        "category": "joins",
+        "references": [
+          64
+        ],
+        "carets": [
+          64
+        ]
+      }
+    },
+    "pipe-join-right-semi": {
+      "resolve": {
+        "classification": "b",
+        "issue": "flat-pipe-native-reference",
+        "component": "PipeStatementGate / ExternalRelationResolveExtension",
+        "reason": "Core resolves the authored name, but the shared statement gate leaves flat PSI without a SqlReferenceExpression. The native resolve extension is never called. A shared flat-PIPE reference bridge is needed; no plugin analyzer substitution is made.",
+        "category": "joins",
+        "references": [
+          64
+        ],
+        "carets": [
+          64
+        ]
+      }
+    },
+    "pipe-join-semi": {
+      "resolve": {
+        "classification": "b",
+        "issue": "flat-pipe-native-reference",
+        "component": "PipeStatementGate / ExternalRelationResolveExtension",
+        "reason": "Core resolves the authored name, but the shared statement gate leaves flat PSI without a SqlReferenceExpression. The native resolve extension is never called. A shared flat-PIPE reference bridge is needed; no plugin analyzer substitution is made.",
+        "category": "joins",
+        "references": [
+          58
+        ],
+        "carets": [
+          58
+        ]
+      }
+    },
+    "pipe-left-using-merged-star": {
+      "resolve": {
+        "classification": "b",
+        "issue": "flat-pipe-native-reference",
+        "component": "PipeStatementGate / ExternalRelationResolveExtension",
+        "reason": "Core resolves the authored name, but the shared statement gate leaves flat PSI without a SqlReferenceExpression. The native resolve extension is never called. A shared flat-PIPE reference bridge is needed; no plugin analyzer substitution is made.",
+        "category": "joins",
+        "references": [
+          66
+        ],
+        "carets": [
+          66
+        ]
+      }
+    },
+    "pipe-limit": {
+      "resolve": {
+        "classification": "b",
+        "issue": "flat-pipe-native-reference",
+        "component": "PipeStatementGate / ExternalRelationResolveExtension",
+        "reason": "Core resolves the authored name, but the shared statement gate leaves flat PSI without a SqlReferenceExpression. The native resolve extension is never called. A shared flat-PIPE reference bridge is needed; no plugin analyzer substitution is made.",
+        "category": "pipe-preserving",
+        "references": [
+          31
+        ],
+        "carets": [
+          31
+        ]
+      }
+    },
+    "pipe-offset": {
+      "resolve": {
+        "classification": "b",
+        "issue": "flat-pipe-native-reference",
+        "component": "PipeStatementGate / ExternalRelationResolveExtension",
+        "reason": "Core resolves the authored name, but the shared statement gate leaves flat PSI without a SqlReferenceExpression. The native resolve extension is never called. A shared flat-PIPE reference bridge is needed; no plugin analyzer substitution is made.",
+        "category": "pipe-preserving",
+        "references": [
+          32
+        ],
+        "carets": [
+          32
+        ]
+      }
+    },
+    "pipe-order-by": {
+      "resolve": {
+        "classification": "b",
+        "issue": "flat-pipe-native-reference",
+        "component": "PipeStatementGate / ExternalRelationResolveExtension",
+        "reason": "Core resolves the authored name, but the shared statement gate leaves flat PSI without a SqlReferenceExpression. The native resolve extension is never called. A shared flat-PIPE reference bridge is needed; no plugin analyzer substitution is made.",
+        "category": "pipe-preserving",
+        "references": [
+          35
+        ],
+        "carets": [
+          35
+        ]
+      }
+    },
+    "pipe-pivot": {
+      "resolve": {
+        "classification": "b",
+        "issue": "flat-pipe-native-reference",
+        "component": "PipeStatementGate / ExternalRelationResolveExtension",
+        "reason": "Core resolves the authored name, but the shared statement gate leaves flat PSI without a SqlReferenceExpression. The native resolve extension is never called. A shared flat-PIPE reference bridge is needed; no plugin analyzer substitution is made.",
+        "category": "pipe-changing",
+        "references": [
+          105
+        ],
+        "carets": [
+          105
+        ]
+      }
+    },
+    "pipe-qualified-star": {
+      "resolve": {
+        "classification": "b",
+        "issue": "flat-pipe-native-reference",
+        "component": "PipeStatementGate / ExternalRelationResolveExtension",
+        "reason": "Core resolves the authored name, but the shared statement gate leaves flat PSI without a SqlReferenceExpression. The native resolve extension is never called. A shared flat-PIPE reference bridge is needed; no plugin analyzer substitution is made.",
+        "category": "stars",
+        "references": [
+          36
+        ],
+        "carets": [
+          36
+        ]
+      }
+    },
+    "pipe-rename": {
+      "resolve": {
+        "classification": "b",
+        "issue": "flat-pipe-native-reference",
+        "component": "PipeStatementGate / ExternalRelationResolveExtension",
+        "reason": "Core resolves the authored name, but the shared statement gate leaves flat PSI without a SqlReferenceExpression. The native resolve extension is never called. A shared flat-PIPE reference bridge is needed; no plugin analyzer substitution is made.",
+        "category": "lineage",
+        "references": [
+          49
+        ],
+        "carets": [
+          49
+        ]
+      }
+    },
+    "pipe-select-computed": {
+      "resolve": {
+        "classification": "b",
+        "issue": "flat-pipe-native-reference",
+        "component": "PipeStatementGate / ExternalRelationResolveExtension",
+        "reason": "Core resolves the authored name, but the shared statement gate leaves flat PSI without a SqlReferenceExpression. The native resolve extension is never called. A shared flat-PIPE reference bridge is needed; no plugin analyzer substitution is made.",
+        "category": "computed",
+        "references": [
+          49
+        ],
+        "carets": [
+          49
+        ]
+      }
+    },
+    "pipe-select-rename-lineage": {
+      "resolve": {
+        "classification": "b",
+        "issue": "flat-pipe-native-reference",
+        "component": "PipeStatementGate / ExternalRelationResolveExtension",
+        "reason": "Core resolves the authored name, but the shared statement gate leaves flat PSI without a SqlReferenceExpression. The native resolve extension is never called. A shared flat-PIPE reference bridge is needed; no plugin analyzer substitution is made.",
+        "category": "lineage",
+        "references": [
+          51
+        ],
+        "carets": [
+          51
+        ]
+      }
+    },
+    "pipe-set": {
+      "resolve": {
+        "classification": "b",
+        "issue": "flat-pipe-native-reference",
+        "component": "PipeStatementGate / ExternalRelationResolveExtension",
+        "reason": "Core resolves the authored name, but the shared statement gate leaves flat PSI without a SqlReferenceExpression. The native resolve extension is never called. A shared flat-PIPE reference bridge is needed; no plugin analyzer substitution is made.",
+        "category": "pipe-changing",
+        "references": [
+          43
+        ],
+        "carets": [
+          43
+        ]
+      }
+    },
+    "pipe-set-except": {
+      "resolve": {
+        "classification": "b",
+        "issue": "flat-pipe-native-reference",
+        "component": "PipeStatementGate / ExternalRelationResolveExtension",
+        "reason": "Core resolves the authored name, but the shared statement gate leaves flat PSI without a SqlReferenceExpression. The native resolve extension is never called. A shared flat-PIPE reference bridge is needed; no plugin analyzer substitution is made.",
+        "category": "set-operations",
+        "references": [
+          69
+        ],
+        "carets": [
+          69
+        ]
+      }
+    },
+    "pipe-set-intersect": {
+      "resolve": {
+        "classification": "b",
+        "issue": "flat-pipe-native-reference",
+        "component": "PipeStatementGate / ExternalRelationResolveExtension",
+        "reason": "Core resolves the authored name, but the shared statement gate leaves flat PSI without a SqlReferenceExpression. The native resolve extension is never called. A shared flat-PIPE reference bridge is needed; no plugin analyzer substitution is made.",
+        "category": "set-operations",
+        "references": [
+          72
+        ],
+        "carets": [
+          72
+        ]
+      }
+    },
+    "pipe-set-union-all": {
+      "resolve": {
+        "classification": "b",
+        "issue": "flat-pipe-native-reference",
+        "component": "PipeStatementGate / ExternalRelationResolveExtension",
+        "reason": "Core resolves the authored name, but the shared statement gate leaves flat PSI without a SqlReferenceExpression. The native resolve extension is never called. A shared flat-PIPE reference bridge is needed; no plugin analyzer substitution is made.",
+        "category": "set-operations",
+        "references": [
+          72
+        ],
+        "carets": [
+          72
+        ]
+      }
+    },
+    "pipe-set-union-distinct": {
+      "resolve": {
+        "classification": "b",
+        "issue": "flat-pipe-native-reference",
+        "component": "PipeStatementGate / ExternalRelationResolveExtension",
+        "reason": "Core resolves the authored name, but the shared statement gate leaves flat PSI without a SqlReferenceExpression. The native resolve extension is never called. A shared flat-PIPE reference bridge is needed; no plugin analyzer substitution is made.",
+        "category": "set-operations",
+        "references": [
+          77
+        ],
+        "carets": [
+          77
+        ]
+      }
+    },
+    "pipe-star-join-duckdb-dedup": {
+      "resolve": {
+        "classification": "b",
+        "issue": "flat-pipe-native-reference",
+        "component": "PipeStatementGate / ExternalRelationResolveExtension",
+        "reason": "Core resolves the authored name, but the shared statement gate leaves flat PSI without a SqlReferenceExpression. The native resolve extension is never called. A shared flat-PIPE reference bridge is needed; no plugin analyzer substitution is made.",
+        "category": "stars",
+        "references": [
+          68
+        ],
+        "carets": [
+          68
+        ]
+      }
+    },
+    "pipe-star-single": {
+      "resolve": {
+        "classification": "b",
+        "issue": "flat-pipe-native-reference",
+        "component": "PipeStatementGate / ExternalRelationResolveExtension",
+        "reason": "Core resolves the authored name, but the shared statement gate leaves flat PSI without a SqlReferenceExpression. The native resolve extension is never called. A shared flat-PIPE reference bridge is needed; no plugin analyzer substitution is made.",
+        "category": "stars",
+        "references": [
+          34
+        ],
+        "carets": [
+          34
+        ]
+      }
+    },
+    "pipe-tablesample": {
+      "resolve": {
+        "classification": "b",
+        "issue": "flat-pipe-native-reference",
+        "component": "PipeStatementGate / ExternalRelationResolveExtension",
+        "reason": "Core resolves the authored name, but the shared statement gate leaves flat PSI without a SqlReferenceExpression. The native resolve extension is never called. A shared flat-PIPE reference bridge is needed; no plugin analyzer substitution is made.",
+        "category": "pipe-preserving",
+        "references": [
+          49
+        ],
+        "carets": [
+          49
+        ]
+      }
+    },
+    "pipe-unpivot": {
+      "resolve": {
+        "classification": "b",
+        "issue": "flat-pipe-native-reference",
+        "component": "PipeStatementGate / ExternalRelationResolveExtension",
+        "reason": "Core resolves the authored name, but the shared statement gate leaves flat PSI without a SqlReferenceExpression. The native resolve extension is never called. A shared flat-PIPE reference bridge is needed; no plugin analyzer substitution is made.",
+        "category": "pipe-changing",
+        "references": [
+          87
+        ],
+        "carets": [
+          87
+        ]
+      }
+    },
+    "pipe-where": {
+      "resolve": {
+        "classification": "b",
+        "issue": "flat-pipe-native-reference",
+        "component": "PipeStatementGate / ExternalRelationResolveExtension",
+        "reason": "Core resolves the authored name, but the shared statement gate leaves flat PSI without a SqlReferenceExpression. The native resolve extension is never called. A shared flat-PIPE reference bridge is needed; no plugin analyzer substitution is made.",
+        "category": "pipe-preserving",
+        "references": [
+          24
+        ],
+        "carets": [
+          24
+        ]
+      }
+    },
+    "pipe-window": {
+      "resolve": {
+        "classification": "b",
+        "issue": "flat-pipe-native-reference",
+        "component": "PipeStatementGate / ExternalRelationResolveExtension",
+        "reason": "Core resolves the authored name, but the shared statement gate leaves flat PSI without a SqlReferenceExpression. The native resolve extension is never called. A shared flat-PIPE reference bridge is needed; no plugin analyzer substitution is made.",
+        "category": "computed",
+        "references": [
+          68
+        ],
+        "carets": [
+          68
+        ]
+      }
+    },
+    "pivot-surviving-key": {
+      "resolve": {
+        "classification": "b",
+        "issue": "flat-pipe-native-reference",
+        "component": "PipeStatementGate / ExternalRelationResolveExtension",
+        "reason": "Core resolves the authored name, but the shared statement gate leaves flat PSI without a SqlReferenceExpression. The native resolve extension is never called. A shared flat-PIPE reference bridge is needed; no plugin analyzer substitution is made.",
+        "category": "pipe-changing",
+        "references": [
+          106
+        ],
+        "carets": [
+          106
+        ]
+      }
+    },
+    "q13-keeps-distinct": {
+      "resolve": {
+        "classification": "b",
+        "issue": "flat-pipe-native-reference",
+        "component": "PipeStatementGate / ExternalRelationResolveExtension",
+        "reason": "Core resolves the authored name, but the shared statement gate leaves flat PSI without a SqlReferenceExpression. The native resolve extension is never called. A shared flat-PIPE reference bridge is needed; no plugin analyzer substitution is made.",
+        "category": "pipe-preserving",
+        "references": [
+          36
+        ],
+        "carets": [
+          36
+        ]
+      }
+    },
+    "q13-keeps-limit": {
+      "resolve": {
+        "classification": "b",
+        "issue": "flat-pipe-native-reference",
+        "component": "PipeStatementGate / ExternalRelationResolveExtension",
+        "reason": "Core resolves the authored name, but the shared statement gate leaves flat PSI without a SqlReferenceExpression. The native resolve extension is never called. A shared flat-PIPE reference bridge is needed; no plugin analyzer substitution is made.",
+        "category": "pipe-preserving",
+        "references": [
+          35
+        ],
+        "carets": [
+          35
+        ]
+      }
+    },
+    "q13-keeps-offset": {
+      "resolve": {
+        "classification": "b",
+        "issue": "flat-pipe-native-reference",
+        "component": "PipeStatementGate / ExternalRelationResolveExtension",
+        "reason": "Core resolves the authored name, but the shared statement gate leaves flat PSI without a SqlReferenceExpression. The native resolve extension is never called. A shared flat-PIPE reference bridge is needed; no plugin analyzer substitution is made.",
+        "category": "pipe-preserving",
+        "references": [
+          36
+        ],
+        "carets": [
+          36
+        ]
+      }
+    },
+    "q13-keeps-order-by": {
+      "resolve": {
+        "classification": "b",
+        "issue": "flat-pipe-native-reference",
+        "component": "PipeStatementGate / ExternalRelationResolveExtension",
+        "reason": "Core resolves the authored name, but the shared statement gate leaves flat PSI without a SqlReferenceExpression. The native resolve extension is never called. A shared flat-PIPE reference bridge is needed; no plugin analyzer substitution is made.",
+        "category": "pipe-preserving",
+        "references": [
+          39
+        ],
+        "carets": [
+          39
+        ]
+      }
+    },
+    "q13-keeps-tablesample": {
+      "resolve": {
+        "classification": "b",
+        "issue": "flat-pipe-native-reference",
+        "component": "PipeStatementGate / ExternalRelationResolveExtension",
+        "reason": "Core resolves the authored name, but the shared statement gate leaves flat PSI without a SqlReferenceExpression. The native resolve extension is never called. A shared flat-PIPE reference bridge is needed; no plugin analyzer substitution is made.",
+        "category": "pipe-preserving",
+        "references": [
+          53
+        ],
+        "carets": [
+          53
+        ]
+      }
+    },
+    "q13-keeps-where": {
+      "resolve": {
+        "classification": "b",
+        "issue": "flat-pipe-native-reference",
+        "component": "PipeStatementGate / ExternalRelationResolveExtension",
+        "reason": "Core resolves the authored name, but the shared statement gate leaves flat PSI without a SqlReferenceExpression. The native resolve extension is never called. A shared flat-PIPE reference bridge is needed; no plugin analyzer substitution is made.",
+        "category": "pipe-preserving",
+        "references": [
+          38
+        ],
+        "carets": [
+          38
+        ]
+      }
+    },
+    "quoted-case-duckdb": {
+      "resolve": {
+        "classification": "b",
+        "issue": "quoted-column-case-bridge",
+        "component": "ExternalRelationResolveExtension / RelationColumnSymbol",
+        "reason": "Native and core start offsets agree, but no native variant survives for DuckDB's case-insensitive quoted column. The provider symbol's native name/quote matching needs to preserve the core verdict.",
+        "category": "quoting",
+        "references": [
+          9
+        ],
+        "carets": [
+          9
+        ]
+      }
+    },
+    "select-first-pipe": {
+      "resolve": {
+        "classification": "b",
+        "issue": "flat-pipe-native-reference",
+        "component": "PipeStatementGate / ExternalRelationResolveExtension",
+        "reason": "Core resolves the authored name, but the shared statement gate leaves flat PSI without a SqlReferenceExpression. The native resolve extension is never called. A shared flat-PIPE reference bridge is needed; no plugin analyzer substitution is made.",
+        "category": "pipeline-shapes",
+        "references": [
+          30
+        ],
+        "carets": [
+          30
+        ]
+      }
+    },
+    "self-join-same-slot": {
+      "resolve": {
+        "classification": "b",
+        "issue": "self-join-occurrence-identity",
+        "component": "RelationColumnSymbol / ExternalRelationResolveExtension",
+        "reason": "Core finds two alias occurrences and reports AMBIGUOUS. The native variants are equal provider-column symbols, so native resolve picks that declaration and loses occurrence ambiguity. Declaration identity must not erase reference-occurrence ambiguity.",
+        "category": "joins",
+        "references": [
+          7
+        ],
+        "carets": [
+          7
+        ]
+      }
+    },
+    "set-column-count-mismatch": {
+      "resolve": {
+        "classification": "b",
+        "issue": "set-output-native-deference",
+        "component": "ExternalRelationResolveExtension / ExternalRelationGotoDeclarationHandler",
+        "reason": "The native result retains a left-input declaration after core made the output computed or rejected the branch column count. The shared native/declaration deference policy leaves that stale input result visible.",
+        "category": "arity",
+        "references": [
+          21,
+          66
+        ],
+        "carets": [
+          66
+        ]
+      },
+      "navigation": {
+        "classification": "b",
+        "issue": "set-output-native-deference",
+        "component": "ExternalRelationResolveExtension / ExternalRelationGotoDeclarationHandler",
+        "reason": "The native result retains a left-input declaration after core made the output computed or rejected the branch column count. The shared native/declaration deference policy leaves that stale input result visible.",
+        "category": "arity",
+        "references": [
+          21,
+          66
+        ],
+        "carets": [
+          66
+        ]
+      }
+    },
+    "set-nullability-names-except": {
+      "resolve": {
+        "classification": "b",
+        "issue": "renamed-set-lineage-native-management",
+        "component": "RelationAnalysis.manages / ExternalRelationGotoDeclarationHandler",
+        "reason": "Core retains the left input's provider provenance through the renamed set output. The native result is a SQL alias declaration, not that provider column; the shared management/deference policy loses the retained lineage.",
+        "category": "set-operations",
+        "references": [
+          91
+        ],
+        "carets": [
+          91
+        ]
+      },
+      "navigation": {
+        "classification": "b",
+        "issue": "renamed-set-lineage-native-management",
+        "component": "RelationAnalysis.manages / ExternalRelationGotoDeclarationHandler",
+        "reason": "Core retains the left input's provider provenance through the renamed set output. The native result is a SQL alias declaration, not that provider column; the shared management/deference policy loses the retained lineage.",
+        "category": "set-operations",
+        "references": [
+          91
+        ],
+        "carets": [
+          91
+        ]
+      }
+    },
+    "set-nullability-names-intersect": {
+      "resolve": {
+        "classification": "b",
+        "issue": "renamed-set-lineage-native-management",
+        "component": "RelationAnalysis.manages / ExternalRelationGotoDeclarationHandler",
+        "reason": "Core retains the left input's provider provenance through the renamed set output. The native result is a SQL alias declaration, not that provider column; the shared management/deference policy loses the retained lineage.",
+        "category": "set-operations",
+        "references": [
+          94
+        ],
+        "carets": [
+          94
+        ]
+      },
+      "navigation": {
+        "classification": "b",
+        "issue": "renamed-set-lineage-native-management",
+        "component": "RelationAnalysis.manages / ExternalRelationGotoDeclarationHandler",
+        "reason": "Core retains the left input's provider provenance through the renamed set output. The native result is a SQL alias declaration, not that provider column; the shared management/deference policy loses the retained lineage.",
+        "category": "set-operations",
+        "references": [
+          94
+        ],
+        "carets": [
+          94
+        ]
+      }
+    },
+    "unknown-table-open-catalog": {
+      "diagnostics": {
+        "classification": "c",
+        "issue": "stock-open-catalog-inspection",
+        "component": "SqlResolveInspection",
+        "reason": "The shared open-catalog analysis reports nothing. The separately enabled stock inspection still reports an unresolved table; there is no provider fact or closed-catalog proof that would let the shared suppressor own it.",
+        "category": "diagnostics",
+        "references": [
+          7,
+          15
+        ],
+        "carets": [
+          7
+        ]
+      }
+    },
+    "unpivot-include-nulls": {
+      "resolve": {
+        "classification": "b",
+        "issue": "flat-pipe-native-reference",
+        "component": "PipeStatementGate / ExternalRelationResolveExtension",
+        "reason": "Core resolves the authored name, but the shared statement gate leaves flat PSI without a SqlReferenceExpression. The native resolve extension is never called. A shared flat-PIPE reference bridge is needed; no plugin analyzer substitution is made.",
+        "category": "pipe-changing",
+        "references": [
+          102
+        ],
+        "carets": [
+          102
+        ]
+      }
+    }
+  },
+  "lanes": {
+    "native": {
+      "fingerprints": {
+        "aggregate-group-expression-alias": {
+          "resolve": "973be60ede81c160e2939598d14090c67a55b8cf01b2e64b86486a73f02e8dbd"
+        },
+        "aggregate-no-group": {
+          "resolve": "0b8b9dc9f6612ae6724bb317174713b7c9d39555de247eb5aaf08e9d8a04d8be"
+        },
+        "call-known-output-contract": {
+          "resolve": "e4720a3f6e3c031ceb5d96c0667619b462cbd65d67825ea8935bb829007d4f88"
+        },
+        "called-slot-not-shadowed-by-cte": {
+          "resolve": "c8dd7436ef44c511ba34f659b59765bf8b30ae7a7c6024698167b4b4453f41bc"
+        },
+        "duckdb-lateral-select-alias": {
+          "resolve": "de9a7c207e61aff1551db38733b2c7454c5fbadf8e43fd3a4ebbca2886f8f713"
+        },
+        "duckdb-where-projection-alias": {
+          "resolve": "447e46fa0a6fb28a759e96f797fbb6b4d121630a232bbcf123ca655d8ca85eff"
+        },
+        "full-using-key-non-null-non-null": {
+          "resolve": "9567153d01e8bd48373bf4178eb7968ee74d779c24865b740d25faea1070f991"
+        },
+        "full-using-key-non-null-nullable": {
+          "resolve": "9567153d01e8bd48373bf4178eb7968ee74d779c24865b740d25faea1070f991"
+        },
+        "full-using-key-nullable-non-null": {
+          "resolve": "9567153d01e8bd48373bf4178eb7968ee74d779c24865b740d25faea1070f991"
+        },
+        "full-using-key-nullable-nullable": {
+          "resolve": "9567153d01e8bd48373bf4178eb7968ee74d779c24865b740d25faea1070f991"
+        },
+        "join-after-drop-without-as": {
+          "resolve": "9da6268e85c4dfff3f54c29f0c9b7176c8ca2c4476c5b56d151e7faa8a2990f0"
+        },
+        "left-using-merged-star": {
+          "resolve": "c8dd7436ef44c511ba34f659b59765bf8b30ae7a7c6024698167b4b4453f41bc"
+        },
+        "natural-merged-star": {
+          "resolve": "f0628f611d32994a9ca4a0a71802ef6316f8c08bfa6219a15657d318a93c83d1"
+        },
+        "ordinary-group-alias": {
+          "resolve": "0c603f63c94d3860d04caded37ff723a28a00d0aa361972d7e1c868035c973b8"
+        },
+        "ordinary-set-union-all": {
+          "resolve": "29a572080a4d6753588ca56c783fed9d6ff2640a69ce10d34b167c651df2fe72",
+          "navigation": "105927c275193ad22255f5ad17cbb4bedd1cc8f6a9297a71fd2cad7d8319fc06"
+        },
+        "ordinary-star-join-cte-duckdb": {
+          "resolve": "83c8364c226c4b4fbc217e444714cc02dd5767c5bd7b3a182bd69e252d8550cc"
+        },
+        "ordinary-star-join-subquery-duckdb": {
+          "resolve": "623c7383745e3bf310fac9df7f143444467fa1f1bdf156a912fec3409dcd8b3d"
+        },
+        "parenthesized-pipe-input": {
+          "resolve": "615a8dcc48df203567a6433b22c1cb592de7c19a33265414fa65647a1f7fb261"
+        },
+        "physical-mixed-pipe": {
+          "resolve": "82f6af8b380068ec04e98dfbb73cb8f18832b39771fbd49f951dc6d0e31f2c81"
+        },
+        "physical-pipe": {
+          "resolve": "8899ebb76fc21029b9d6806d6ddb1e86257ed4e8d84679ab4b03194f4dd69fef"
+        },
+        "pipe-aggregate": {
+          "resolve": "06d2641595831593cd48968aab74e023b0b870e32b61f640cb73aec98535f63b"
+        },
+        "pipe-aggregate-group-order": {
+          "resolve": "92a02ac0523bd31f9bb9fbf9809a8540591a27d1714b326e271afef2a2139fa7"
+        },
+        "pipe-as": {
+          "resolve": "00a4afea9607fdf9b6999f5a8aa39776de088578893600a0b1fe9f8b2b26a5f7"
+        },
+        "pipe-as-new-alias": {
+          "resolve": "615a8dcc48df203567a6433b22c1cb592de7c19a33265414fa65647a1f7fb261"
+        },
+        "pipe-distinct": {
+          "resolve": "615a8dcc48df203567a6433b22c1cb592de7c19a33265414fa65647a1f7fb261"
+        },
+        "pipe-drop": {
+          "resolve": "633e51d3bb49cd0f0525908ca971ebc4eb2783b752b3a05770f643996247dee4"
+        },
+        "pipe-extend-computed": {
+          "resolve": "4c8b16b3121bd0a3e4102c83f545c3e3846de987f29a0e990f13e97ab3ca4d34"
+        },
+        "pipe-extend-passthrough": {
+          "resolve": "a63f8f267873fc4c26ccb34498e26ec4eee20b48044e3127cd783eee37a33a2a"
+        },
+        "pipe-extend-unknown": {
+          "resolve": "ff74921d21a8e2422d03adf86d56e9c943c8c56fd8833d401218f2ac8ee96085"
+        },
+        "pipe-in-cte": {
+          "resolve": "12264eab37d4d5b9b2b3ed678318e1d433a22cfe6a75dde3ea13f6d01a1af384"
+        },
+        "pipe-in-subquery": {
+          "resolve": "9567153d01e8bd48373bf4178eb7968ee74d779c24865b740d25faea1070f991"
+        },
+        "pipe-join-anti": {
+          "resolve": "315b80f1aa8b18a20dd39a88b0fd2a59335a91c9b84dab8c64f06937426a34ed"
+        },
+        "pipe-join-cross": {
+          "resolve": "81611d4b896cd5fd9fd1e273419c100aa5a4ffc2a6ec8f4359a3e24cdb75ef28"
+        },
+        "pipe-join-full": {
+          "resolve": "315b80f1aa8b18a20dd39a88b0fd2a59335a91c9b84dab8c64f06937426a34ed"
+        },
+        "pipe-join-inner": {
+          "resolve": "86e8bfa68d791f9004c4003c38ccefe44e0c6aa30f42bbedd85e27347d30686f"
+        },
+        "pipe-join-left": {
+          "resolve": "315b80f1aa8b18a20dd39a88b0fd2a59335a91c9b84dab8c64f06937426a34ed"
+        },
+        "pipe-join-right": {
+          "resolve": "86e8bfa68d791f9004c4003c38ccefe44e0c6aa30f42bbedd85e27347d30686f"
+        },
+        "pipe-join-right-anti": {
+          "resolve": "1b02ba2bf21d00d70c75e2f9737f8f7fa9042551c85ae9701217c841e9c9a4ab"
+        },
+        "pipe-join-right-semi": {
+          "resolve": "1b02ba2bf21d00d70c75e2f9737f8f7fa9042551c85ae9701217c841e9c9a4ab"
+        },
+        "pipe-join-semi": {
+          "resolve": "315b80f1aa8b18a20dd39a88b0fd2a59335a91c9b84dab8c64f06937426a34ed"
+        },
+        "pipe-left-using-merged-star": {
+          "resolve": "97fd1d23e34100e6fedfef4abccf918dd46ccdb5bf0c001d582a819fa2aba4bc"
+        },
+        "pipe-limit": {
+          "resolve": "7440e247af918e61f7738756c01802f1a56536f54b225a4126f252f97d4a0fbb"
+        },
+        "pipe-offset": {
+          "resolve": "615a8dcc48df203567a6433b22c1cb592de7c19a33265414fa65647a1f7fb261"
+        },
+        "pipe-order-by": {
+          "resolve": "aebea36151af9a5311efab21609cd02ac223d12bbde499a024b216228c5e539b"
+        },
+        "pipe-pivot": {
+          "resolve": "76284daf8ae2a1a9e65d0c3f15e896315b0757ca8d67ca23d7e1a221531c5fcd"
+        },
+        "pipe-qualified-star": {
+          "resolve": "65c3849a1fbc08b47090c00155309143499ffa512c5f2fcf35f032681452fea1"
+        },
+        "pipe-rename": {
+          "resolve": "afcbb53ac89ae328efc120422a246b6ed22bf6c0a556e6a94e96bbbb247abc1d"
+        },
+        "pipe-select-computed": {
+          "resolve": "ea6a3b4c30f47c2bb72fecc7145319d8b17879e75881f6d06e4c3146ead0ff2c"
+        },
+        "pipe-select-rename-lineage": {
+          "resolve": "0423790108b5923f87f0562662174ae3d15094cb35a6eec46ff1bf78d7811db2"
+        },
+        "pipe-set": {
+          "resolve": "447e46fa0a6fb28a759e96f797fbb6b4d121630a232bbcf123ca655d8ca85eff"
+        },
+        "pipe-set-except": {
+          "resolve": "202cac26a210f7e552bf21b1ae06d60c01a50077fa9caf03961ef33a0773088d"
+        },
+        "pipe-set-intersect": {
+          "resolve": "69ebd201bb5326b91f840b7c14538f6b5abefe465af91251eccb22aaafec9d40"
+        },
+        "pipe-set-union-all": {
+          "resolve": "69ebd201bb5326b91f840b7c14538f6b5abefe465af91251eccb22aaafec9d40"
+        },
+        "pipe-set-union-distinct": {
+          "resolve": "89707eeb923d42f4c9018c4d9acfb2b42412077662164e2ff617ddd3ce2e7d8f"
+        },
+        "pipe-star-join-duckdb-dedup": {
+          "resolve": "8c14913f7988046cb79538bd362292cb04721c402f4c7e565a4dc001a5053e27"
+        },
+        "pipe-star-single": {
+          "resolve": "c433d99a3d623fbf1d8dfbbdf423f56a3aa721f70f5787abf9b62e2eaa3b42f0"
+        },
+        "pipe-tablesample": {
+          "resolve": "f0628f611d32994a9ca4a0a71802ef6316f8c08bfa6219a15657d318a93c83d1"
+        },
+        "pipe-unpivot": {
+          "resolve": "210193e66c419de61714468850043070a64770512aa17eb86c0a7d623f9be701"
+        },
+        "pipe-where": {
+          "resolve": "3abd4b19f0a4f88f0b9bc990c180812a0a77225f2b7df32a6be6cfe5240b6c9b"
+        },
+        "pipe-window": {
+          "resolve": "6640f006caf0b20fa877a993609449f3018444eccb2963fb7013cfaccb654583"
+        },
+        "pivot-surviving-key": {
+          "resolve": "a6737a2480ae8f3462cb5a7abe9c9b20a6e4761e8f3edebdab07db99708535db"
+        },
+        "q13-keeps-distinct": {
+          "resolve": "65c3849a1fbc08b47090c00155309143499ffa512c5f2fcf35f032681452fea1"
+        },
+        "q13-keeps-limit": {
+          "resolve": "aebea36151af9a5311efab21609cd02ac223d12bbde499a024b216228c5e539b"
+        },
+        "q13-keeps-offset": {
+          "resolve": "65c3849a1fbc08b47090c00155309143499ffa512c5f2fcf35f032681452fea1"
+        },
+        "q13-keeps-order-by": {
+          "resolve": "b0187923e5ac8b1d2d7d9eff66b09382f4515e8b396b890c3de532721b7191ab"
+        },
+        "q13-keeps-tablesample": {
+          "resolve": "6984cff769784a62c1b3ee2f27aa6dff8d0dd2da1e24af005182c0560ab43f69"
+        },
+        "q13-keeps-where": {
+          "resolve": "046a62992f447f38289e3e864df40687a428073adc0a2dcfc626c1f03825c4b5"
+        },
+        "quoted-case-duckdb": {
+          "resolve": "69db1c330eb9217fef1c675966291751670f77255696be7c20e5ca6aebb3b75b"
+        },
+        "select-first-pipe": {
+          "resolve": "00a4afea9607fdf9b6999f5a8aa39776de088578893600a0b1fe9f8b2b26a5f7"
+        },
+        "self-join-same-slot": {
+          "resolve": "02b1fc289f90c09cca1923fce3a9f5d7d3d2a026997b3ac9c0e443e1f4edd433"
+        },
+        "set-column-count-mismatch": {
+          "resolve": "b171ea29e425331b8e6eb0489ed80439bafd9d2b261603aabdf88af2903c7f21",
+          "navigation": "d53c96aefd252eb6899199e9cde39b0151d6292ac7b2ab0383fecb6ed042ae18"
+        },
+        "set-nullability-names-except": {
+          "resolve": "f3e0e6e7273f1054881e21aee990c8c19bc6cbf00f6ca76bca5aa14b9179213c",
+          "navigation": "f6bc43df557ed59e35ec0ba52e74cda0ff8ffe8e85493b3f03b6cb410cd58660"
+        },
+        "set-nullability-names-intersect": {
+          "resolve": "263e92f87ad9e1ecfe129503e65f787b4a1fcc3ea098e1531698803c62380f37",
+          "navigation": "a9a8a48675d1cb7375f5bef10e6c192d8ea7002ab93b1cd234ffcd2b3fd87566"
+        },
+        "unknown-table-open-catalog": {
+          "diagnostics": "f50dfbd12a645beaa77cddc586bb27cbcb73f5b74027af3173a4b3654657168a"
+        },
+        "unpivot-include-nulls": {
+          "resolve": "f94ef6a9f4ec082a9c73704c4c25c9c3c281fb037acadbe14f67e652922f8cc9"
+        }
+      }
+    },
+    "brikk": {
+      "fingerprints": {
+        "aggregate-group-expression-alias": {
+          "resolve": "973be60ede81c160e2939598d14090c67a55b8cf01b2e64b86486a73f02e8dbd"
+        },
+        "aggregate-no-group": {
+          "resolve": "0b8b9dc9f6612ae6724bb317174713b7c9d39555de247eb5aaf08e9d8a04d8be"
+        },
+        "call-known-output-contract": {
+          "resolve": "e4720a3f6e3c031ceb5d96c0667619b462cbd65d67825ea8935bb829007d4f88"
+        },
+        "called-slot-not-shadowed-by-cte": {
+          "resolve": "c8dd7436ef44c511ba34f659b59765bf8b30ae7a7c6024698167b4b4453f41bc"
+        },
+        "duckdb-lateral-select-alias": {
+          "resolve": "de9a7c207e61aff1551db38733b2c7454c5fbadf8e43fd3a4ebbca2886f8f713"
+        },
+        "duckdb-where-projection-alias": {
+          "resolve": "447e46fa0a6fb28a759e96f797fbb6b4d121630a232bbcf123ca655d8ca85eff"
+        },
+        "full-using-key-non-null-non-null": {
+          "resolve": "9567153d01e8bd48373bf4178eb7968ee74d779c24865b740d25faea1070f991"
+        },
+        "full-using-key-non-null-nullable": {
+          "resolve": "9567153d01e8bd48373bf4178eb7968ee74d779c24865b740d25faea1070f991"
+        },
+        "full-using-key-nullable-non-null": {
+          "resolve": "9567153d01e8bd48373bf4178eb7968ee74d779c24865b740d25faea1070f991"
+        },
+        "full-using-key-nullable-nullable": {
+          "resolve": "9567153d01e8bd48373bf4178eb7968ee74d779c24865b740d25faea1070f991"
+        },
+        "join-after-drop-without-as": {
+          "resolve": "9da6268e85c4dfff3f54c29f0c9b7176c8ca2c4476c5b56d151e7faa8a2990f0"
+        },
+        "left-using-merged-star": {
+          "resolve": "c8dd7436ef44c511ba34f659b59765bf8b30ae7a7c6024698167b4b4453f41bc"
+        },
+        "natural-merged-star": {
+          "resolve": "f0628f611d32994a9ca4a0a71802ef6316f8c08bfa6219a15657d318a93c83d1"
+        },
+        "ordinary-group-alias": {
+          "resolve": "0c603f63c94d3860d04caded37ff723a28a00d0aa361972d7e1c868035c973b8"
+        },
+        "ordinary-set-union-all": {
+          "resolve": "29a572080a4d6753588ca56c783fed9d6ff2640a69ce10d34b167c651df2fe72",
+          "navigation": "105927c275193ad22255f5ad17cbb4bedd1cc8f6a9297a71fd2cad7d8319fc06"
+        },
+        "ordinary-star-join-cte-duckdb": {
+          "resolve": "83c8364c226c4b4fbc217e444714cc02dd5767c5bd7b3a182bd69e252d8550cc"
+        },
+        "ordinary-star-join-subquery-duckdb": {
+          "resolve": "623c7383745e3bf310fac9df7f143444467fa1f1bdf156a912fec3409dcd8b3d"
+        },
+        "parenthesized-pipe-input": {
+          "resolve": "615a8dcc48df203567a6433b22c1cb592de7c19a33265414fa65647a1f7fb261"
+        },
+        "physical-mixed-pipe": {
+          "resolve": "82f6af8b380068ec04e98dfbb73cb8f18832b39771fbd49f951dc6d0e31f2c81"
+        },
+        "physical-pipe": {
+          "resolve": "8899ebb76fc21029b9d6806d6ddb1e86257ed4e8d84679ab4b03194f4dd69fef"
+        },
+        "pipe-aggregate": {
+          "resolve": "06d2641595831593cd48968aab74e023b0b870e32b61f640cb73aec98535f63b"
+        },
+        "pipe-aggregate-group-order": {
+          "resolve": "92a02ac0523bd31f9bb9fbf9809a8540591a27d1714b326e271afef2a2139fa7"
+        },
+        "pipe-as": {
+          "resolve": "00a4afea9607fdf9b6999f5a8aa39776de088578893600a0b1fe9f8b2b26a5f7"
+        },
+        "pipe-as-new-alias": {
+          "resolve": "615a8dcc48df203567a6433b22c1cb592de7c19a33265414fa65647a1f7fb261"
+        },
+        "pipe-distinct": {
+          "resolve": "615a8dcc48df203567a6433b22c1cb592de7c19a33265414fa65647a1f7fb261"
+        },
+        "pipe-drop": {
+          "resolve": "633e51d3bb49cd0f0525908ca971ebc4eb2783b752b3a05770f643996247dee4"
+        },
+        "pipe-extend-computed": {
+          "resolve": "4c8b16b3121bd0a3e4102c83f545c3e3846de987f29a0e990f13e97ab3ca4d34"
+        },
+        "pipe-extend-passthrough": {
+          "resolve": "a63f8f267873fc4c26ccb34498e26ec4eee20b48044e3127cd783eee37a33a2a"
+        },
+        "pipe-extend-unknown": {
+          "resolve": "ff74921d21a8e2422d03adf86d56e9c943c8c56fd8833d401218f2ac8ee96085"
+        },
+        "pipe-in-cte": {
+          "resolve": "12264eab37d4d5b9b2b3ed678318e1d433a22cfe6a75dde3ea13f6d01a1af384"
+        },
+        "pipe-in-subquery": {
+          "resolve": "9567153d01e8bd48373bf4178eb7968ee74d779c24865b740d25faea1070f991"
+        },
+        "pipe-join-anti": {
+          "resolve": "315b80f1aa8b18a20dd39a88b0fd2a59335a91c9b84dab8c64f06937426a34ed"
+        },
+        "pipe-join-cross": {
+          "resolve": "81611d4b896cd5fd9fd1e273419c100aa5a4ffc2a6ec8f4359a3e24cdb75ef28"
+        },
+        "pipe-join-full": {
+          "resolve": "315b80f1aa8b18a20dd39a88b0fd2a59335a91c9b84dab8c64f06937426a34ed"
+        },
+        "pipe-join-inner": {
+          "resolve": "86e8bfa68d791f9004c4003c38ccefe44e0c6aa30f42bbedd85e27347d30686f"
+        },
+        "pipe-join-left": {
+          "resolve": "315b80f1aa8b18a20dd39a88b0fd2a59335a91c9b84dab8c64f06937426a34ed"
+        },
+        "pipe-join-right": {
+          "resolve": "86e8bfa68d791f9004c4003c38ccefe44e0c6aa30f42bbedd85e27347d30686f"
+        },
+        "pipe-join-right-anti": {
+          "resolve": "1b02ba2bf21d00d70c75e2f9737f8f7fa9042551c85ae9701217c841e9c9a4ab"
+        },
+        "pipe-join-right-semi": {
+          "resolve": "1b02ba2bf21d00d70c75e2f9737f8f7fa9042551c85ae9701217c841e9c9a4ab"
+        },
+        "pipe-join-semi": {
+          "resolve": "315b80f1aa8b18a20dd39a88b0fd2a59335a91c9b84dab8c64f06937426a34ed"
+        },
+        "pipe-left-using-merged-star": {
+          "resolve": "97fd1d23e34100e6fedfef4abccf918dd46ccdb5bf0c001d582a819fa2aba4bc"
+        },
+        "pipe-limit": {
+          "resolve": "7440e247af918e61f7738756c01802f1a56536f54b225a4126f252f97d4a0fbb"
+        },
+        "pipe-offset": {
+          "resolve": "615a8dcc48df203567a6433b22c1cb592de7c19a33265414fa65647a1f7fb261"
+        },
+        "pipe-order-by": {
+          "resolve": "aebea36151af9a5311efab21609cd02ac223d12bbde499a024b216228c5e539b"
+        },
+        "pipe-pivot": {
+          "resolve": "76284daf8ae2a1a9e65d0c3f15e896315b0757ca8d67ca23d7e1a221531c5fcd"
+        },
+        "pipe-qualified-star": {
+          "resolve": "65c3849a1fbc08b47090c00155309143499ffa512c5f2fcf35f032681452fea1"
+        },
+        "pipe-rename": {
+          "resolve": "afcbb53ac89ae328efc120422a246b6ed22bf6c0a556e6a94e96bbbb247abc1d"
+        },
+        "pipe-select-computed": {
+          "resolve": "ea6a3b4c30f47c2bb72fecc7145319d8b17879e75881f6d06e4c3146ead0ff2c"
+        },
+        "pipe-select-rename-lineage": {
+          "resolve": "0423790108b5923f87f0562662174ae3d15094cb35a6eec46ff1bf78d7811db2"
+        },
+        "pipe-set": {
+          "resolve": "447e46fa0a6fb28a759e96f797fbb6b4d121630a232bbcf123ca655d8ca85eff"
+        },
+        "pipe-set-except": {
+          "resolve": "202cac26a210f7e552bf21b1ae06d60c01a50077fa9caf03961ef33a0773088d"
+        },
+        "pipe-set-intersect": {
+          "resolve": "69ebd201bb5326b91f840b7c14538f6b5abefe465af91251eccb22aaafec9d40"
+        },
+        "pipe-set-union-all": {
+          "resolve": "69ebd201bb5326b91f840b7c14538f6b5abefe465af91251eccb22aaafec9d40"
+        },
+        "pipe-set-union-distinct": {
+          "resolve": "89707eeb923d42f4c9018c4d9acfb2b42412077662164e2ff617ddd3ce2e7d8f"
+        },
+        "pipe-star-join-duckdb-dedup": {
+          "resolve": "8c14913f7988046cb79538bd362292cb04721c402f4c7e565a4dc001a5053e27"
+        },
+        "pipe-star-single": {
+          "resolve": "c433d99a3d623fbf1d8dfbbdf423f56a3aa721f70f5787abf9b62e2eaa3b42f0"
+        },
+        "pipe-tablesample": {
+          "resolve": "f0628f611d32994a9ca4a0a71802ef6316f8c08bfa6219a15657d318a93c83d1"
+        },
+        "pipe-unpivot": {
+          "resolve": "210193e66c419de61714468850043070a64770512aa17eb86c0a7d623f9be701"
+        },
+        "pipe-where": {
+          "resolve": "3abd4b19f0a4f88f0b9bc990c180812a0a77225f2b7df32a6be6cfe5240b6c9b"
+        },
+        "pipe-window": {
+          "resolve": "6640f006caf0b20fa877a993609449f3018444eccb2963fb7013cfaccb654583"
+        },
+        "pivot-surviving-key": {
+          "resolve": "a6737a2480ae8f3462cb5a7abe9c9b20a6e4761e8f3edebdab07db99708535db"
+        },
+        "q13-keeps-distinct": {
+          "resolve": "65c3849a1fbc08b47090c00155309143499ffa512c5f2fcf35f032681452fea1"
+        },
+        "q13-keeps-limit": {
+          "resolve": "aebea36151af9a5311efab21609cd02ac223d12bbde499a024b216228c5e539b"
+        },
+        "q13-keeps-offset": {
+          "resolve": "65c3849a1fbc08b47090c00155309143499ffa512c5f2fcf35f032681452fea1"
+        },
+        "q13-keeps-order-by": {
+          "resolve": "b0187923e5ac8b1d2d7d9eff66b09382f4515e8b396b890c3de532721b7191ab"
+        },
+        "q13-keeps-tablesample": {
+          "resolve": "6984cff769784a62c1b3ee2f27aa6dff8d0dd2da1e24af005182c0560ab43f69"
+        },
+        "q13-keeps-where": {
+          "resolve": "046a62992f447f38289e3e864df40687a428073adc0a2dcfc626c1f03825c4b5"
+        },
+        "quoted-case-duckdb": {
+          "resolve": "69db1c330eb9217fef1c675966291751670f77255696be7c20e5ca6aebb3b75b"
+        },
+        "select-first-pipe": {
+          "resolve": "00a4afea9607fdf9b6999f5a8aa39776de088578893600a0b1fe9f8b2b26a5f7"
+        },
+        "self-join-same-slot": {
+          "resolve": "02b1fc289f90c09cca1923fce3a9f5d7d3d2a026997b3ac9c0e443e1f4edd433"
+        },
+        "set-column-count-mismatch": {
+          "resolve": "b171ea29e425331b8e6eb0489ed80439bafd9d2b261603aabdf88af2903c7f21",
+          "navigation": "d53c96aefd252eb6899199e9cde39b0151d6292ac7b2ab0383fecb6ed042ae18"
+        },
+        "set-nullability-names-except": {
+          "resolve": "f3e0e6e7273f1054881e21aee990c8c19bc6cbf00f6ca76bca5aa14b9179213c",
+          "navigation": "f6bc43df557ed59e35ec0ba52e74cda0ff8ffe8e85493b3f03b6cb410cd58660"
+        },
+        "set-nullability-names-intersect": {
+          "resolve": "263e92f87ad9e1ecfe129503e65f787b4a1fcc3ea098e1531698803c62380f37",
+          "navigation": "a9a8a48675d1cb7375f5bef10e6c192d8ea7002ab93b1cd234ffcd2b3fd87566"
+        },
+        "unknown-table-open-catalog": {
+          "diagnostics": "f50dfbd12a645beaa77cddc586bb27cbcb73f5b74027af3173a4b3654657168a"
+        },
+        "unpivot-include-nulls": {
+          "resolve": "f94ef6a9f4ec082a9c73704c4c25c9c3c281fb037acadbe14f67e652922f8cc9"
+        }
+      }
+    }
+  },
+  "sourceHashes": {
+    "facts.json": "f086dd38b42386402a7e6f631f6f7d969f29a61639a723577c512c3ff1dc87bc",
+    "cases.jsonl": "22cea5edd198bd0b436f0612a6d4081be731ce632ec1b2ede21370970812667d",
+    "witnesses.json": "b82aa2a52ef3a20dfd21cc53c4cee02bfb1f229712f976443f893232e278972b"
+  },
+  "classificationCounts": {
+    "b": 76,
+    "c": 3
   },
   "prunedV1Flags": [
     "pipe-select-rename-lineage/completion",
     "pipe-select-hides-alias/completion"
   ],
   "notes": [
-    "v2.2: regenerated from actual DuckDB observations on 261/262/263. Shared disagreement axes are identical on all three IDE generations. Expectations are not replaced by implementation behavior.",
-    "All completion observations disable auto-insert. Physical identity serialization uses resolved DAS schema/table/column facts, not ambiguous column names.",
-    "Native witnesses execute independently. coreExecution also executes actual toExecutable output; five known boundary/alias failures are retained as coreExecution disagreements. INNER/LEFT JOIN and SQL declaration ranges pass.",
-    "PostgreSQL-family and Trino-only cases are not DuckDB evidence. Their native witnesses are null or explicitly unverified."
+    "Phase 5 triage observes native SQL files and genuine Kotlin injections independently, without changing corpus expectations.",
+    "Logical scope/references/order and execution pass 167/167; native-PSI differences are recorded separately with reasons and fingerprints.",
+    "Normalization follows core's corpus contract: canonical SQL types, computed identity, and no assertion on unspecified computed SQL types.",
+    "Completion is observed from actual items, matched to current shared candidates only by their actual presentation; raw items remain in the report.",
+    "Native resolve never substitutes analyzer results for missing PSI. It normalizes a visible alias only after native identity/provenance independently agree.",
+    "Physical native fixtures remain real SQL-file sources, with an explicit platform-resolves physical facts adapter; real LocalDataSource DasRelationFacts has a separate consumer test.",
+    "The optional native slot table-type bridge was evaluated but is not enabled: it introduces additional lineage/navigation errors and a shadowed completion item."
   ]
 }

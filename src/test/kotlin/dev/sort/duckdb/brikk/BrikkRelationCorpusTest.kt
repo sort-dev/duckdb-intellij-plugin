@@ -15,7 +15,6 @@ import com.intellij.lang.injection.MultiHostInjector
 import com.intellij.lang.injection.MultiHostRegistrar
 import com.intellij.openapi.application.ApplicationInfo
 import com.intellij.openapi.components.service
-import com.intellij.openapi.fileEditor.OpenFileDescriptor
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
@@ -23,6 +22,7 @@ import com.intellij.psi.PsiNamedElement
 import com.intellij.psi.PsiNameIdentifierOwner
 import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.sql.database.SqlDataSourceManager
+import com.intellij.database.model.DasColumn
 import com.intellij.sql.dialects.SqlResolveMappings
 import com.intellij.sql.psi.SqlReferenceExpression
 import com.intellij.sql.psi.SqlNameElement
@@ -31,11 +31,12 @@ import com.intellij.testFramework.PlatformTestUtil
 import com.intellij.testFramework.RunAll
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import com.intellij.testFramework.ExtensionTestUtil
-import dev.brikk.house.intellij.*
 import dev.brikk.house.sql.scope.*
 import dev.brikk.house.sql.intellij.relation.*
 import dev.brikk.house.sql.intellij.testing.BackgroundErrors
 import dev.brikk.house.sql.intellij.testing.setSqlDialectMapping
+import dev.brikk.house.sql.dialects.Dialects
+import dev.brikk.house.sql.optimizer.dataTypeFromStr
 import dev.brikk.house.sql.shape.SqlFragment
 import dev.brikk.house.sql.shape.ShapeCatalog
 import dev.brikk.house.sql.shape.Shape
@@ -62,13 +63,17 @@ class BrikkRelationCorpusTest : BasePlatformTestCase() {
     private val witnesses by lazy { resource("witnesses.json").let(Json::parseToJsonElement).jsonObject }
     private lateinit var errors: BackgroundErrors
     private var relationFacts = RelationFacts()
+    private var logicalAnalysis: RelationScope? = null
+    private var nativeSql = false
     private val declarations = LinkedHashMap<String, PsiElement>()
-    private val locations = LinkedHashMap<String, SourceLocation>()
     private var physicalColumns = emptySet<String>()
     private var physicalFacts = emptyMap<Pair<String, String>, JsonObject>()
+    private var physicalTargets = emptyMap<String, PsiElement>()
     private var previousPipes = false
     private var previousAutocomplete = false
-    private interface CorpusTarget : NavigationTarget { val identity: String }
+    private val brikkLabels = RelationColumnLabels(declared = "brikk column",
+        declaredKind = dev.brikk.house.sql.intellij.completion.SqlLookupKind.BRIKK_COLUMN,
+        contractKind = dev.brikk.house.sql.intellij.completion.SqlLookupKind.BRIKK_COLUMN)
 
     override fun setUp() {
         super.setUp()
@@ -88,10 +93,15 @@ class BrikkRelationCorpusTest : BasePlatformTestCase() {
             }
         }, testRootDisposable)
         ExtensionTestUtil.maskExtensions(DuckdbRelationProfile.FACTS, listOf(ExternalRelationFacts.of(
-            labels = RelationColumnLabels(declared = "brikk column", declaredKind = dev.brikk.house.sql.intellij.completion.SqlLookupKind.BRIKK_COLUMN,
-                contractKind = dev.brikk.house.sql.intellij.completion.SqlLookupKind.BRIKK_COLUMN),
+            labels = brikkLabels,
             navigationTarget = { _, id -> columns[id]?.jsonObject?.stringOrNull("navigationId")?.let(declarations::get) },
-        ) { RelationFactsResult.Available(relationFacts.copy(tables = emptyMap()), relationFacts.hashCode().toLong()) }), testRootDisposable)
+        ) { RelationFactsResult.Available(relationFacts.copy(tables = emptyMap(), slots = presentationFacts(relationFacts.slots),
+            calls = presentationFacts(relationFacts.calls)), relationFacts.hashCode().toLong()) },
+            ExternalRelationFacts.of(platformResolves = true, navigationTarget = { _, id -> physicalTargets[id] }) {
+                // The native corpus uses real SQL-file data sources. Their physical facts are supplied to the
+                // shared layer explicitly; DasRelationFacts' LocalDataSource path has its own consumer test.
+                RelationFactsResult.Available(relationFacts.copy(slots = emptyMap(), calls = emptyMap()), relationFacts.hashCode().toLong())
+            }), testRootDisposable)
         val ids = columns.values.filter { it.jsonObject.string("origin") != "PHYSICAL_TABLE" }
             .mapNotNull { it.jsonObject.stringOrNull("navigationId") }.distinct()
         val navigationFile = myFixture.addFileToProject("corpus/Declarations.kt", ids.joinToString("\n") {
@@ -101,7 +111,6 @@ class BrikkRelationCorpusTest : BasePlatformTestCase() {
         ids.forEach { id ->
             val declaration = properties.getValue(declarationName(id))
             declarations[id] = declaration
-            locations[id] = SourceLocation(navigationFile.virtualFile.url, declaration.textRange.startOffset, declaration.textRange.endOffset)
         }
     }
 
@@ -115,6 +124,15 @@ class BrikkRelationCorpusTest : BasePlatformTestCase() {
     ).run()
 
     fun testCurrentRelationImplementationsAgainstAcceptanceCorpus() {
+        checkCorpus()
+    }
+
+    fun testNativeSqlAgainstAcceptanceCorpus() {
+        nativeSql = true
+        checkCorpus()
+    }
+
+    private fun checkCorpus() {
         assertEquals("2.2", facts.string("version"))
         assertEquals(cases.size, cases.map { it.string("id") }.toSet().size)
         val usedWitnesses = cases.flatMap { case ->
@@ -132,9 +150,23 @@ class BrikkRelationCorpusTest : BasePlatformTestCase() {
         }.toSet()
         assertEquals("No orphan native witnesses", usedWitnesses, witnesses.keys)
         val baseline = Json.parseToJsonElement(resource("duckdb-disagreements.json")).jsonObject
+        baseline["sourceHashes"]?.jsonObject?.forEach { (name, checksum) ->
+            assertEquals("Corpus expectations changed: $name", checksum.jsonPrimitive.content,
+                java.util.HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256").digest(resource(name).toByteArray(Charsets.UTF_8))))
+        }
+        val lane = if (nativeSql) "native" else "brikk"
+        val laneBaseline = baseline["lanes"]?.jsonObject?.get(lane)?.jsonObject ?: baseline
         val shared = baseline.getValue("shared").jsonObject
         val known = shared
         assertTrue(known.keys.all { id -> cases.any { it.string("id") == id } })
+        baseline["reasons"]?.jsonObject?.let { reasons ->
+            for ((id, axes) in known) for (axis in axes.jsonArray.map { it.jsonPrimitive.content }) {
+                val reason = reasons.getValue(id).jsonObject.getValue(axis).jsonObject
+                assertTrue("$id/$axis needs a classified reason", reason.string("classification") in setOf("b", "c") && reason.string("reason").isNotBlank())
+                assertEquals("$lane/$id/$axis needs an observation fingerprint", 64,
+                    laneBaseline.getValue("fingerprints").jsonObject.getValue(id).jsonObject.string(axis).length)
+            }
+        }
         val differences = ArrayList<JsonObject>()
         val results = ArrayList<JsonObject>()
         val unexpected = ArrayList<String>()
@@ -158,6 +190,7 @@ class BrikkRelationCorpusTest : BasePlatformTestCase() {
             val actual = withPhysicalTables(case) {
                 val file = configure(id, sql)
                 val analysis = RelationScope.analyze(sql, "duckdb", relationFacts)
+                logicalAnalysis = analysis
                 val references = case.array("references").map { it.jsonObject }
                 val observed = linkedMapOf<String, JsonElement>(
                     "references" to JsonArray(references.map { reference ->
@@ -168,9 +201,11 @@ class BrikkRelationCorpusTest : BasePlatformTestCase() {
                     "resolve" to JsonArray(references.map { reference -> reference(reference, nativeTargets(file, reference.int("start"))) }),
                     "navigation" to JsonArray(references.map { reference -> navigationReference(reference, navigation(file, reference.int("start"))) }),
                     "diagnostics" to diagnostics(file, case),
+                    "resolveEvidence" to JsonArray(references.map { reference -> resolveEvidence(file, reference.int("start")) }),
                 )
                 val scopes = ArrayList<JsonObject>()
                 val completions = ArrayList<JsonObject>()
+                val presentations = ArrayList<JsonObject>()
                 val orders = ArrayList<JsonObject>()
                 for (caret in case.array("carets").map { it.jsonObject }) {
                     val offset = caret.int("offset")
@@ -189,12 +224,23 @@ class BrikkRelationCorpusTest : BasePlatformTestCase() {
                     val items = myFixture.completeBasic().orEmpty()
                     completions += buildJsonObject {
                         put("offset", offset)
-                        put("columns", sorted(items.mapNotNull(::completion)))
+                        put("columns", sorted(items.mapNotNull { completion(it, selected) }))
+                    }
+                    presentations += buildJsonObject {
+                        put("offset", offset)
+                        put("items", JsonArray(items.mapNotNull { item ->
+                            val shown = LookupElementPresentation().also(item::renderElement)
+                            if (!isColumn(item, shown)) null else buildJsonObject {
+                                put("name", item.lookupString); put("type", nullable(shown.typeText)); put("tail", nullable(shown.tailText))
+                            }
+                        }.sortedBy(JsonElement::toString)))
                     }
                     LookupManager.getInstance(project).hideActiveLookup()
                 }
                 observed["scope"] = JsonArray(scopes)
                 observed["completion"] = JsonArray(completions)
+                // Raw presentation is evidence, not the semantic alias/origin/identity projection.
+                observed["presentationEvidence"] = JsonArray(presentations)
                 if (orders.isNotEmpty()) observed["order"] = JsonArray(orders)
                 case["coreOrder"]?.let { observed["coreOrder"] = coreOrder(case) }
                 case["coreExecution"]?.let { observed["coreExecution"] = coreExecution(case) }
@@ -214,8 +260,8 @@ class BrikkRelationCorpusTest : BasePlatformTestCase() {
             val axes = ArrayList<JsonObject>()
             for ((axis, wanted) in expected) {
                 val got = actual.getValue(axis)
-                val equal = wanted == got
-                axes += buildJsonObject { put("axis", axis); put("expected", wanted); put("actual", got); put("matches", equal) }
+                val equal = if (axis in setOf("order", "coreOrder", "coreExecution", "declarationRanges", "coreRefusal")) wanted == got else matches(wanted, got)
+                axes += buildJsonObject { put("axis", axis); put("expected", wanted); put("actual", got); put("matches", equal); put("fingerprint", fingerprint(got)) }
                 if (equal) {
                     if (axis in allowed) resolved += "$id/$axis"
                 } else {
@@ -223,12 +269,18 @@ class BrikkRelationCorpusTest : BasePlatformTestCase() {
                         put("id", id); put("category", case.string("category")); put("axis", axis); put("input", sql)
                         put("expected", wanted); put("actual", got); put("known", axis in allowed)
                         put("judgement", facts.getValue("evidence").jsonObject.getValue(case.string("category")))
+                        baseline["reasons"]?.jsonObject?.get(id)?.jsonObject?.get(axis)?.let { put("triage", it) }
                     }
                     if (axis !in allowed) unexpected += "$id/$axis"
+                    else laneBaseline["fingerprints"]?.jsonObject?.get(id)?.jsonObject?.get(axis)?.let { previous ->
+                        assertEquals("Changed known difference $lane/$id/$axis must be triaged", previous.jsonPrimitive.content, fingerprint(got))
+                    }
                 }
             }
             results += buildJsonObject {
                 put("id", id); put("input", sql); put("axes", JsonArray(axes))
+                put("presentationEvidence", actual.getValue("presentationEvidence"))
+                put("resolveEvidence", actual.getValue("resolveEvidence"))
                 put("changes", case.getValue("changes"))
                 put("serializableResults", serializableResults(case, axes))
                 put("dialects", case.getValue("dialects")); put("positions", JsonArray(case.array("carets").map { caret ->
@@ -243,6 +295,13 @@ class BrikkRelationCorpusTest : BasePlatformTestCase() {
         }
         val report = buildJsonObject {
             put("corpusSize", cases.size); put("disagreementCount", differences.size)
+            put("lane", lane)
+            put("logicalPassingCases", applicable.count { case ->
+                results.first { it.string("id") == case.string("id") }.array("axes").all { axis ->
+                    val entry = axis.jsonObject
+                    entry.string("axis") !in setOf("references", "scope", "order", "coreOrder", "coreExecution", "coreRefusal") || entry.getValue("matches").jsonPrimitive.boolean
+                }
+            })
             put("applicableCases", applicable.size)
             put("notApplicable", strings((cases - applicable.toSet()).map { it.string("id") }))
             put("engineWitnessCount", applicable.count { it.getValue("engine").jsonObject["duckdb"] != JsonNull })
@@ -257,7 +316,7 @@ class BrikkRelationCorpusTest : BasePlatformTestCase() {
             put("resultContract", facts.getValue("resultContract"))
             put("inputReviews", facts.getValue("inputReviews"))
             put("caseChanges", JsonObject(cases.associate { it.string("id") to it.getValue("changes") }))
-            put("adapter", "Post-replacement SQL in genuine DuckDB injection into a raw Kotlin string, with an editing profile and copied facts through the registered relation-provider extension. No Kotlin Analysis API or new analyzer. Physical schemas are real SQL-file data sources. Completion runs every registered contributor; resolve uses native SQL PSI for ordinary SQL and BrikkSqlEditorSupport.reference for flat PIPE PSI; navigation uses the Brikk handler plus native fallback; diagnostics use the real contract annotator.")
+            put("adapter", "Post-replacement SQL in a genuine DuckDB injection into a raw Kotlin string. Scope and references use core RelationScope with the corpus's facts. Registered shared features use the same facts with simple Kotlin display types. Completion observes real lookup items and matches their actual labels/types to core candidates; raw presentation remains in presentationEvidence. Resolve uses native SQL PSI only, with no analyzer substitution for flat PIPE PSI. Navigation uses the registered shared handler and native fallback. Diagnostics include the shared annotator and separately observed platform inspections. Canonical SQL types, computed identity and unspecified computed SQL types follow core's corpus comparison contract.")
             put("categories", JsonObject(differences.groupBy { it.string("category") }.mapValues { JsonArray(it.value) }))
             put("categorySummary", JsonObject(applicable.groupBy { it.string("category") }.mapValues { (category, entries) ->
                 val mismatches = differences.filter { it.string("category") == category }
@@ -268,12 +327,17 @@ class BrikkRelationCorpusTest : BasePlatformTestCase() {
             }))
             put("results", JsonArray(results))
         }
-        val output = Path.of("build", "relation-corpus", "duckdb-${ApplicationInfo.getInstance().build.baselineVersion}.json")
+        val output = Path.of("build", "relation-corpus", "duckdb-$lane-${ApplicationInfo.getInstance().build.baselineVersion}.json")
         Files.createDirectories(output.parent)
         Files.writeString(output, Json { prettyPrint = true }.encodeToString(JsonElement.serializer(), report))
+        if (!nativeSql) Files.writeString(output.resolveSibling("duckdb-${ApplicationInfo.getInstance().build.baselineVersion}.json"),
+            Json { prettyPrint = true }.encodeToString(JsonElement.serializer(), report))
         println("DuckDB relation corpus v2: ${cases.size} cases, ${applicable.size} applicable, ${differences.size} disagreements in ${differences.map { it.string("id") }.toSet().size} cases, ${resolved.size} resolved; $output")
         assertTrue("Unlisted relation disagreements: ${unexpected.joinToString()}; see $output", unexpected.isEmpty())
     }
+
+    private fun fingerprint(value: JsonElement) = java.util.HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256")
+        .digest(value.toString().toByteArray(Charsets.UTF_8)))
 
     private fun resource(name: String) = Files.readString(Path.of(System.getProperty("corpus.dir"))
         .resolveSibling("relation-corpus").resolve(name))
@@ -290,7 +354,7 @@ class BrikkRelationCorpusTest : BasePlatformTestCase() {
                 buildJsonObject {
                     put("name", fields.getValue("name")); put("kind", "COLUMN")
                     put("insertText", fields.getValue("name")); put("range", range(caret - prefix.length, caret))
-                    put("detail", "${fields.string("origin")} ${fields.string("relation")} ${fields.string("displayType")}".trim())
+                    put("detail", "${fields.string("origin")} ${fields.string("relation")} ${fields.stringOrNull("kotlinType") ?: fields.stringOrNull("sqlType") ?: fields.stringOrNull("type").orEmpty()}".trim())
                 }
             }
         })
@@ -331,7 +395,7 @@ class BrikkRelationCorpusTest : BasePlatformTestCase() {
         val shape = shapes.getValue(id).jsonObject
         val copied = shape.array("columns").map { key ->
             val column = columns.getValue(key.jsonPrimitive.content).jsonObject
-            ColumnFact(column.string("name"), column.stringOrNull("sqlType"), column.stringOrNull("kotlinType")?.substringAfterLast('.'),
+            ColumnFact(column.string("name"), column.stringOrNull("sqlType"), column.stringOrNull("kotlinType"),
                 Nullability.valueOf(column.string("nullability")), when (column.string("origin")) {
                     "KOTLIN_RELATION" -> ColumnOrigin.DECLARED
                     "RELATION_CONTRACT" -> ColumnOrigin.RELATION_CONTRACT
@@ -342,7 +406,16 @@ class BrikkRelationCorpusTest : BasePlatformTestCase() {
         return RelationFact(copied, Knowledge.valueOf(shape.string("knowledge")))
     }
 
+    private fun presentationFacts(input: Map<String, RelationFact>) = input.mapValues { (_, fact) ->
+        fact.copy(columns = fact.columns.map { it.copy(displayType = it.displayType?.substringAfterLast('.')) })
+    }
+
     private fun configure(id: String, sql: String): PsiFile {
+        if (nativeSql) {
+            val file = myFixture.configureByText("NativeRelationCase-$id.sql", sql)
+            assertEquals(DuckdbSqlDialect, file.language)
+            return file
+        }
         val hostFile = myFixture.configureByText("RelationCase-$id.kt", "val sql = \"\"\"$sql\"\"\"")
         val manager = InjectedLanguageManager.getInstance(project)
         val host = requireNotNull(PsiTreeUtil.findChildOfType(manager.getTopLevelFile(hostFile), KtStringTemplateExpression::class.java))
@@ -363,6 +436,7 @@ class BrikkRelationCorpusTest : BasePlatformTestCase() {
             }
         }.toMap()
         if (tables.isEmpty()) return action()
+        physicalTargets = emptyMap()
         val schemas = tables.keys.filter { '.' in it }.map { it.substringBeforeLast('.') }.distinct()
         val ddl = schemas.joinToString("\n") { "CREATE SCHEMA $it;" } + "\n" + tables.entries.joinToString("\n") { (name, fact) ->
             val fields = shapes.getValue(fact.jsonPrimitive.content).jsonObject.array("columns").joinToString(", ") { key ->
@@ -382,6 +456,12 @@ class BrikkRelationCorpusTest : BasePlatformTestCase() {
         try {
             source.syncAndWait()
             DbPsiFacade.getInstance(project).clearCaches()
+            val db = requireNotNull(DbPsiFacade.getInstance(project).findDataSource(source.uniqueId))
+            physicalTargets = DasUtil.getTables(db).flatMap { table -> DasUtil.getColumns(table).mapNotNull { column ->
+                val fact = physicalFact(column)
+                val key = columns.entries.singleOrNull { it.value.jsonObject == fact }?.key
+                key?.let { db.findElement(column)?.let { target -> key to target } }
+            } }.toMap()
             SqlResolveMappings.getInstance(project).setMapping(null, SqlResolveMappings.ALL_DATA_SOURCES)
             return action()
         } finally {
@@ -416,10 +496,7 @@ class BrikkRelationCorpusTest : BasePlatformTestCase() {
             } }),
             "completion" to JsonArray(carets.map { caret -> buildJsonObject {
                 put("offset", caret.int("offset"))
-                put("columns", sorted((caret["completionColumns"] ?: caret.getValue("columns")).jsonArray.map { tuple ->
-                    val column = expectedColumn(tuple)
-                    completionColumn(column.string("name"), column.string("relation"), column.string("origin"), display(column), column.string("nullability"))
-                }))
+                put("columns", sorted((caret["completionColumns"] ?: caret.getValue("columns")).jsonArray.map(::expectedColumn)))
             } }),
         ).apply {
             val ordered = carets.filter { it.string("order") == "SIGNIFICANT" }
@@ -439,9 +516,11 @@ class BrikkRelationCorpusTest : BasePlatformTestCase() {
         fun override(index: Int, key: String) = tuple.getOrNull(index)?.takeUnless { it == JsonNull } ?: column.getValue(key)
         return buildJsonObject {
             put("name", override(2, "name")); put("relation", tuple[1]); put("origin", override(4, "origin"))
-            put("kotlinType", column.getValue("kotlinType")); put("sqlType", column.getValue("sqlType"))
+            val computed = override(4, "origin") == JsonPrimitive("COMPUTED")
+            put("kotlinType", column.getValue("kotlinType"))
+            put("sqlType", if (computed && column.getValue("sqlType") == JsonNull) JsonPrimitive("*") else type(column.stringOrNull("sqlType")))
             put("nullability", override(3, "nullability")); put("navigationId", override(5, "navigationId"))
-            put("identity", override(6, "identity"))
+            put("identity", if (computed) JsonPrimitive("computed") else override(6, "identity"))
         }
     }
 
@@ -454,9 +533,9 @@ class BrikkRelationCorpusTest : BasePlatformTestCase() {
             ColumnOrigin.PHYSICAL_TABLE -> "PHYSICAL_TABLE"
             ColumnOrigin.COMPUTED -> "COMPUTED"
         })
-        put("kotlinType", nullable(source?.stringOrNull("kotlinType"))); put("sqlType", nullable(column.sqlType))
+        put("kotlinType", nullable(column.displayType)); put("sqlType", type(column.sqlType))
         put("nullability", column.nullability.name); put("navigationId", nullable(source?.stringOrNull("navigationId")))
-        put("identity", source?.string("identity") ?: "computed.${column.name}")
+        put("identity", source?.string("identity") ?: "computed")
     }
 
     private fun targets(candidates: List<ScopeColumn>): List<JsonObject> =
@@ -466,7 +545,7 @@ class BrikkRelationCorpusTest : BasePlatformTestCase() {
         }.orEmpty()
 
     private fun target(relation: String, column: String, identity: String, navigation: String?) = buildJsonObject {
-        put("relation", relation); put("column", column); put("identity", identity); put("navigationId", nullable(navigation))
+        put("relation", relation); put("column", column); put("identity", if (identity.startsWith("computed.")) "computed" else identity); put("navigationId", nullable(navigation))
     }
 
     private fun coreOrder(case: JsonObject): JsonElement {
@@ -517,11 +596,18 @@ class BrikkRelationCorpusTest : BasePlatformTestCase() {
         }
     }
 
-    private fun idOf(location: SourceLocation?) = locations.entries.firstOrNull { it.value == location }?.key
-    private fun idOf(element: PsiElement?) = declarations.entries.firstOrNull { (_, declaration) ->
-        element != null && element.containingFile === declaration.containingFile &&
-            declaration.textRange.contains(element.textRange)
-    }?.key
+    private fun idOf(element: PsiElement?): String? {
+        val column = (element as? DasColumnSymbol)?.dasObject ?: (element as? com.intellij.database.psi.DbElement)?.delegate as? DasColumn
+        if (column != null) return physicalFact(column)?.stringOrNull("navigationId")
+        return declarations.entries.firstOrNull { (_, declaration) ->
+            element != null && element.containingFile === declaration.containingFile && declaration.textRange.contains(element.textRange)
+        }?.key
+    }
+
+    private fun physicalFact(column: DasColumn): JsonObject? {
+        val table = listOfNotNull(DasUtil.getCatalog(column), DasUtil.getSchema(column), column.table?.name).filter(String::isNotBlank).joinToString(".")
+        return physicalFacts.filter { (key, _) -> key.second == column.name && (table == key.first || table.endsWith(".${key.first}")) }.values.singleOrNull()
+    }
 
     private fun reference(expected: JsonObject, targets: List<JsonObject>) = buildJsonObject {
         put("start", expected.int("start")); put("end", expected.int("end")); put("targets", sorted(targets))
@@ -549,26 +635,69 @@ class BrikkRelationCorpusTest : BasePlatformTestCase() {
 
     private fun nativeTargets(file: PsiFile, start: Int): List<JsonObject> {
         val reference = nativeReference(file, start) ?: return emptyList()
+        // An ambiguous polyvariant result is not the first candidate the platform's resolve() picks.
+        val variants = (reference.reference as? com.intellij.psi.PsiPolyVariantReference)?.multiResolve(false)
+        val distinct = variants?.mapNotNull { it.element }?.fold(mutableListOf<PsiElement>()) { targets, element ->
+            if (targets.none { it == element || file.manager.areElementsEquivalent(it, element) }) targets += element
+            targets
+        }
+        if (distinct != null && distinct.size != 1) return emptyList()
         val resolved = reference.reference.resolve() ?: return emptyList()
         val result = reference.resolveSingle() as? SqlResolveResult
-        val qualifier = reference.qualifierExpression?.text
+        val qualifier = (reference.qualifierExpression as? SqlNameElement)?.name ?: reference.qualifierExpression?.text
             ?: (result?.immediateQualifier as? SqlNameElement)?.name
             ?: (result?.qualifier as? SqlNameElement)?.name
-        val symbol = resolved as? DasColumnSymbol ?: reference.resolveSymbol()
-        val navigationId = idOf(resolved.navigationElement)
-        if (navigationId != null) {
+        val symbol = result?.targetSymbol as? DasColumnSymbol ?: resolved as? DasColumnSymbol ?: reference.resolveSymbol()
+        val navigationId = idOf((symbol as? PsiElement)?.navigationElement ?: resolved.navigationElement)
+        if (navigationId != null && (symbol as? DasColumnSymbol)?.dasObject?.let(::physicalFact) == null) {
             val fact = columns.values.map { it.jsonObject }.firstOrNull { it.stringOrNull("navigationId") == navigationId }
-            if (fact != null) return listOf(target(qualifier ?: (symbol as? DasColumnSymbol)?.dasObject?.table?.name.orEmpty(),
-                (resolved as? PsiNamedElement)?.name.orEmpty(), fact.string("identity"), navigationId))
+            if (fact != null) return listOf(contextualTarget(start, target(qualifier ?: (symbol as? DasColumnSymbol)?.dasObject?.table?.name.orEmpty(),
+                (symbol as? PsiNamedElement)?.name ?: (resolved as? PsiNamedElement)?.name.orEmpty(), fact.string("identity"), navigationId)))
         }
         if (symbol is DasColumnSymbol) return symbol.dasObject?.let { column ->
-            val table = listOfNotNull(DasUtil.getSchema(column), column.table?.name).filter(String::isNotBlank).joinToString(".")
-            val fact = physicalFacts[table to column.name]
-            listOf(target(qualifier.orEmpty(), column.name, fact?.string("identity") ?: "physical.${column.name}",
-                fact?.stringOrNull("navigationId") ?: "decl:physical.${column.name}"))
+            val fact = physicalFact(column)
+            listOf(contextualTarget(start, target(qualifier.orEmpty(), column.name, fact?.string("identity") ?: "physical.${column.name}",
+                fact?.stringOrNull("navigationId") ?: "decl:physical.${column.name}")))
         }.orEmpty()
         val name = (resolved as? PsiNamedElement)?.name ?: return emptyList()
-        return listOf(target("", name, "computed.$name", idOf(resolved.navigationElement)))
+        return listOf(contextualTarget(start, target("", name, "computed.$name", idOf(resolved.navigationElement))))
+    }
+
+    /** A native symbol names the source declaration, not necessarily its visible alias/renamed name.
+     * Use the current shared scope only after native identity and navigation independently agree. */
+    private fun contextualTarget(start: Int, native: JsonObject): JsonObject {
+        val candidates = logicalAnalysis?.referenceAt(start)?.columns.orEmpty().map(::observedColumn).filter {
+            it.getValue("identity") == native.getValue("identity") && it.getValue("navigationId") == native.getValue("navigationId")
+                && (native.string("identity") != "computed" || it.string("name") == native.string("column"))
+        }.distinct()
+        val current = candidates.singleOrNull() ?: return native
+        return target(current.string("relation"), current.string("name"), native.string("identity"), native.stringOrNull("navigationId"))
+    }
+
+    private fun resolveEvidence(file: PsiFile, start: Int): JsonObject = buildJsonObject {
+        val reference = nativeReference(file, start)
+        put("start", start); put("nativeReference", reference != null)
+        if (reference != null) {
+            val result = reference.resolveSingle() as? SqlResolveResult
+            val symbol = result?.targetSymbol
+            put("symbolClass", nullable(symbol?.javaClass?.name))
+            put("symbolName", nullable((symbol as? PsiNamedElement)?.name))
+            put("nativeReferenceStart", reference.reference.element.textRange.startOffset + reference.reference.rangeInElement.startOffset)
+            put("identifierStart", reference.identifier?.textRange?.startOffset ?: -1)
+            val variants = (reference.reference as? com.intellij.psi.PsiPolyVariantReference)?.multiResolve(false)?.mapNotNull { it.element }
+                ?: listOfNotNull(reference.reference.resolve())
+            put("variants", JsonArray(variants.map { element -> buildJsonObject {
+                put("class", element.javaClass.name); put("name", nullable((element as? PsiNamedElement)?.name))
+                put("text", element.text); put("offset", element.textOffset)
+                put("navigation", nullable(idOf(element.navigationElement)))
+                val column = (element as? DasColumnSymbol)?.dasObject ?: (element as? com.intellij.database.psi.DbElement)?.delegate as? DasColumn
+                put("table", nullable(column?.table?.name)); put("column", nullable(column?.name))
+            } }))
+        }
+        val logical = logicalAnalysis?.referenceAt(start)
+        put("logicalStart", logical?.start ?: -1)
+        put("logicalEnd", logical?.end ?: -1)
+        put("logicalResolution", nullable(logical?.resolution?.name))
     }
 
     private fun navigation(file: PsiFile, start: Int): List<String> {
@@ -589,6 +718,7 @@ class BrikkRelationCorpusTest : BasePlatformTestCase() {
                 annotation.message.contains("partial relation contract") -> "PARTIAL_CONTRACT"
                 annotation.message.startsWith("Unknown relation") -> "UNKNOWN_QUALIFIER"
                 annotation.message.startsWith("Unknown table") -> "UNKNOWN_TABLE"
+                annotation.message.contains("branches have") -> "COLUMN_COUNT_MISMATCH"
                 annotation.message.contains("cannot lower") -> "PIPE_UNSUPPORTED"
                 else -> "MISSING"
             })
@@ -596,6 +726,7 @@ class BrikkRelationCorpusTest : BasePlatformTestCase() {
             put("subject", when {
                 annotation.message.startsWith("Unknown relation") -> "QUALIFIER"
                 annotation.message.startsWith("Unknown table") -> "TABLE"
+                annotation.message.contains("branches have") -> "OPERATOR"
                 else -> "COLUMN"
             })
         } }.toMutableList()
@@ -617,8 +748,29 @@ class BrikkRelationCorpusTest : BasePlatformTestCase() {
         return sorted(result.distinct())
     }
 
-    private fun completion(item: LookupElement): JsonObject? {
+    private fun isColumn(item: LookupElement, shown: LookupElementPresentation): Boolean {
+        val symbol = (item.`object` as? SqlResolveResult)?.targetSymbol ?: item.psiElement
+        return shown.tailText.orEmpty().contains("column") || shown.tailText.orEmpty().contains("relation contract") ||
+            symbol is DasColumnSymbol || ((symbol as? com.intellij.database.psi.DbElement)?.delegate is com.intellij.database.model.DasColumn)
+    }
+
+    private fun completion(item: LookupElement, candidates: List<ScopeColumn>): JsonObject? {
         val shown = LookupElementPresentation().also(item::renderElement)
+        if (!isColumn(item, shown)) return null
+        val matched = candidates.filter { column ->
+            if (column.name != item.lookupString) false else {
+                val short = column.copy(displayType = column.displayType?.substringAfterLast('.'))
+                val label = brikkLabels.label(short)
+                val tail = "  ${label.origin}" + if (label.relation.isNotBlank()) " (${label.relation})" else ""
+                val typeText = (label.type ?: "unknown type") + when (label.nullable) {
+                    true -> "?"; false -> ""; null -> " (nullability unknown)"
+                }
+                shown.tailText == tail && shown.typeText == typeText
+            }
+        }
+        // Match actual output, not the corpus's expected columns. Preserve an unmatched/ambiguous item as a difference.
+        if (matched.size == 1) return observedColumn(matched.single())
+        if (matched.isNotEmpty() && matched.map(::observedColumn).distinct().size == 1) return observedColumn(matched.first())
         val tail = shown.tailText.orEmpty()
         val symbol = (item.`object` as? SqlResolveResult)?.targetSymbol ?: item.psiElement as? DasColumnSymbol
         val physical = (symbol as? DasColumnSymbol)?.dasObject
@@ -632,24 +784,25 @@ class BrikkRelationCorpusTest : BasePlatformTestCase() {
         }
         val relation = Regex("\\(([^()]*)\\)$").find(tail)?.groupValues?.get(1)
             ?: (symbol as? DasColumnSymbol)?.dasObject?.table?.name.orEmpty()
-        return completionColumn(item.lookupString, relation, origin, shown.typeText.orEmpty().let {
-            if (origin == "PHYSICAL_TABLE") it.uppercase() else it
-        }, when {
-            origin == "PHYSICAL_TABLE" -> if (physical?.isNotNull == true) "NON_NULL" else "NULLABLE"
-            shown.typeText.orEmpty().contains("nullability unknown") || shown.typeText == "PIPE input column" -> "UNKNOWN"
-            shown.typeText.orEmpty().endsWith('?') -> "NULLABLE"
-            else -> "NON_NULL"
-        })
+        return buildJsonObject {
+            put("name", item.lookupString); put("relation", relation); put("origin", origin)
+            put("unmatchedPresentation", true); put("type", nullable(shown.typeText)); put("tail", nullable(shown.tailText))
+        }
     }
 
-    private fun completionColumn(name: String, relation: String, origin: String, type: String, nullability: String) = buildJsonObject {
-        put("name", name); put("relation", relation); put("origin", origin); put("displayType", type); put("nullability", nullability)
-    }
+    private fun type(sql: String?): JsonElement = nullable(sql?.let {
+        try { Dialects.BASE.generate(dataTypeFromStr(it)) } catch (_: dev.brikk.house.sql.parser.ParseError) { it }
+    })
 
-    private fun display(column: JsonObject): String {
-        val base = column.stringOrNull("kotlinType")?.substringAfterLast('.') ?: column.stringOrNull("sqlType") ?: "unknown type"
-        if (column.string("origin") == "PHYSICAL_TABLE") return base
-        return base + when (column.string("nullability")) { "NULLABLE" -> "?"; "UNKNOWN" -> " (nullability unknown)"; else -> "" }
+    /** Same comparison contract as core's RelationCorpusTest: computed unspecified types are not assertions. */
+    private fun matches(expected: JsonElement, actual: JsonElement): Boolean = when {
+        expected == JsonPrimitive("*") -> true
+        expected is JsonObject && actual is JsonObject -> expected.keys == actual.keys && expected.all { (key, value) -> matches(value, actual.getValue(key)) }
+        expected is JsonArray && actual is JsonArray -> expected.size == actual.size && run {
+            val unused = actual.toMutableList()
+            expected.all { wanted -> unused.firstOrNull { matches(wanted, it) }?.let(unused::remove) == true }
+        }
+        else -> expected == actual
     }
 
     private fun engine(oracle: JsonObject, id: String): JsonObject = DriverManager.getConnection("jdbc:duckdb:").use { connection ->
