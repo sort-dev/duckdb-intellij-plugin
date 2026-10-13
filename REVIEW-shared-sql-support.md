@@ -619,3 +619,21 @@ no files/tests deleted. Full default/present 261/262/263 lanes pass 300 tests wi
 nine skips. Absent passes 214 with nine skips; Brikk 86; isolation two; census
 226/226. The two corpus lanes still match the reasoned 79-entry ledger and retain
 167/167 logical passes and all 132 native witnesses.
+
+### Step 7: isolation-contract adoption deferred
+
+The shared kit was exercised through DuckDB's product loader, keeping Brikk jars
+off fixture core. Installed-peer, ownership and language checks passed. Its Execute
+check falsely requires SQL Transpiler's wrapper in the stock Execute chain merely
+because that peer bundles `CooperativeExecuteAction`. The loaded chain correctly
+has four dialect wrappers and the stock action; Transpiler does not register that
+wrapper. Reproducer: all five local plugin ZIPs loaded, call
+`PluginIsolationContract.everyExecuteChainKeepsEachPluginsWrapper()`;
+`wrappingLoaders()` includes `dev.sort.sql-transpiler-intellij-plugin` by resource
+presence and asserts a wrapper the plugin never installed.
+
+Adoption needs the kit to identify actual Execute customizers or accept explicit
+wrapping peers. No peer was excluded and no assertion disabled. The experiment was
+removed; both existing isolation tests, including all six dialect registration
+orders and detached predecessors, remain unchanged and pass. No production or
+test files deleted, no tests added/deleted, no visible behavior change.
