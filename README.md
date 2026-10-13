@@ -150,13 +150,25 @@ driver. The built-in PIPE translator is independent of that driver.
 ## Building from source
 
 ```bash
-./gradlew buildPlugin   # → build/distributions/duckdb-intellij-plugin.zip
+./gradlew buildPlugin   # → build/distributions/duckdb-intellij-plugin-<version>.zip
 ./gradlew test          # census scoreboard + validator grading + boundary contracts
 ./gradlew test262 test263 # same 261-compiled plugin on newer SQL and Kotlin APIs
 ./gradlew verifyDistribution verifyPlugin # ZIP contents, bytecode, IDE API compatibility
 # optional: live wire suite against a quack server
 ./gradlew test -Dquack.live.url='jdbc:quack://localhost:9494?token=<token>'
 ```
+
+The declared base is `0.4.0`; source builds default to
+`0.4.0-dev.<commit time yyyyMMddHHmm UTC>+<12-character SHA>`, with `.dirty` for
+uncommitted changes. The ZIP and the IDE's plugin version use the same label.
+`-Prelease=true` uses the base unchanged, without publishing or choosing a release
+number. IntelliJ sorts the requested dev format above the same bare base, so a
+same-base release install needs a manual downgrade/removal.
+
+The canonical conventions repo provides `tools/stage-plugin-builds.sh --dry-run`.
+A real staging run builds clean checkouts only and places the five plugins' ZIPs
+and `MANIFEST.md` under `/home/jayson/DEV/sortdev/plugin-builds/<yyyyMMdd-HHmm UTC>/`.
+It never edits or commits the other plugins' sources.
 
 IntelliJ IDEA Ultimate 2026.1 SDK (auto-downloaded), Kotlin 2.4.10, JVM 21.
 The SDK supplies optional Kotlin injection APIs; Kotlin is not required to use

@@ -729,3 +729,23 @@ differences. Remaining gaps versus the ideal shared result are native resolve in
 flat PIPE/derived/alias cases (74), one native navigation fallback and one stock
 open-catalog inspection. These are documented, not patched with a second resolver.
 No plain-SQL smoke failure remains. No publication or stash was performed.
+
+## Named dev artifacts
+
+Synced conventions `0e64764` and changed DuckDB's declared base to `0.4.0`, not a
+release decision. Default ZIP and patched IDE versions now include HEAD's UTC
+committer minute, 12-character SHA and a dirty suffix when needed. Explicit
+`-Prelease=true` builds preserve the base. Two SDK-comparator tests pin the actual
+IntelliJ ordering, including the same-base downgrade caveat.
+
+Canonical tests cover deterministic Git identity, tracked/untracked/ignored
+changes and newest versioned sibling discovery. DuckDB dev and explicit release
+`buildPlugin`/`verifyDistribution` checks pass. The dirty dev-labelled ZIP is
+Compatible on all five configured verifier targets, and isolation passes without
+explicit sibling paths, exercising versioned/legacy ZIP discovery.
+
+The staging script was only dry-run. It reported dirty Doris/Trino trees and
+printed the remaining build commands, without building any peer or creating a
+staging directory. Its in-memory version bridge was tested by directly building
+DuckDB before syncing; both filename and descriptor used the same dev label and
+the source tree remained clean. The script is documented in the canonical README.
