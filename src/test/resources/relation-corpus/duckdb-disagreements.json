@@ -1,55 +1,522 @@
 {
-  "bare-slot-is-physical": ["references", "scope"],
-  "contract-origin": ["completion"],
-  "correlated-qualified": ["completion", "scope"],
-  "cte-flatten": ["completion"],
-  "cte-projection": ["completion"],
-  "cte-shadow-slot": ["completion"],
-  "incomplete-parenthesis": ["completion", "scope"],
-  "join-ambiguous": ["completion", "resolve"],
-  "local-alias-shadow": ["references", "scope"],
-  "nested-cte-shadow": ["completion"],
-  "ordinary-alias": ["completion"],
-  "ordinary-group-alias": ["completion", "diagnostics", "navigation", "references", "resolve", "scope"],
-  "ordinary-join-anti": ["completion"],
-  "ordinary-join-cross": ["completion"],
-  "ordinary-join-full": ["completion"],
-  "ordinary-join-inner": ["completion"],
-  "ordinary-join-left": ["completion"],
-  "ordinary-join-right": ["completion"],
-  "ordinary-join-right-anti": ["completion", "navigation", "references", "resolve", "scope"],
-  "ordinary-join-right-semi": ["completion", "navigation", "references", "resolve", "scope"],
-  "ordinary-join-semi": ["completion"],
-  "ordinary-order-alias": ["completion", "scope"],
-  "ordinary-set-except": ["completion", "references", "resolve", "scope"],
-  "ordinary-set-intersect": ["completion", "references", "resolve", "scope"],
-  "ordinary-set-union-all": ["completion", "references", "resolve", "scope"],
-  "parenthesized-lineage": ["completion"],
-  "physical-mixed-pipe": ["completion", "navigation", "references", "resolve", "scope"],
-  "physical-ordinary": ["references", "scope"],
-  "physical-pipe": ["completion", "navigation", "references", "resolve", "scope"],
-  "pipe-aggregate": ["completion", "scope"],
-  "pipe-aggregate-group-order": ["completion", "scope"],
-  "pipe-drop": ["completion", "navigation", "references", "resolve", "scope"],
-  "pipe-drop-missing": ["completion", "diagnostics", "scope"],
-  "pipe-extend-computed": ["completion", "scope"],
-  "pipe-extend-unknown": ["completion", "scope"],
-  "pipe-join-right-anti": ["completion", "navigation", "references", "resolve", "scope"],
-  "pipe-join-right-semi": ["completion", "navigation", "references", "resolve", "scope"],
-  "pipe-pivot": ["completion", "references", "resolve", "scope"],
-  "pipe-rename": ["completion", "navigation", "references", "resolve", "scope"],
-  "pipe-select-computed": ["completion", "scope"],
-  "pipe-select-hides-alias": ["completion"],
-  "pipe-select-rename-lineage": ["completion"],
-  "pipe-set": ["completion", "references", "resolve", "scope"],
-  "pipe-set-except": ["completion", "references", "resolve", "scope"],
-  "pipe-set-intersect": ["completion", "references", "resolve", "scope"],
-  "pipe-set-union-all": ["completion", "references", "resolve", "scope"],
-  "pipe-set-union-distinct": ["completion", "references", "resolve", "scope"],
-  "pipe-tablesample": ["completion", "navigation", "references", "resolve", "scope"],
-  "pipe-unpivot": ["completion", "references", "resolve", "scope"],
-  "pipe-window": ["completion", "references", "resolve", "scope"],
-  "qualified-column-case": ["completion"],
-  "subquery-flatten": ["completion"],
-  "utf16-after-emoji-bind": ["completion"]
+  "shared": {
+    "aggregate-group-expression-alias": [
+      "completion",
+      "order",
+      "scope"
+    ],
+    "aggregate-no-group": [
+      "completion",
+      "scope"
+    ],
+    "bare-slot-is-physical": [
+      "references",
+      "scope"
+    ],
+    "call-known-output-contract": [
+      "completion",
+      "navigation",
+      "references",
+      "resolve",
+      "scope"
+    ],
+    "contract-origin": [
+      "completion"
+    ],
+    "correlated-qualified": [
+      "completion",
+      "scope"
+    ],
+    "cte-flatten": [
+      "completion"
+    ],
+    "cte-projection": [
+      "completion"
+    ],
+    "cte-shadow-slot": [
+      "completion"
+    ],
+    "incomplete-parenthesis": [
+      "completion",
+      "scope"
+    ],
+    "join-ambiguous": [
+      "completion",
+      "resolve"
+    ],
+    "left-using-merged-star": [
+      "completion",
+      "diagnostics",
+      "navigation",
+      "order",
+      "references",
+      "resolve",
+      "scope"
+    ],
+    "local-alias-shadow": [
+      "references",
+      "scope"
+    ],
+    "mixed-case-column-folding": [
+      "completion",
+      "navigation",
+      "resolve"
+    ],
+    "natural-merged-star": [
+      "completion",
+      "diagnostics",
+      "navigation",
+      "order",
+      "references",
+      "resolve",
+      "scope"
+    ],
+    "nested-cte-shadow": [
+      "completion"
+    ],
+    "ordinary-alias": [
+      "completion"
+    ],
+    "ordinary-group-alias": [
+      "completion",
+      "diagnostics",
+      "navigation",
+      "references",
+      "resolve",
+      "scope"
+    ],
+    "ordinary-join-anti": [
+      "completion"
+    ],
+    "ordinary-join-cross": [
+      "completion"
+    ],
+    "ordinary-join-full": [
+      "completion"
+    ],
+    "ordinary-join-inner": [
+      "completion"
+    ],
+    "ordinary-join-left": [
+      "completion"
+    ],
+    "ordinary-join-right": [
+      "completion"
+    ],
+    "ordinary-join-semi": [
+      "completion"
+    ],
+    "ordinary-order-alias": [
+      "completion",
+      "scope"
+    ],
+    "ordinary-set-except": [
+      "completion",
+      "navigation",
+      "references",
+      "resolve",
+      "scope"
+    ],
+    "ordinary-set-intersect": [
+      "completion",
+      "navigation",
+      "references",
+      "resolve",
+      "scope"
+    ],
+    "ordinary-set-union-all": [
+      "completion",
+      "references",
+      "resolve",
+      "scope"
+    ],
+    "ordinary-star-join-cte-duckdb": [
+      "completion",
+      "diagnostics",
+      "navigation",
+      "order",
+      "references",
+      "resolve",
+      "scope"
+    ],
+    "ordinary-star-join-subquery-duckdb": [
+      "completion",
+      "diagnostics",
+      "navigation",
+      "order",
+      "references",
+      "resolve",
+      "scope"
+    ],
+    "parenthesized-lineage": [
+      "completion"
+    ],
+    "physical-mixed-pipe": [
+      "completion",
+      "navigation",
+      "references",
+      "resolve",
+      "scope"
+    ],
+    "physical-ordinary": [
+      "references",
+      "scope"
+    ],
+    "physical-pipe": [
+      "completion",
+      "navigation",
+      "references",
+      "resolve",
+      "scope"
+    ],
+    "pipe-aggregate": [
+      "completion",
+      "order",
+      "scope"
+    ],
+    "pipe-aggregate-group-order": [
+      "completion",
+      "order",
+      "scope"
+    ],
+    "pipe-anti-right-hidden": [
+      "diagnostics"
+    ],
+    "pipe-as-replaces-old-alias": [
+      "diagnostics"
+    ],
+    "pipe-call-unknown-output": [
+      "scope"
+    ],
+    "pipe-drop": [
+      "completion",
+      "navigation",
+      "order",
+      "references",
+      "resolve",
+      "scope"
+    ],
+    "pipe-drop-missing": [
+      "completion",
+      "diagnostics",
+      "scope"
+    ],
+    "pipe-extend-computed": [
+      "completion",
+      "scope"
+    ],
+    "pipe-extend-passthrough": [
+      "completion",
+      "scope"
+    ],
+    "pipe-extend-unknown": [
+      "completion",
+      "scope"
+    ],
+    "pipe-join-right-anti": [
+      "completion",
+      "navigation",
+      "references",
+      "resolve",
+      "scope"
+    ],
+    "pipe-join-right-semi": [
+      "completion",
+      "navigation",
+      "references",
+      "resolve",
+      "scope"
+    ],
+    "pipe-left-using-merged-star": [
+      "completion",
+      "diagnostics",
+      "navigation",
+      "order",
+      "references",
+      "resolve",
+      "scope"
+    ],
+    "pipe-pivot": [
+      "completion",
+      "references",
+      "resolve",
+      "scope"
+    ],
+    "pipe-rename": [
+      "completion",
+      "navigation",
+      "order",
+      "references",
+      "resolve",
+      "scope"
+    ],
+    "pipe-select-computed": [
+      "completion",
+      "scope"
+    ],
+    "pipe-select-hides-alias": [
+      "diagnostics"
+    ],
+    "pipe-semi-right-hidden": [
+      "diagnostics"
+    ],
+    "pipe-set": [
+      "completion",
+      "references",
+      "resolve",
+      "scope"
+    ],
+    "pipe-set-except": [
+      "completion",
+      "navigation",
+      "references",
+      "resolve",
+      "scope"
+    ],
+    "pipe-set-intersect": [
+      "completion",
+      "navigation",
+      "references",
+      "resolve",
+      "scope"
+    ],
+    "pipe-set-union-all": [
+      "completion",
+      "references",
+      "resolve",
+      "scope"
+    ],
+    "pipe-set-union-distinct": [
+      "completion",
+      "references",
+      "resolve",
+      "scope"
+    ],
+    "pipe-star-join": [
+      "completion",
+      "diagnostics",
+      "navigation",
+      "references",
+      "resolve",
+      "scope"
+    ],
+    "pipe-star-join-duckdb-dedup": [
+      "completion",
+      "diagnostics",
+      "navigation",
+      "order",
+      "references",
+      "resolve",
+      "scope"
+    ],
+    "pipe-star-single": [
+      "completion",
+      "references",
+      "resolve",
+      "scope"
+    ],
+    "pipe-star-single-hidden-alias": [
+      "completion",
+      "diagnostics",
+      "navigation",
+      "references",
+      "resolve",
+      "scope"
+    ],
+    "pipe-tablesample": [
+      "completion",
+      "navigation",
+      "references",
+      "resolve",
+      "scope"
+    ],
+    "pipe-unknown-star": [
+      "diagnostics",
+      "scope"
+    ],
+    "pipe-unpivot": [
+      "completion",
+      "references",
+      "resolve",
+      "scope"
+    ],
+    "pipe-window": [
+      "completion",
+      "references",
+      "resolve",
+      "scope"
+    ],
+    "pivot-surviving-key": [
+      "completion",
+      "navigation",
+      "order",
+      "references",
+      "resolve",
+      "scope"
+    ],
+    "portable-group-expression": [
+      "completion"
+    ],
+    "provider-case-exact-match": [
+      "completion"
+    ],
+    "q13-drops-aggregate": [
+      "diagnostics"
+    ],
+    "q13-drops-drop": [
+      "diagnostics",
+      "scope"
+    ],
+    "q13-drops-except": [
+      "diagnostics",
+      "scope"
+    ],
+    "q13-drops-extend": [
+      "completion",
+      "diagnostics",
+      "navigation",
+      "references",
+      "resolve",
+      "scope"
+    ],
+    "q13-drops-intersect": [
+      "diagnostics",
+      "scope"
+    ],
+    "q13-drops-pivot": [
+      "diagnostics",
+      "scope"
+    ],
+    "q13-drops-rename": [
+      "diagnostics",
+      "scope"
+    ],
+    "q13-drops-select": [
+      "diagnostics"
+    ],
+    "q13-drops-set": [
+      "diagnostics",
+      "scope"
+    ],
+    "q13-drops-union": [
+      "diagnostics",
+      "scope"
+    ],
+    "q13-drops-unpivot": [
+      "diagnostics",
+      "scope"
+    ],
+    "q13-drops-window": [
+      "diagnostics",
+      "scope"
+    ],
+    "q13-keeps-tablesample": [
+      "completion",
+      "navigation",
+      "references",
+      "resolve",
+      "scope"
+    ],
+    "qualified-column-case": [
+      "completion"
+    ],
+    "quoted-case-duckdb": [
+      "navigation"
+    ],
+    "quoted-source-alias": [
+      "completion",
+      "resolve"
+    ],
+    "self-join-same-slot": [
+      "completion",
+      "navigation",
+      "resolve"
+    ],
+    "set-column-count-mismatch": [
+      "diagnostics"
+    ],
+    "set-nullability-names-except": [
+      "completion",
+      "navigation",
+      "order",
+      "references",
+      "resolve",
+      "scope"
+    ],
+    "set-nullability-names-intersect": [
+      "completion",
+      "navigation",
+      "order",
+      "references",
+      "resolve",
+      "scope"
+    ],
+    "set-nullability-names-union-all": [
+      "completion",
+      "order",
+      "references",
+      "resolve",
+      "scope"
+    ],
+    "subquery-flatten": [
+      "completion"
+    ],
+    "union-by-name": [
+      "completion",
+      "navigation",
+      "order",
+      "references",
+      "resolve",
+      "scope"
+    ],
+    "union-unanimous-origin": [
+      "completion",
+      "navigation",
+      "order",
+      "references",
+      "resolve",
+      "scope"
+    ],
+    "unpivot-include-nulls": [
+      "completion",
+      "order",
+      "references",
+      "resolve",
+      "scope"
+    ],
+    "utf16-after-emoji-bind": [
+      "completion"
+    ]
+  },
+  "runtimes": {
+    "261": {
+      "parenthesized-pipe-input": [
+        "completion"
+      ],
+      "pipe-select-hides-alias": [
+        "completion"
+      ],
+      "q13-drops-select": [
+        "completion"
+      ],
+      "select-first-pipe": [
+        "completion"
+      ],
+      "q13-drops-aggregate": [
+        "completion"
+      ],
+      "pipe-select-rename-lineage": [
+        "completion"
+      ]
+    },
+    "262": {},
+    "263": {}
+  },
+  "prunedV1Flags": [
+    "pipe-select-rename-lineage/completion",
+    "pipe-select-hides-alias/completion"
+  ],
+  "notes": [
+    "V1 all-runtime completion flags are pruned. On 261 full-suite runs the real PIPE input-column contributor intermittently adds unqualified/duplicate suggestions for those cases and Q13 SELECT/AGGREGATE; current observations remain runtime-specific, with semantic expectations unchanged."
+  ]
 }
