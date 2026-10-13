@@ -4,6 +4,9 @@ import com.intellij.codeInsight.CodeInsightSettings
 import com.intellij.database.util.Version
 import dev.brikk.house.sql.intellij.catalog.CatalogSource
 import dev.brikk.house.sql.intellij.completion.completableFunctions
+import dev.brikk.house.sql.intellij.completion.SqlLookupKind
+import dev.brikk.house.sql.intellij.completion.SqlLookupStyles
+import dev.brikk.house.sql.intellij.completion.SqlLookupIcons
 import dev.brikk.house.sql.intellij.testing.setSqlDialectMapping
 import dev.brikk.house.sql.metadata.DUCKDB_METADATA
 import dev.brikk.house.sql.metadata.FunctionKind
@@ -137,6 +140,11 @@ class DuckdbCatalogResolverTest : DuckdbCatalogTestCase() {
     fun testWindowKindReachesCompletion() {
         legacy(source(), listOf("review_window" to "WINDOW"))
         assertEquals(FunctionKind.WINDOW, completions("review_").single { it.name == "review_window" }.kind)
+        for (kind in listOf(SqlLookupKind.WINDOW, SqlLookupKind.BRIKK_COLUMN, SqlLookupKind.PIPE_STAGE)) {
+            assertEquals(kind.name, SqlLookupStyles.DEFAULT[kind], DuckdbCompletionProfile.styles[kind])
+        }
+        assertSame(SqlLookupIcons.WindowFunction, DuckdbCompletionProfile.styles[SqlLookupKind.WINDOW].icon)
+        assertSame(SqlLookupIcons.BrikkColumn, DuckdbCompletionProfile.styles[SqlLookupKind.BRIKK_COLUMN].icon)
     }
 
     fun testLiveKeywordsReplaceBundledKeywordsThroughCompletion() {

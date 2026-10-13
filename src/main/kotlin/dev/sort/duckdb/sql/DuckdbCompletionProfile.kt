@@ -30,7 +30,6 @@ object DuckdbCompletionProfile : SqlCompletionProfile {
             ).map { (kind, label) ->
                 kind to defaults[kind].copy(typeText = label, showsSignature = false, showsReturnType = false)
             }.toTypedArray(),
-            SqlLookupKind.BRIKK_COLUMN to defaults[SqlLookupKind.BRIKK_COLUMN].copy(icon = null),
         )
     }
 }
