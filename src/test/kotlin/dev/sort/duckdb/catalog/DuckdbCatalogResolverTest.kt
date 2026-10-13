@@ -33,8 +33,8 @@ class DuckdbCatalogResolverTest : DuckdbCatalogTestCase() {
         super.tearDown()
     }
 
-    private fun completions(prefix: String): List<FunctionPresentation> {
-        myFixture.configureByText("completion.sql", "SELECT $prefix<caret>")
+    private fun completions(prefix: String, table: Boolean = false): List<FunctionPresentation> {
+        myFixture.configureByText("completion.sql", "${if (table) "SELECT * FROM" else "SELECT"} $prefix<caret>")
         return myFixture.completeBasic().orEmpty().mapNotNull { it.`object` as? FunctionPresentation }
     }
 
@@ -90,7 +90,9 @@ class DuckdbCatalogResolverTest : DuckdbCatalogTestCase() {
         for ((name, kind) in listOf("version" to FunctionKind.SCALAR,
             "enable_profiling" to FunctionKind.TABLE_VALUED, "disable_profiling" to FunctionKind.TABLE_VALUED,
             "force_checkpoint" to FunctionKind.TABLE_VALUED, "json_execute_serialized_sql" to FunctionKind.TABLE_VALUED)) {
-            assertTrue("$name / $kind missing", completions(name.take(4)).any { it.name == name && it.kind == kind })
+            val table = kind == FunctionKind.TABLE_VALUED
+            assertTrue("$name / $kind missing", completions(name.take(4), table).any { it.name == name && it.kind == kind })
+            assertFalse("$name offered in wrong position", completions(name.take(4), !table).any { it.name == name })
         }
     }
 
@@ -125,7 +127,10 @@ class DuckdbCatalogResolverTest : DuckdbCatalogTestCase() {
             connected(connection, source)
             val functions = completions("review_")
             assertEquals("macro", functions.single { it.name == "review_scalar" }.nativeKind)
-            assertEquals("table_macro", functions.single { it.name == "review_table" }.nativeKind)
+            assertFalse(functions.toString(), functions.any { it.name == "review_table" })
+            val tables = completions("review_", table = true)
+            assertEquals("table_macro", tables.single { it.name == "review_table" }.nativeKind)
+            assertFalse(tables.toString(), tables.any { it.name == "review_scalar" })
         }
     }
 

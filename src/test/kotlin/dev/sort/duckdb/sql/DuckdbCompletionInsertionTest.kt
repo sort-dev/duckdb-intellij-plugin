@@ -64,9 +64,12 @@ class DuckdbCompletionInsertionTest : BasePlatformTestCase() {
             "repeat" to setOf(FunctionKind.SCALAR, FunctionKind.TABLE_VALUED),
             "histogram" to setOf(FunctionKind.AGGREGATE, FunctionKind.TABLE_VALUED),
         )) {
-            myFixture.configureByText("kinds.sql", "SELECT ${name.take(3)}<caret>")
-            val entries = myFixture.completeBasic().orEmpty().mapNotNull { it.`object` as? FunctionPresentation }
-            assertEquals(name, kinds, entries.filter { it.name == name }.map { it.kind }.toSet())
+            for (table in listOf(false, true)) {
+                myFixture.configureByText("kinds.sql", "${if (table) "SELECT * FROM" else "SELECT"} ${name.take(3)}<caret>")
+                val entries = myFixture.completeBasic().orEmpty().mapNotNull { it.`object` as? FunctionPresentation }
+                assertEquals("$name table=$table", kinds.filter { (it == FunctionKind.TABLE_VALUED) == table }.toSet(),
+                    entries.filter { it.name == name }.map { it.kind }.toSet())
+            }
         }
     }
 
