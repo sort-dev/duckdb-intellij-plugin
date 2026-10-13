@@ -363,6 +363,13 @@ real-loader isolation passes both tests with the local peer ZIPs. The old lane
 script referenced a removed transpiler ZIP; rerunning against its worktree ZIP
 passes. Census remains 226/226. No corpus expectations changed.
 
+The refresh resolves five known core execution differences on all three IDE
+generations: ORDER after LIMIT, EXTEND with a window after LIMIT, SET input
+aliases, and RIGHT/FULL JOIN after WHERE. The observed disagreement count is
+394 instead of 399, with all 132 native witnesses passing. The committed
+expectations still retain these five known differences; they were not rewritten
+to match the new implementation.
+
 ## U-V3 native diagnostics
 
 `DuckdbErrorAnnotator` now delegates to `NativeErrorAnnotator` with one DuckDB
@@ -395,3 +402,25 @@ up from 269. Kotlin-absent lanes pass with 208 tests and nine skips. Brikk passe
 69 tests; isolation passes both tests. Parse-only safety tests remain green.
 Census is 226/226 and corpus expectations are unchanged. No Plugin Verifier or
 publication ran.
+
+## P6.e DuckDB catalog definitions
+
+Registered `DuckdbDefinitionProvider`, a
+`ShowCreateDefinitionProvider("duckdb", …)` subclass, for TABLE, VIEW,
+ROUTINE mapped to MACRO, SEQUENCE and INDEX. Namespace paths include DATABASE
+and SCHEMA, so attached catalogs and same-named objects are read independently.
+The fallback audit no longer permits an inherited PostgreSQL definition provider.
+
+Object source views now show DuckDB's catalog definitions. Macros retain
+overloads, quote parameter names and disclose that DuckDB does not report
+parameter defaults. Reads call qualified `system.main.duckdb_*` built-ins only;
+shadowing catalog or helper macros never advances the test sequence. A live
+IDE-driver test checks list-valued macro parameters without changing the
+connection's namespace. No DuckDB text-explain profile or action was added.
+
+Final default and Kotlin-present 261/262/263 lanes pass with 282 tests and nine
+skips. Kotlin-absent lanes pass with 213 tests and nine skips. Brikk passes 69
+tests; real-loader isolation passes both tests with all five plugins loaded.
+Census remains 226/226; corpus results remain 394 disagreements, five resolved
+and 132 passing native witnesses. No corpus expectations changed. No Plugin
+Verifier or publication ran.

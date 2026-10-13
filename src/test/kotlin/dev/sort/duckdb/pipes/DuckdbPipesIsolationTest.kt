@@ -68,6 +68,7 @@ class DuckdbPipesIsolationTest : BasePlatformTestCase() {
             "catalog.ExecutionObserver", "catalog.HarvestConnectionInterceptor", "catalog.RefreshLiveCatalogAction",
             "catalog.CatalogProfile", "catalog.AutoIntrospectService", "catalog.IntrospectBannerProvider",
             "catalog.QualifiedPathIntrospectContributor",
+            "catalog.ShowCreateDefinitionProvider", "diagnostics.NativeErrorAnnotator", "diagnostics.NativeErrorProfile",
         )) assertSame(name, loader, loader.loadClass("dev.brikk.house.sql.intellij.$name").classLoader)
         for ((base, consumer) in listOf(
             "PgFamilyModelFacade" to "DuckdbModelFacade",
@@ -83,6 +84,7 @@ class DuckdbPipesIsolationTest : BasePlatformTestCase() {
             "AutoIntrospectService" to "DuckdbAutoIntrospectService",
             "IntrospectBannerProvider" to "DuckdbIntrospectBannerProvider",
             "QualifiedPathIntrospectContributor" to "DuckdbQualifiedPathIntrospectContributor",
+            "ShowCreateDefinitionProvider" to "DuckdbDefinitionProvider",
         )) assertTrue(consumer, loader.loadClass("dev.brikk.house.sql.intellij.catalog.$base")
             .isAssignableFrom(loader.loadClass("dev.sort.duckdb.catalog.$consumer")))
         for ((base, consumer) in listOf(
@@ -94,6 +96,8 @@ class DuckdbPipesIsolationTest : BasePlatformTestCase() {
             "dialect.PgFamilyDialect" to "DuckdbSqlDialect",
         )) assertTrue(consumer, loader.loadClass("dev.brikk.house.sql.intellij.$base")
             .isAssignableFrom(loader.loadClass("dev.sort.duckdb.sql.$consumer")))
+        assertTrue(loader.loadClass("dev.brikk.house.sql.intellij.diagnostics.NativeErrorAnnotator")
+            .isAssignableFrom(loader.loadClass("dev.sort.duckdb.validate.DuckdbErrorAnnotator")))
         val sharedCompletion = loader.loadClass("dev.brikk.house.sql.intellij.completion.SqlCompletionContributor")
         assertSame(loader, sharedCompletion.classLoader)
         val completionProfile = loader.loadClass("dev.sort.duckdb.sql.DuckdbCompletionProfile")

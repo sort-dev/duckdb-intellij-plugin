@@ -205,6 +205,26 @@ class DuckdbLiveCatalogConsoleTest : DuckdbCatalogTestCase() {
         return generateSequence(requireNotNull(result).current) { it.parent }.mapNotNull { it.name }.toList().asReversed()
     }
 
+    fun testMacroDefinitionLoadsListParametersThroughTheUserDriverProcess() {
+        val a = console("definitions")
+        a.run("CREATE MACRO main.definition_macro(\"a, b\", c) AS c")
+        val namespace = a.readNamespace()
+        val model = ModelFactory.BLACK_HOLE.createModel(DuckdbDbms.DUCKDB_BRIKK)
+        val main = (model.root as PgRoot).databases.createOrGet(namespace.first()).schemas.createOrGet("main")
+        val definition = StringBuilder()
+        val request = object : DataRequest.RawRequest(a.session) {
+            override fun processRaw(context: DataRequest.Context, connection: DatabaseConnectionCore) {
+                DuckdbDefinitionProvider().load(listOf(main.routines.createOrGet("definition_macro")), connection, definition)
+            }
+        }
+        a.session.messageBus.dataProducer.processRequest(request)
+        PlatformTestUtil.waitWithEventsDispatching("DuckDB macro definition is loaded", { request in finished }, 30)
+        assertEmpty(executionErrors)
+        errors.assertNone()
+        assertTrue(definition.toString(), definition.contains("CREATE MACRO \"main\".\"definition_macro\"(\"a, b\", \"c\") AS c;"))
+        assertEquals(namespace, a.readNamespace())
+    }
+
     fun testTemporaryMacrosCompleteOnlyInTheirOwnSessionAndSurviveHelperRefresh() {
         val a = console("a")
         a.run("CREATE TEMP MACRO only_in_a(x) AS x + 1")
