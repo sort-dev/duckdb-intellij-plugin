@@ -277,10 +277,11 @@ open class BrikkDuckdbInjectionTest : BasePlatformTestCase() {
             InjectedLanguageManager.getInstance(project).injectedToHost(file, offset))
         val annotator = dev.sort.duckdb.validate.DuckdbErrorAnnotator()
         val info = annotator.collectInformation(file)!!
-        assertEquals(virtualSql, info.brikkText)
-        assertNull(info.engineJar)
-        assertEmpty(info.statements)
-        assertEmpty(annotator.doAnnotate(info)!!.pipeErrors)
+        val result = annotator.doAnnotate(info)!!
+        val annotations = com.intellij.codeInsight.daemon.impl.AnnotationHolderImpl(com.intellij.lang.annotation.AnnotationSession(file), false)
+        annotations.runAnnotatorWithContext(file, com.intellij.lang.annotation.Annotator { _, holder -> annotator.apply(file, result, holder) })
+        annotations.assertAllAnnotationsCreated()
+        assertEmpty(annotations)
     }
 
     fun testResolvedTypeAliasStillClassifiesARelSlot() {
@@ -357,7 +358,6 @@ open class BrikkDuckdbInjectionTest : BasePlatformTestCase() {
             val file = injected(host)
             val annotator = dev.sort.duckdb.validate.DuckdbErrorAnnotator()
             val result = annotator.doAnnotate(annotator.collectInformation(file))!!
-            assertEquals(1, result.pipeErrors.size)
             val annotations = com.intellij.codeInsight.daemon.impl.AnnotationHolderImpl(
                 com.intellij.lang.annotation.AnnotationSession(file), false)
             annotations.runAnnotatorWithContext(file, com.intellij.lang.annotation.Annotator { _, holder ->
@@ -368,7 +368,6 @@ open class BrikkDuckdbInjectionTest : BasePlatformTestCase() {
             if (text == "SELECT 1 FROM") {
                 assertEquals(file.text.indexOf("FROM"), error.startOffset)
                 assertEquals(file.text.indexOf("FROM") + 4, error.endOffset)
-                assertNotNull(result.pipeErrors.single().second.range)
             } else {
                 assertEquals(1, error.endOffset - error.startOffset)
                 assertEquals(file.text.indexOf("SELECT"), error.startOffset)
@@ -388,10 +387,7 @@ open class BrikkDuckdbInjectionTest : BasePlatformTestCase() {
             assertTrue("Expected an escaped injection: ${file.text}", file.text.length > source.text.length)
             val annotator = dev.sort.duckdb.validate.DuckdbErrorAnnotator()
             val info = annotator.collectInformation(file)!!
-            assertEquals(source.text, info.pipes.single().second)
-            assertEmpty(info.statements)
             val result = annotator.doAnnotate(info)!!
-            assertEquals(1, result.pipeErrors.size)
             val annotations = com.intellij.codeInsight.daemon.impl.AnnotationHolderImpl(
                 com.intellij.lang.annotation.AnnotationSession(file), false)
             annotations.runAnnotatorWithContext(file, com.intellij.lang.annotation.Annotator { _, holder ->
@@ -404,6 +400,50 @@ open class BrikkDuckdbInjectionTest : BasePlatformTestCase() {
         } finally {
             settings.enabled = previous
             com.intellij.testFramework.PlatformTestUtil.dispatchAllInvocationEventsInIdeEventQueue()
+        }
+    }
+
+    fun testKotlinHostChecksEveryDuckdbFragmentAtAuthoredRanges() {
+        configure("""
+            @BrikkSql fun first() = Sql.duckdb("SELECT '😊'\nFROM WHERE")
+            @BrikkSql fun second() = Sql.duckdb(""${'"'}
+                SELECT 1 FROM
+            ""${'"'}.trimIndent())
+        """.trimIndent())
+        val hostFile = InjectedLanguageManager.getInstance(project).getTopLevelFile(myFixture.file)
+        PsiTreeUtil.findChildrenOfType(hostFile, KtStringTemplateExpression::class.java).forEach { injected(it) }
+        val registrations = com.intellij.lang.ExternalLanguageAnnotators.INSTANCE
+            .allForLanguage(hostFile.language).map { it.javaClass.name }
+        assertTrue(registrations.toString(), registrations.contains("dev.sort.duckdb.validate.DuckdbErrorAnnotator"))
+        val annotator = dev.sort.duckdb.validate.DuckdbErrorAnnotator()
+        val result = annotator.doAnnotate(annotator.collectInformation(hostFile))!!
+        val annotations = com.intellij.codeInsight.daemon.impl.AnnotationHolderImpl(com.intellij.lang.annotation.AnnotationSession(hostFile), false)
+        annotations.runAnnotatorWithContext(hostFile, com.intellij.lang.annotation.Annotator { _, holder -> annotator.apply(hostFile, result, holder) })
+        annotations.assertAllAnnotationsCreated()
+        val errors = annotations.filter { it.severity == com.intellij.lang.annotation.HighlightSeverity.ERROR }
+        assertEquals(errors.toString(), 2, errors.size)
+        assertTrue(errors.all { it.message.startsWith("DuckDB Brikk:") })
+        assertEquals(listOf("WHERE", "FROM"), errors.map { hostFile.text.substring(it.startOffset, it.endOffset) })
+    }
+
+    fun testBrikkInterpolationIssuesStayOnKotlinAndValidSlotsStayClean() {
+        for (body in listOf(
+            "@BrikkSql fun query(src: Rel<Nothing>, id: Int) = Sql.duckdb(\"FROM \${src}() |> WHERE id > \${id}\")",
+            "@BrikkSql fun query(id: Int) = Sql.duckdb(\"SELECT \${missing}\")",
+        )) {
+            val host = configure(body)
+            val fragment = injected(host)
+            val hostFile = host.containingFile
+            val annotator = dev.sort.duckdb.validate.DuckdbErrorAnnotator()
+            val result = annotator.doAnnotate(annotator.collectInformation(hostFile))
+            if (result == null) {
+                assertTrue("Only uncertain injections may be skipped", InjectedLanguageManager.getInstance(project).isFrankensteinInjection(fragment))
+                continue
+            }
+            val annotations = com.intellij.codeInsight.daemon.impl.AnnotationHolderImpl(com.intellij.lang.annotation.AnnotationSession(hostFile), false)
+            annotations.runAnnotatorWithContext(hostFile, com.intellij.lang.annotation.Annotator { _, holder -> annotator.apply(hostFile, result, holder) })
+            annotations.assertAllAnnotationsCreated()
+            assertEmpty(annotations)
         }
     }
 }

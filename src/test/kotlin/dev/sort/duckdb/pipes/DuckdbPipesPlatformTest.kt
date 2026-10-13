@@ -46,11 +46,12 @@ class DuckdbPipesPlatformTest : BasePlatformTestCase() {
             "FROM range(3) |> LIMIT 1; FROM t |> BOGUS 2; SELECT FROM WHERE;")
         val annotator = DuckdbErrorAnnotator()
         val info = annotator.collectInformation(file)!!
-        assertEquals(2, info.pipes.size)
-        assertEquals(1, info.statements.size)
         val result = annotator.doAnnotate(info)!!
-        assertEquals(1, result.pipeErrors.size)
-        assertEquals(1, result.errors.size)
+        val annotations = com.intellij.codeInsight.daemon.impl.AnnotationHolderImpl(com.intellij.lang.annotation.AnnotationSession(file), false)
+        annotations.runAnnotatorWithContext(file, com.intellij.lang.annotation.Annotator { _, holder -> annotator.apply(file, result, holder) })
+        annotations.assertAllAnnotationsCreated()
+        assertEquals(1, annotations.count { it.message.startsWith("DuckDB PIPE:") })
+        assertEquals(1, annotations.count { it.message.startsWith("DuckDB: Parser Error") })
     }
     fun testCapturedActionsDelegateExactlyOnceAndClaimedFailuresNeverDelegate() {
         var calls = 0

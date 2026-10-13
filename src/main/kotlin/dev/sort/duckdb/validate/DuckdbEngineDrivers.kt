@@ -3,6 +3,8 @@ package dev.sort.duckdb.validate
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.Service
 import dev.brikk.house.sql.intellij.recoverEditorOperation
+import dev.brikk.house.sql.intellij.pipe.NativeSqlValidator
+import dev.brikk.house.sql.verify.ParseOnlyDuckdbVerifier
 import java.io.File
 import java.net.URLClassLoader
 import java.sql.Driver
@@ -10,6 +12,17 @@ import java.sql.Driver
 internal class DuckdbEngineDrivers : AutoCloseable {
     private data class Loaded(val loader: URLClassLoader, val driver: Driver?)
     private val jars = mutableMapOf<String, Loaded>()
+    private val validators = java.util.IdentityHashMap<Driver, Pair<ParseOnlyDuckdbVerifier, NativeSqlValidator>>()
+
+    @Synchronized
+    fun validatorForJar(path: String?): NativeSqlValidator? {
+        val driver = if (path == null) defaultDriver else driverForJar(path)
+        driver ?: return null
+        return validators.getOrPut(driver) {
+            val verifier = ParseOnlyDuckdbVerifier(driver)
+            verifier to NativeSqlValidator.of(verifier)
+        }.second
+    }
 
     val defaultDriver: Driver? by lazy {
         System.getProperty("duckdb.validator.jar")?.let(::driverForJar) ?: recoverEditorOperation {
@@ -36,6 +49,8 @@ internal class DuckdbEngineDrivers : AutoCloseable {
 
     @Synchronized
     override fun close() {
+        validators.values.forEach { it.first.close() }
+        validators.clear()
         jars.values.forEach { it.loader.close() }
         jars.clear()
     }

@@ -6,5 +6,6 @@
         <languageInjectionContributor language="kotlin" implementationClass="dev.sort.duckdb.brikk.kotlin.BrikkDuckdbInjectionContributor" order="first"/>
         <languageInjectionPerformer language="kotlin" implementationClass="dev.sort.duckdb.brikk.kotlin.BrikkDuckdbInjectionPerformer" order="first"/>
         <annotator language="kotlin" implementationClass="dev.sort.duckdb.brikk.kotlin.BrikkDuckdbHostAnnotator"/>
+        <externalAnnotator language="kotlin" implementationClass="dev.sort.duckdb.validate.DuckdbErrorAnnotator"/>
     </extensions>
 </idea-plugin>

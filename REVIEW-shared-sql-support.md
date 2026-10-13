@@ -362,3 +362,36 @@ Kotlin-absent lanes pass with 204 tests and nine skips. Brikk passes 65 tests;
 real-loader isolation passes both tests with the local peer ZIPs. The old lane
 script referenced a removed transpiler ZIP; rerunning against its worktree ZIP
 passes. Census remains 226/226. No corpus expectations changed.
+
+## U-V3 native diagnostics
+
+`DuckdbErrorAnnotator` now delegates to `NativeErrorAnnotator` with one DuckDB
+profile. Its stable, application-owned validators wrap the located user driver
+through `NativeSqlValidator.of(ParseOnlyDuckdbVerifier(driver))`; disposal closes
+the parser connections before unloading drivers. The 100,000 UTF-16 statement
+cutoff is explicit. Local-parser and PSI-parser diagnostics, debounce and budgets
+remain off. There is no EXPLAIN, bind or execution fallback.
+
+PIPE lowering and Brikk single-statement checks use the file-aware
+`statementDiagnostics` hook. Read-side hooks copy per-file PIPE enablement,
+Brikk slots and interpolation issues into user data. Changes increment that
+file's diagnostic revision; background hooks do not read PSI. Shared application
+checks reject results after text, validator or metadata changes and map escaped,
+trimmed and supplementary-character injections to editable authored ranges.
+
+Newly visible behavior: the annotator is also registered on the optional Kotlin
+host. External annotators do not run on injected SQL fragments, so the old
+SQL-only registration did not expose these checks there. Kotlin DuckDB strings
+now show native parse-only errors, enabled PIPE lowering refusals, and Brikk
+template SQL errors. Brikk still uses its existing core parser instead of the
+engine, so valid DuckDB syntax outside that parser's coverage may receive a false
+Brikk syntax error in a Kotlin string. Ordinary SQL gets no new local grammar
+errors. Unsupported interpolation diagnostics stay on authored Kotlin; uncertain
+Frankenstein injections are skipped, and inspection placeholders are never sent
+to the engine.
+
+Default and Kotlin-present 261/262/263 lanes pass with 277 tests and nine skips,
+up from 269. Kotlin-absent lanes pass with 208 tests and nine skips. Brikk passes
+69 tests; isolation passes both tests. Parse-only safety tests remain green.
+Census is 226/226 and corpus expectations are unchanged. No Plugin Verifier or
+publication ran.
