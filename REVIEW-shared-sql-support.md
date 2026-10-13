@@ -345,3 +345,20 @@ The user has requested commit/push to main before waiting for final versioned
 verification. That verification uses a frozen copy under
 `/tmp/opencode/duckdb-shared-column/frozen-035`, not the installable dogfood ZIP.
 No release branch, tag, GitHub release or Marketplace publication is requested.
+
+## Unification refresh, 91a5ed0
+
+Refreshed Maven Local dependencies published 2026-10-13 00:53 from brikk-sql
+`91a5ed0`, including the file-aware native-diagnostics hooks in `e7f1cc9`.
+No library source changes, publication or Plugin Verifier run.
+
+Resolved binary SHA-256 values:
+
+- SQL core 0.20.0-SNAPSHOT: `20d0cb97404c595b6154c7067590cac1e2e1bc59e9038126958caa50b0aafb8d`.
+- IntelliJ support 0.2.0-SNAPSHOT: `c1950eb271f8b089d5016429e8a204957b8fd461b65a79a4ee4f7c0dd756214f`.
+
+Default and Kotlin-present 261/262/263 lanes pass with 269 tests and nine skips.
+Kotlin-absent lanes pass with 204 tests and nine skips. Brikk passes 65 tests;
+real-loader isolation passes both tests with the local peer ZIPs. The old lane
+script referenced a removed transpiler ZIP; rerunning against its worktree ZIP
+passes. Census remains 226/226. No corpus expectations changed.
