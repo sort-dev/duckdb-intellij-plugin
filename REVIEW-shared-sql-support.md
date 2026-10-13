@@ -637,3 +637,33 @@ wrapping peers. No peer was excluded and no assertion disabled. The experiment w
 removed; both existing isolation tests, including all six dialect registration
 orders and detached predecessors, remain unchanged and pass. No production or
 test files deleted, no tests added/deleted, no visible behavior change.
+
+## Working-plugins gate
+
+### Gate 1: dependency refresh
+
+Refreshed SQL core/support/test-support from `654d6a8`, published to Maven Local
+2026-10-13 12:44. Registered the shared `HostSqlRunConsoleVeto` and its real-host
+contract test. The existing host execution contract now also checks selection.
+Adapted the obsolete text-explain test signature without enabling DuckDB explain.
+
+The new shared go-to fixes three provider-navigation waivers. The observer now
+honors a nonempty shared SQL-declaration answer even when it has no Kotlin/provider
+navigation id, instead of falling back and inventing a single input origin.
+Removed resolved navigation waivers for UNION ALL and renamed INTERSECT/EXCEPT.
+Both corpus lanes pass 167/167 logical cases; remaining ledger entries are 76:
+resolve 74, navigation one, stock diagnostics one. Corpus expectations are unchanged.
+
+The 262 harvested-macro completion test passed five independent reruns, without
+code changes. Kotlin-absent full suites pass 214 tests with nine skips on all
+three generations.
+
+The requested helper source is `44d6d47`, but Maven Local still holds the unchanged
+09:38 helper binary (`7e5d080a6d97b33639f9aaab642c16519a6a8f2a478dfb973a12996181492805`).
+It called the previous `RelationFacts` default constructor and failed against
+core's new search-path constructor. The owner republished helper `507fe04` at
+13:16, compiled against `654d6a8`; its binary SHA-256 is
+`ad0018265452a7061efff5e3acfba6f2d876f2e1bd8eca360aa145d02734380e`.
+After refresh, full default/present 261/262/263 lanes pass 302 tests with nine
+skips; absent lanes pass 214 with nine skips; Brikk passes 88. The constructor
+failure is gone. No binary shim, library source edit or publication was done here.

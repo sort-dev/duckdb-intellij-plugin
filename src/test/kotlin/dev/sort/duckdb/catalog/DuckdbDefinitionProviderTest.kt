@@ -122,6 +122,6 @@ class DuckdbDefinitionProviderTest : BasePlatformTestCase() {
     }
 
     fun testDuckdbHasNoTextExplainOptIn() {
-        assertTrue(dev.brikk.house.sql.shape.prepareTextExplain("SELECT 1", "duckdb") { true } is dev.brikk.house.sql.shape.ExplainPreparation.Refused)
+        assertTrue(dev.brikk.house.sql.shape.prepareTextExplain("SELECT 1", "duckdb") is dev.brikk.house.sql.shape.ExplainPreparation.Refused)
     }
 }

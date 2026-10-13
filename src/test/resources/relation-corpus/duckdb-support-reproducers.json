@@ -720,11 +720,6 @@
           "items": [
             {
               "name": "id",
-              "type": "<Injected DuckDB (sort.dev) file>",
-              "tail": " (src)"
-            },
-            {
-              "name": "id",
               "type": "unknown type",
               "tail": "  computed column (UNION ALL)"
             }

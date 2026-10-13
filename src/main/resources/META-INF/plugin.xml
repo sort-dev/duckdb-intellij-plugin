@@ -172,6 +172,7 @@
     </extensions>
 
     <extensions defaultExtensionNs="com.intellij.database">
+        <runConsoleAvailable implementation="dev.sort.duckdb.brikk.DuckdbRunConsoleVeto"/>
         <dbms id="DUCKDB_BRIKK" instance="dev.sort.duckdb.DuckdbDbms.DUCKDB_BRIKK"/>
         <!-- DuckDB is Postgres-derived; PG machinery is the right family default for everything
              we don't override. The modelFacade below completes the facade/dialect/introspector

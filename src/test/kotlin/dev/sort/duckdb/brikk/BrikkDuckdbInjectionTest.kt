@@ -497,6 +497,14 @@ open class BrikkDuckdbInjectionTest : BasePlatformTestCase() {
         }.refusesInspectionOnlySqlFromTheHostEditor()
     }
 
+    fun testRegisteredRunConsoleVetoUsesTheSharedContract() {
+        dev.brikk.house.sql.intellij.testing.HostSqlExecutionContract(DuckdbPipeDialect) {
+            val host = configure("@BrikkSql fun query(id: Int) = Sql.duckdb(\"FROM customers |> WHERE id > <caret>\$id\")")
+            injected(host)
+            com.intellij.psi.impl.source.tree.injected.InjectedLanguageUtil.getTopLevelEditor(myFixture.editor)
+        }.vetoesRunInConsole()
+    }
+
     fun testInspectionViewClaimsPendingHostWithoutAnInjection() {
         com.intellij.testFramework.DumbModeTestUtils.runInDumbModeSynchronously(project) {
             val host = configure("""

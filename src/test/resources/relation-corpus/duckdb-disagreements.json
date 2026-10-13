@@ -43,7 +43,6 @@
       "resolve"
     ],
     "ordinary-set-union-all": [
-      "navigation",
       "resolve"
     ],
     "ordinary-star-join-cte-duckdb": [
@@ -216,11 +215,9 @@
       "resolve"
     ],
     "set-nullability-names-except": [
-      "navigation",
       "resolve"
     ],
     "set-nullability-names-intersect": [
-      "navigation",
       "resolve"
     ],
     "unknown-table-open-catalog": [
@@ -445,19 +442,6 @@
     },
     "ordinary-set-union-all": {
       "resolve": {
-        "classification": "b",
-        "issue": "set-output-native-deference",
-        "component": "ExternalRelationResolveExtension / ExternalRelationGotoDeclarationHandler",
-        "reason": "The native result retains a left-input declaration after core made the output computed or rejected the branch column count. The shared native/declaration deference policy leaves that stale input result visible.",
-        "category": "set-operations",
-        "references": [
-          61
-        ],
-        "carets": [
-          61
-        ]
-      },
-      "navigation": {
         "classification": "b",
         "issue": "set-output-native-deference",
         "component": "ExternalRelationResolveExtension / ExternalRelationGotoDeclarationHandler",
@@ -1339,36 +1323,10 @@
         "carets": [
           91
         ]
-      },
-      "navigation": {
-        "classification": "b",
-        "issue": "renamed-set-lineage-native-management",
-        "component": "RelationAnalysis.manages / ExternalRelationGotoDeclarationHandler",
-        "reason": "Core retains the left input's provider provenance through the renamed set output. The native result is a SQL alias declaration, not that provider column; the shared management/deference policy loses the retained lineage.",
-        "category": "set-operations",
-        "references": [
-          91
-        ],
-        "carets": [
-          91
-        ]
       }
     },
     "set-nullability-names-intersect": {
       "resolve": {
-        "classification": "b",
-        "issue": "renamed-set-lineage-native-management",
-        "component": "RelationAnalysis.manages / ExternalRelationGotoDeclarationHandler",
-        "reason": "Core retains the left input's provider provenance through the renamed set output. The native result is a SQL alias declaration, not that provider column; the shared management/deference policy loses the retained lineage.",
-        "category": "set-operations",
-        "references": [
-          94
-        ],
-        "carets": [
-          94
-        ]
-      },
-      "navigation": {
         "classification": "b",
         "issue": "renamed-set-lineage-native-management",
         "component": "RelationAnalysis.manages / ExternalRelationGotoDeclarationHandler",
@@ -1460,8 +1418,7 @@
           "resolve": "0c603f63c94d3860d04caded37ff723a28a00d0aa361972d7e1c868035c973b8"
         },
         "ordinary-set-union-all": {
-          "resolve": "29a572080a4d6753588ca56c783fed9d6ff2640a69ce10d34b167c651df2fe72",
-          "navigation": "105927c275193ad22255f5ad17cbb4bedd1cc8f6a9297a71fd2cad7d8319fc06"
+          "resolve": "29a572080a4d6753588ca56c783fed9d6ff2640a69ce10d34b167c651df2fe72"
         },
         "ordinary-star-join-cte-duckdb": {
           "resolve": "83c8364c226c4b4fbc217e444714cc02dd5767c5bd7b3a182bd69e252d8550cc"
@@ -1633,12 +1590,10 @@
           "navigation": "d53c96aefd252eb6899199e9cde39b0151d6292ac7b2ab0383fecb6ed042ae18"
         },
         "set-nullability-names-except": {
-          "resolve": "f3e0e6e7273f1054881e21aee990c8c19bc6cbf00f6ca76bca5aa14b9179213c",
-          "navigation": "f6bc43df557ed59e35ec0ba52e74cda0ff8ffe8e85493b3f03b6cb410cd58660"
+          "resolve": "f3e0e6e7273f1054881e21aee990c8c19bc6cbf00f6ca76bca5aa14b9179213c"
         },
         "set-nullability-names-intersect": {
-          "resolve": "263e92f87ad9e1ecfe129503e65f787b4a1fcc3ea098e1531698803c62380f37",
-          "navigation": "a9a8a48675d1cb7375f5bef10e6c192d8ea7002ab93b1cd234ffcd2b3fd87566"
+          "resolve": "263e92f87ad9e1ecfe129503e65f787b4a1fcc3ea098e1531698803c62380f37"
         },
         "unknown-table-open-catalog": {
           "diagnostics": "f50dfbd12a645beaa77cddc586bb27cbcb73f5b74027af3173a4b3654657168a"
@@ -1693,8 +1648,7 @@
           "resolve": "0c603f63c94d3860d04caded37ff723a28a00d0aa361972d7e1c868035c973b8"
         },
         "ordinary-set-union-all": {
-          "resolve": "29a572080a4d6753588ca56c783fed9d6ff2640a69ce10d34b167c651df2fe72",
-          "navigation": "105927c275193ad22255f5ad17cbb4bedd1cc8f6a9297a71fd2cad7d8319fc06"
+          "resolve": "29a572080a4d6753588ca56c783fed9d6ff2640a69ce10d34b167c651df2fe72"
         },
         "ordinary-star-join-cte-duckdb": {
           "resolve": "83c8364c226c4b4fbc217e444714cc02dd5767c5bd7b3a182bd69e252d8550cc"
@@ -1866,12 +1820,10 @@
           "navigation": "d53c96aefd252eb6899199e9cde39b0151d6292ac7b2ab0383fecb6ed042ae18"
         },
         "set-nullability-names-except": {
-          "resolve": "f3e0e6e7273f1054881e21aee990c8c19bc6cbf00f6ca76bca5aa14b9179213c",
-          "navigation": "f6bc43df557ed59e35ec0ba52e74cda0ff8ffe8e85493b3f03b6cb410cd58660"
+          "resolve": "f3e0e6e7273f1054881e21aee990c8c19bc6cbf00f6ca76bca5aa14b9179213c"
         },
         "set-nullability-names-intersect": {
-          "resolve": "263e92f87ad9e1ecfe129503e65f787b4a1fcc3ea098e1531698803c62380f37",
-          "navigation": "a9a8a48675d1cb7375f5bef10e6c192d8ea7002ab93b1cd234ffcd2b3fd87566"
+          "resolve": "263e92f87ad9e1ecfe129503e65f787b4a1fcc3ea098e1531698803c62380f37"
         },
         "unknown-table-open-catalog": {
           "diagnostics": "f50dfbd12a645beaa77cddc586bb27cbcb73f5b74027af3173a4b3654657168a"
@@ -1888,7 +1840,7 @@
     "witnesses.json": "b82aa2a52ef3a20dfd21cc53c4cee02bfb1f229712f976443f893232e278972b"
   },
   "classificationCounts": {
-    "b": 76,
+    "b": 73,
     "c": 3
   },
   "prunedV1Flags": [

@@ -703,8 +703,9 @@ class BrikkRelationCorpusTest : BasePlatformTestCase() {
     private fun navigation(file: PsiFile, start: Int): List<String> {
         val element = file.findElementAt(start) ?: return emptyList()
         val targets = DuckdbRelationGotoDeclarationHandler().getGotoDeclarationTargets(element, start, myFixture.editor)
-            ?.mapNotNull { idOf(it) }.orEmpty()
-        if (targets.isNotEmpty()) return targets.distinct()
+        // SQL declarations/branch outputs have no provider navigation id. A real shared answer
+        // must still win over the stock fallback, rather than inventing a single input provenance.
+        if (!targets.isNullOrEmpty()) return targets.mapNotNull { idOf(it) }.distinct()
         return nativeTargets(file, start).mapNotNull { it.stringOrNull("navigationId") }
     }
 
