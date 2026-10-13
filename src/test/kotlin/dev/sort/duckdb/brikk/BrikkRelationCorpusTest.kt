@@ -1,6 +1,7 @@
 package dev.sort.duckdb.brikk
 
 import com.intellij.codeInsight.daemon.impl.AnnotationHolderImpl
+import com.intellij.codeInsight.CodeInsightSettings
 import com.intellij.codeInsight.lookup.LookupElement
 import com.intellij.codeInsight.lookup.LookupElementPresentation
 import com.intellij.codeInsight.lookup.LookupManager
@@ -60,11 +61,14 @@ class BrikkRelationCorpusTest : BasePlatformTestCase() {
     private val locations = LinkedHashMap<String, SourceLocation>()
     private var physicalColumns = emptySet<String>()
     private var previousPipes = false
+    private var previousAutocomplete = false
     private interface CorpusTarget : NavigationTarget { val identity: String }
 
     override fun setUp() {
         super.setUp()
         errors = BackgroundErrors(testRootDisposable)
+        previousAutocomplete = CodeInsightSettings.getInstance().AUTOCOMPLETE_ON_CODE_COMPLETION
+        CodeInsightSettings.getInstance().AUTOCOMPLETE_ON_CODE_COMPLETION = false
         previousPipes = project.service<DuckdbPipesSettings>().enabled
         project.service<DuckdbPipesSettings>().enabled = true
         setSqlDialectMapping(project, null, DuckdbSqlDialect, testRootDisposable)
@@ -95,6 +99,7 @@ class BrikkRelationCorpusTest : BasePlatformTestCase() {
 
     override fun tearDown() = RunAll(
         { LookupManager.getInstance(project).hideActiveLookup() },
+        { CodeInsightSettings.getInstance().AUTOCOMPLETE_ON_CODE_COMPLETION = previousAutocomplete },
         { project.service<DuckdbPipesSettings>().enabled = previousPipes },
         { PlatformTestUtil.dispatchAllEventsInIdeEventQueue() },
         { errors.assertNone() },

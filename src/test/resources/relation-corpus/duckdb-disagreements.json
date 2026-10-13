@@ -486,29 +486,31 @@
     ],
     "utf16-after-emoji-bind": [
       "completion"
+    ],
+    "parenthesized-pipe-input": [
+      "completion"
+    ],
+    "pipe-select-hides-alias": [
+      "completion",
+      "diagnostics"
+    ],
+    "q13-drops-select": [
+      "completion",
+      "diagnostics"
+    ],
+    "select-first-pipe": [
+      "completion"
+    ],
+    "q13-drops-aggregate": [
+      "completion",
+      "diagnostics"
+    ],
+    "pipe-select-rename-lineage": [
+      "completion"
     ]
   },
   "runtimes": {
-    "261": {
-      "parenthesized-pipe-input": [
-        "completion"
-      ],
-      "pipe-select-hides-alias": [
-        "completion"
-      ],
-      "q13-drops-select": [
-        "completion"
-      ],
-      "select-first-pipe": [
-        "completion"
-      ],
-      "q13-drops-aggregate": [
-        "completion"
-      ],
-      "pipe-select-rename-lineage": [
-        "completion"
-      ]
-    },
+    "261": {},
     "262": {},
     "263": {}
   },
@@ -517,6 +519,6 @@
     "pipe-select-hides-alias/completion"
   ],
   "notes": [
-    "V1 all-runtime completion flags are pruned. On 261 full-suite runs the real PIPE input-column contributor intermittently adds unqualified/duplicate suggestions for those cases and Q13 SELECT/AGGREGATE; current observations remain runtime-specific, with semantic expectations unchanged."
+    "After 67c74a6 adoption the six PIPE fallback/duplicate completion axes reproduce on all three runtimes, so they are shared known differences. Semantic expectations remain unchanged; v2.1 will disable completion auto-insert and prove repeatability."
   ]
 }
