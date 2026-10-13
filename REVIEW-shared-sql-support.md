@@ -697,3 +697,12 @@ the bundled Brikk APIs. No exclusion was added to hide a verifier problem.
 
 Reports are under `build/reports/pluginVerifier/<IDE>/plugins/dev.sort.duckdb-intellij-plugin/0.3.5`.
 No publication was performed.
+
+### Gate 3: five-plugin isolation
+
+The same 261-compiled plugin passes the isolation suite on 261, 262 and 263:
+two tests per generation, no failures or skips. Every runtime reports all five
+plugins loaded: DuckDB, ClickHouse, Doris, Trino and SQL Transpiler. Existing
+private-library ownership, Execute chains, registration-order and detached-
+predecessor checks pass. No compatibility or routing fix was needed, and the
+deferred isolation-contract migration was not resumed.
