@@ -11,6 +11,9 @@ import com.intellij.database.dialects.postgres.model.PgRoot
 import com.intellij.database.model.ModelFactory
 import com.intellij.database.model.ObjectKind
 import com.intellij.database.psi.DbPsiFacade
+import com.intellij.database.util.ObjectPath
+import com.intellij.database.util.SearchPath
+import com.intellij.sql.psi.SqlResolveResult
 import com.intellij.openapi.components.service
 import com.intellij.testFramework.IndexingTestUtil
 import com.intellij.testFramework.PlatformTestUtil
@@ -19,11 +22,13 @@ import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import com.intellij.testFramework.registerOrReplaceServiceInstance
 import com.intellij.ui.EditorNotificationProvider
 import dev.brikk.house.sql.intellij.catalog.AutoIntrospectEngine
+import dev.brikk.house.sql.intellij.catalog.CatalogScopes
 import dev.brikk.house.sql.intellij.catalog.pathResolver
 import dev.brikk.house.sql.intellij.testing.BackgroundErrors
 import dev.brikk.house.sql.intellij.testing.HeldIntrospections
 import dev.brikk.house.sql.intellij.testing.RecordingConsole
 import dev.brikk.house.sql.intellij.testing.setSqlDialectMapping
+import dev.brikk.house.sql.metadata.FunctionPresentation
 import dev.sort.duckdb.DuckdbDbms
 import dev.sort.duckdb.sql.DuckdbSqlDialect
 import java.nio.file.Files
@@ -158,6 +163,25 @@ class DuckdbAutoIntrospectTest : BasePlatformTestCase() {
             complete()
             introspections.assertNone()
             assertNoBanner()
+        }
+    }
+
+    fun testUserRoutineNamedLikeABuiltinSurvivesMetadataDeduplication() {
+        fixture(":memory:")
+        val schema = database("memory").schemas.createOrGet("main")
+        jdbc.createStatement().use { it.execute("CREATE MACRO abs(x) AS x") }
+        schema.routines.createOrGet("abs")
+        source.setIntrospectionScope(CatalogScopes.select(listOf(ObjectKind.DATABASE, ObjectKind.SCHEMA), listOf("memory", "main")))
+        DbPsiFacade.getInstance(project).clearCaches()
+        configure("SELECT ab<caret>")
+        RecordingConsole(project, myFixture.file.virtualFile, source).use { recording ->
+            recording.console.setSearchPath(SearchPath.of(ObjectPath.create("memory", ObjectKind.DATABASE).append("main", ObjectKind.SCHEMA)))
+            val items = myFixture.completeBasic().orEmpty()
+            assertTrue(items.toList().toString(), items.any {
+                val routine = (it.`object` as? SqlResolveResult)?.targetSymbol?.dasObject
+                routine?.name == "abs" && routine.dasParent?.name == "main"
+            })
+            assertEquals(1, items.count { (it.`object` as? FunctionPresentation)?.name == "abs" })
         }
     }
 

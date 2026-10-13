@@ -9,6 +9,7 @@ import dev.brikk.house.sql.intellij.testing.BackgroundErrors
 import dev.brikk.house.sql.intellij.testing.setSqlDialectMapping
 import dev.brikk.house.sql.metadata.FunctionKind
 import dev.brikk.house.sql.metadata.FunctionPresentation
+import dev.brikk.house.sql.shape.SqlNameContext
 import dev.sort.duckdb.pipes.DuckdbPipesSettings
 
 class DuckdbCompletionTest : BasePlatformTestCase() {
@@ -101,6 +102,25 @@ class DuckdbCompletionTest : BasePlatformTestCase() {
             "expected list_transform offered or inserted; lookups=${lookups.take(12)} text=$text",
             lookups.contains("list_transform") || text.contains("list_transform("),
         )
+    }
+
+    fun testStringsAndCommentsOfferNoMetadataFunctions() {
+        for (sql in listOf("SELECT 'ab<caret>'", "SELECT 1 -- ab<caret>", "SELECT /* ab<caret> */ 1", "SELECT 1;\n-- ab<caret>")) {
+            assertEmpty(sql, functions(sql))
+        }
+    }
+
+    fun testPipeQualifierComesFromCoreTokensWithoutEnablingAQualifierGate() {
+        val before = "FROM events |> WHERE db.\"t\"."
+        assertEquals("db.\"t\"", SqlNameContext.of(before, "duckdb")!!.qualifier)
+        assertTrue(functions("${before}ab<caret>").any { it.name == "abs" })
+    }
+
+    fun testStockBuiltinAbsIsOfferedOnceFromMetadata() {
+        myFixture.configureByText("builtin.sql", "SELECT ab<caret>")
+        val items = myFixture.completeBasic().orEmpty().filter { it.lookupString.equals("abs", true) }
+        assertEquals(items.toList().toString(), 1, items.size)
+        assertTrue(items.single().`object` is FunctionPresentation)
     }
 
     fun testTableFunctionOfferedInFrom() {
