@@ -706,3 +706,26 @@ plugins loaded: DuckDB, ClickHouse, Doris, Trino and SQL Transpiler. Existing
 private-library ownership, Execute chains, registration-order and detached-
 predecessor checks pass. No compatibility or routing fix was needed, and the
 deferred isolation-contract migration was not resumed.
+
+### Gate 4: plain-SQL smoke
+
+Added three focused smoke tests: ordinary table/column completion from the
+platform's synchronized SQL-file data-source model; whole-editor highlighting of
+self-contained DuckDB CTE/window/QUALIFY/EXCLUDE, struct/list/date and FROM-first
+queries without false ERROR annotations; and optional-Kotlin startup/editor work
+with no logged errors. Logging is collected before project setup through teardown.
+The absent lane asserts that Kotlin has no loaded plugin classloader.
+
+Existing tests cover keyword/function insertion, five-rerun live scalar/table
+macro completion, physical PIPE model columns, cooperative ordinary Execute
+delegation, statement/selection routing and translated PIPE execution. No new
+production fix was needed. A raw manually assigned LocalDataSource model was not
+used as a substitute for the platform's synchronized SQL resolution model.
+
+Final full default/present 261/262/263 lanes pass 305 tests with nine skips; absent
+lanes pass 217 with nine skips; Brikk 88; isolation two on each generation; census
+226/226. Both corpus lanes retain 167/167 logical passes and 76 reasoned native-PSI
+differences. Remaining gaps versus the ideal shared result are native resolve in
+flat PIPE/derived/alias cases (74), one native navigation fallback and one stock
+open-catalog inspection. These are documented, not patched with a second resolver.
+No plain-SQL smoke failure remains. No publication or stash was performed.
