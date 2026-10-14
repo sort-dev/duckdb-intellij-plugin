@@ -6,7 +6,7 @@ dependencyResolutionManagement {
     versionCatalogs {
         create("libs") {
             from(files("build-logic/gradle/libs.versions.toml"))
-            // Shared cleared-model discovery: brikk-sql c785084, 2026-10-14 13:28; helper 507fe04.
+            // Shared cleared-model fixes: brikk-sql 00f661e, 2026-10-14 15:04; helper 507fe04.
             version("brikk-sql-core", "0.20.0-SNAPSHOT")
             version("brikk-sql-intellij-support", "0.2.0-SNAPSHOT")
             version("brikk-engine-kotlin-intellij-support", "0.3.0-SNAPSHOT")

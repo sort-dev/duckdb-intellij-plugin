@@ -3,6 +3,7 @@ package dev.sort.duckdb.catalog
 import com.intellij.database.console.session.DatabaseSession
 import com.intellij.database.datagrid.DataRequest
 import com.intellij.database.console.client.SessionClient
+import com.intellij.database.dataSource.connection.DGDepartment
 import com.intellij.openapi.components.Service
 import com.intellij.psi.PsiFile
 import dev.brikk.house.sql.intellij.catalog.StatementEffect
@@ -46,9 +47,13 @@ class DuckdbIntrospectionTransactions {
         }
     }
 
-    private fun session(context: DataRequest.Context): DatabaseSession? =
-        ((context.request.owner as? SessionClient<*>)?.session as? DatabaseSession)
+    private fun session(context: DataRequest.Context): DatabaseSession? {
+        val owner = context.request.owner
+        // Metadata helpers must not block their own level-by-level discovery or completion refresh.
+        if ((owner as? DataRequest.DepartmentHolder)?.department == DGDepartment.INTROSPECTION) return null
+        return ((owner as? SessionClient<*>)?.session as? DatabaseSession)
             ?.takeIf { DuckdbCatalogProfile.dataSources.accepts(it.connectionPoint.dataSource.dbms) }
+    }
 
     private fun DataRequest.Context.failed() = getUserData(FAILED) == true
 

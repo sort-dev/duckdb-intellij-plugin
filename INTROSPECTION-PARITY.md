@@ -335,3 +335,28 @@ verifier targets are Compatible; non-gating API notices remain. Logs/XML are und
 the platform's random cached-value idempotence assertion while syncing a SQL-file
 source; an unchanged full-matrix retry passed. No checker or corpus expectation
 was disabled or relaxed for that retry.
+
+## Fixed shared discovery migration
+
+Merged the parked migration and refreshed the 2026-10-14 15:04 shared publish.
+The previously reported blockers are fixed. The plugin's reference annotator now
+calls shared `requestPath(file, path)`, completion inherits the shared path
+contributor, and the banner inherits the shared provider. The local
+`DuckdbNamespaceDiscovery` implementation is removed. Its former `discovery`
+property is only an alias to the shared service for the unchanged tests' pending
+assertions; it contains no discovery state or work.
+
+The transaction guard remains deliberately broader than the shared rule, which
+checks the current file's console session. The plugin also blocks for active
+requests and explicit BEGIN in other sessions of the same data source. Requests
+whose owner belongs to the platform INTROSPECTION department are now excluded
+from both busy counting and transaction-state updates, so metadata does not block
+itself. Three additional guard tests cover these distinctions.
+
+The complete real-JDBC test file is unchanged from the initial cleared-model
+fix: all ten tests, including the eight cleared-model cases, pass on 261/262/263.
+The full matrix is green: present 363/nine optional skips, absent 275/nine optional
+skips, isolation two/no skips on each generation; relation selection 88 tests.
+Census remains 226/226. All five verifier targets report Compatible with
+non-gating API notices. Evidence is under
+`build/introspection-audit/shared-00f661e-*`.
