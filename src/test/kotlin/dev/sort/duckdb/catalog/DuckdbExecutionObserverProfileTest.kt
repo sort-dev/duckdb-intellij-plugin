@@ -28,4 +28,12 @@ class DuckdbExecutionObserverProfileTest {
         }
         assertEquals(2, detector.detect(";; SELECT 1; /* nested /* setup */ */ INSTALL fts; LOAD fts;").size)
     }
+
+    @Test fun `table and schema DDL refresh their actual model namespace`() {
+        for (sql in listOf("CREATE TABLE live(x INT)", "ALTER TABLE live ADD COLUMN x INT", "DROP TABLE IF EXISTS live", "CREATE OR REPLACE VIEW v AS SELECT 1")) {
+            val effect = detector.detect(sql).single().effect as StatementEffect.Namespace
+            assertEquals(sql, 3, effect.depth); assertEquals(sql, 2, effect.refreshDepth)
+        }
+        assertEquals(2, (detector.detect("CREATE SCHEMA IF NOT EXISTS web").single().effect as StatementEffect.Namespace).depth)
+    }
 }

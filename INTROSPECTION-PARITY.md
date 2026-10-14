@@ -12,21 +12,21 @@ Scratch databases, reports and driver temporary files live under `build/`.
 
 | Behavior | In baseline? | In current branch? | Same? | Existing evidence and remaining work |
 | --- | --- | --- | --- | --- |
-| Attached databases/catalogs | Yes, JDBC metadata and database-level model | Yes | Model levels retained | All eight metadata tests kept; current completion-trigger tests manually load models. Add a real IDE introspection test. |
-| Schemas and catalog filters | Yes | Yes | JDBC contract retained | `DuckdbJdbcMetadataTruthTest` kept; exercise real IDE loading and same-named tables. |
-| Native introspector selection | Inherited through the fallback | Explicit generic-JDBC gate | Safer routing; no persistent per-source flag required | `DuckdbIntrospectorRoutingTest`; actual generic introspection still needs end-to-end proof. |
+| Attached databases/catalogs | Yes, JDBC metadata and database-level model | Yes | Model levels retained | All eight metadata tests kept; real IDE JDBC process loads primary and two attached catalogs. |
+| Schemas and catalog filters | Yes | Yes | JDBC contract retained | Metadata tests kept; real loading and same-named tables across catalogs and schemas are exercised. |
+| Native introspector selection | Inherited through the fallback | Explicit generic-JDBC gate and source loader | Safer routing | Real generic JDBC sync and source-loader routing tests pass. |
 | `USE` and namespace readback | No custom database dialect | Yes, catalog/schema-aware dialect | Added | Real JDBC-process console namespace test exists. |
-| Auto-introspect on qualified completion | No custom service/contributor | Yes, enabled | Added | Eight current request/namespace tests, but the refresh is held and models are filled manually. |
-| Auto-introspect on object references | No custom implementation | Disabled; no reference trigger registered | Missing requested behavior | `testOutOfScopeReferenceBehaviorStaysOff` explicitly pins the disabled setting. Restore under the new owner requirement. |
-| Introspection banner | No custom banner | Registered | Added | Active-only banner/retry tests; need real refresh proof. |
+| Auto-introspect on qualified completion | No custom service/contributor | Yes, enabled | Added | Held routing/retry tests retained; real completion requests now load tables and columns. |
+| Auto-introspect on object references | No custom implementation | Enabled and registered | Requested behavior restored | Qualified references request only listed childless namespaces; current-console namespace handles unqualified references. Real JDBC loading is tested. |
+| Introspection banner | No custom banner | Registered | Added | Held retry tests plus active/cleared banner around a real reference refresh. |
 | Live function/keyword harvest | Yes, on connect | Yes, shared service/harvester | Retained, richer signatures and callable kinds | In-process harvest, persisted catalog and real console tests exist. |
-| Manual catalog refresh | Yes | Yes | Retained; now session-aware | Editor action and autoload tests use the real JDBC process. Seven baseline refresh tests were removed as named tests. |
-| Model refresh after DDL/ATTACH/DETACH | No custom auto-model observer | Shared execution observer registered | Added | Held-refresh tests prove dispatch, not generic JDBC model population. |
-| Highlighting restart after refresh | Refresh dispatch existed; no custom namespace reload | Shared auto service restarts the file daemon after successful sync | Added for namespace refresh | Need real loading followed by clean highlighting, not a direct annotator call alone. |
-| Cancellation | Driver cancellation test and fail-soft harvesting | Driver cancellation retained; shared runner propagates cancellation | Retained/improved | Driver cancel test unchanged. Old clock/deadline test names were removed; restore equivalent service/runner coverage. |
+| Manual catalog refresh | Yes | Yes | Retained; now session-aware | Seven baseline names restored; editor action and autoload tests use the real JDBC process. |
+| Model refresh after DDL/ATTACH/DETACH | No custom auto-model observer | Shared execution observer registered with table/view/schema rules | Added/fixed | Real CREATE and ALTER update loaded tables/columns; attached list refresh dispatch kept. |
+| Highlighting restart after refresh | Refresh dispatch existed; no custom namespace reload | Shared auto service restarts the file daemon after successful sync | Added for namespace refresh | Shared restart call retained; real refresh followed by actual clean highlighting is tested. The light fixture has no live-daemon cancellation event to count. |
+| Cancellation | Driver cancellation test and fail-soft harvesting | Driver cancellation retained; shared runner propagates cancellation | Retained/improved | Driver cancel unchanged; both baseline deadline names restored against the shared runner. |
 | Transaction guard | No explicit harvest guard | Shared service refuses harvesting an active transaction | Added | Real JDBC-process commit/rollback and manual/observer guard tests exist. |
-| Persistence and corrupt-cache fallback | Yes | Identity-keyed shared store plus legacy migration | Retained, safer connection identity and session separation | Three baseline persistence tests removed as named tests; current migration tests cover much of their behavior. |
-| Refresh debounce | Yes, per-key window | Shared queued/coalesced refresh | Mechanism changed | Four baseline deterministic tests removed as named tests; restore equivalent behavior tests. |
+| Persistence and corrupt-cache fallback | Yes | Identity-keyed shared store plus legacy migration | Retained, safer connection identity and session separation | All three baseline names restored; current migration/session tests also pass. |
+| Refresh debounce | Yes, per-key window | Shared queued/coalesced refresh | Mechanism changed | All four baseline deterministic cases restored through the real shared service and scheduler. |
 
 ## Baseline tests
 
@@ -42,16 +42,16 @@ Unchanged named tests retained in full:
 - The live remote-driver harvest and eight live metadata/console tests remain;
   they require an explicitly configured endpoint and are not local-engine proof.
 
-Coverage requiring restoration or explicit remapping:
+Audit-start gaps and their restoration:
 
-| Baseline file | Baseline cases | Audit-start status |
-| --- | ---: | --- |
-| `DuckdbCatalogRefreshTest.kt` | 7 | File deleted. Current resolver/console tests cover replacement, persistence and failure retention, but not all named text/outcome cases. |
-| `DuckdbInstallLoadDetectorTest.kt` | 14 | File deleted. Two current observer-profile tests group most cases; restore all named statement-head cases. |
-| `DuckdbLiveCatalogPersistenceTest.kt` | 3 | File deleted. Current legacy/store tests cover round-trip and corrupt fallback; restore all named cases. |
-| `DuckdbRefreshDebouncerTest.kt` | 4 | File deleted. Shared service owns coalescing; restore equivalent named behavior tests without reviving a second production debouncer. |
-| `DuckdbLiveHarvestTest.kt` | 6 | File retained, every baseline case renamed/replaced. Real harvest and incomplete capture remain; deterministic deadline cases need explicit service coverage. |
-| `DuckdbCatalogResolverTest.kt` | 4 | One baseline name kept; live replacement, extension offers and extension-row parsing renamed/replaced. Restore named assertions or document intentional changes. |
+| Baseline file | Baseline cases | Audit-start status | Restoration |
+| --- | ---: | --- | --- |
+| `DuckdbCatalogRefreshTest.kt` | 7 | File deleted. | All seven names exercise the shared refresh service, outcomes and notification text. |
+| `DuckdbInstallLoadDetectorTest.kt` | 14 | File deleted; cases grouped into two tests. | All 14 names exercise the shared statement detector. |
+| `DuckdbLiveCatalogPersistenceTest.kt` | 3 | File deleted. | All three names exercise round-trip and corrupt fallback through the shared store. |
+| `DuckdbRefreshDebouncerTest.kt` | 4 | File deleted; implementation moved into the shared service. | All four names exercise the shared service with deterministic coroutine time. |
+| `DuckdbLiveHarvestTest.kt` | 6 | All six names replaced. | All six restored, including both shared-runner deadline cases. |
+| `DuckdbCatalogResolverTest.kt` | 4 | Three names replaced. | All four retained or restored against current resolver/harvest APIs. |
 
 Intentional differences must not be hidden as parity: callable kinds are now
 retained separately rather than first-name-wins, unknown future kinds are skipped,
@@ -108,3 +108,89 @@ Restoration lanes: present 346/nine optional skips, absent 258/nine optional ski
 isolation two/no skips, on 261/262/263. All baseline catalog names are accounted
 for; all eight JDBC metadata and three driver/transaction/cancellation tests remain.
 No company labels or source-directory scratch artifacts are required.
+
+### Real-engine tests and fixes
+
+`DuckdbRealIntrospectionTest` uses file databases, the IDE JDBC process, actual
+console requests and the registered generic introspector. It does not install
+table/column snapshots or hold introspection tasks. It checks:
+
+- The primary catalog, two attached catalogs and their schemas, including two
+  schemas in the primary catalog.
+- Completion-triggered loading of tables, columns and views in an unloaded schema.
+- Reference-triggered loading of a different schema, with the active banner
+  appearing and then clearing after the real refresh.
+- `USE` namespace readback, same-named tables with different columns across
+  catalogs and schemas, live macro completion and actual resolve highlighting
+  without false errors after loading.
+- CREATE and ALTER console requests updating the real table/column model,
+  followed by clean highlighting of the new columns.
+
+Three failures in these tests required production fixes:
+
+1. The inherited source loader issued a routine-source query joining
+   `pg_language`, which this engine does not provide. Explicit generic source-loader
+   registration avoids that query. The routing test covers 261/262/263, including
+   the base-class move in 263.
+2. The shared statement pack had no table/view/schema DDL namespace effects.
+   The plugin adds these effects to the existing detector and observer, rather
+   than implementing another refresh path. Detector tests and real CREATE/ALTER
+   refreshes reproduce the gap and verify the adapter.
+3. After `USE lake_two.sales`, then `USE "primary".audit`, native completion for
+   `SELECT e.<caret> FROM events e` retained physical columns of the previous
+   catalog. Shared analysis correctly offered `audit_only`, but its completion
+   adapter hid only provider light symbols and passed the unmatched physical
+   `two_only` through. Clearing database PSI caches did not fix it. A small outer
+   completion filter now asks the shared scope analyzer which physical columns
+   are visible and drops unmatched physical items only when that scope is fully
+   known. It never filters partial/unknown scopes or implements its own SQL parser.
+   The same-named-table assertions reproduce and guard this shared-adapter gap.
+
+The default test lane also runs the shared everyday-SQL contract with the standard
+model and every applicable feature, including star removal/replacement, lateral
+aliases, GROUP BY aliases and UNNEST. The model-state contract installs every
+shared model state and runs the external-relation cases. Installed namespaces are
+explicitly selected in the data source scope. These are intentionally model-based
+contracts, separate from the JDBC-process tests above.
+
+Shared-kit gap: star-removal cases and their completion inputs spell the operation
+`* EXCEPT (...)`. The engine requires `* EXCLUDE (...)`. The adapter supplies valid
+dialect variants for those cases and leaves native syntax/error checking enabled.
+The unadapted contract reproduces false errors in `star-except`,
+`star-except-in-cte-with-expression` and `external-except-star-in-cte-of-derived`.
+The contract's completion checks require expected names but do not reject extra
+names. The real-engine test also asserts absence of other namespaces' unique
+columns, which caught the physical-column leak above.
+
+Test boundary: the reference test invokes the registered annotator with the
+platform annotation holder, then waits for real asynchronous JDBC/model loading
+and runs normal highlighting. Running a model-changing sync inside the light
+fixture's immutable `doHighlighting()` pass trips its model-change assertion.
+This is not proof of a continuously running editor daemon or a counted daemon
+restart. The production shared restart call remains in place.
+
+### Final validation
+
+Using the refreshed local dependency publish from 2026-10-13 20:55, all lanes pass.
+Counts include the explicitly skipped remote-endpoint tests.
+
+| Lane | 261 tests / skipped | 262 tests / skipped | 263 tests / skipped |
+| --- | ---: | ---: | ---: |
+| Optional language plugin present | 350 / 9 | 350 / 9 | 350 / 9 |
+| Optional language plugin absent | 262 / 9 | 262 / 9 | 262 / 9 |
+| Plugin isolation | 2 / 0 | 2 / 0 | 2 / 0 |
+
+The separate relation-integration selection passes 88 tests on 261. Both census
+tests pass on all three IDE generations, with 226/226 families parsing and lexer
+restarts matching full lexing. Both shared SQL contract tests pass in the present
+and absent lanes: a 37-case everyday pack and a four-case external pack over four
+model states, filtered by the explicitly enabled engine features.
+
+The final matrix also runs package building and distribution verification in both
+present and absent lanes. Full lane logs and copied test XML are under
+`build/introspection-audit/verified-*`; the summary is
+`build/introspection-audit/verified-summary.log`.
+
+All 39 baseline catalog test names, including the optional remote-driver case,
+were matched against passing-matrix test XML; none are missing. The 38 local
+baseline catalog cases execute, and the remote case remains explicitly optional.

@@ -143,7 +143,8 @@
     <extensions defaultExtensionNs="com.intellij">
         <sql.resolveExtension implementation="dev.sort.duckdb.brikk.DuckdbRelationResolveExtension"/>
         <sql.inspectionSuppressorDelegate implementation="dev.sort.duckdb.brikk.DuckdbRelationInspectionSuppressor"/>
-        <completion.contributor language="DuckDBSQL" implementationClass="dev.sort.duckdb.brikk.DuckdbRelationCompletionContributor" order="first"/>
+        <completion.contributor language="DuckDBSQL" implementationClass="dev.sort.duckdb.catalog.DuckdbPhysicalColumnScopeContributor" order="first, before duckdb.relations"/>
+        <completion.contributor language="DuckDBSQL" implementationClass="dev.sort.duckdb.brikk.DuckdbRelationCompletionContributor" id="duckdb.relations" order="first"/>
         <gotoDeclarationHandler implementation="dev.sort.duckdb.brikk.DuckdbRelationGotoDeclarationHandler"/>
         <annotator language="DuckDBSQL" implementationClass="dev.sort.duckdb.brikk.DuckdbRelationAnnotator"/>
         <lang.parserDefinition language="DuckDBSQL" implementationClass="dev.sort.duckdb.sql.DuckdbParserDefinition"/>
@@ -189,6 +190,8 @@
         <modelFacade dbms="DUCKDB_BRIKK" implementationClass="dev.sort.duckdb.DuckdbModelFacade"/>
         <definitionProvider dbms="DUCKDB_BRIKK" implementationClass="dev.sort.duckdb.catalog.DuckdbDefinitionProvider"/>
         <introspector dbms="DUCKDB_BRIKK" implementationClass="dev.sort.duckdb.DuckdbIntrospectorGate"/>
+        <!-- The PG source loader issues pg_language queries for macros during generic JDBC sync. -->
+        <jdbcSourceLoader dbms="DUCKDB_BRIKK" implementationClass="com.intellij.database.dialects.generic.introspector.jdbc.GenericJdbcSourceLoader"/>
         <jdbcHelper dbms="DUCKDB_BRIKK" implementationClass="com.intellij.database.remote.jdbc.helpers.GenericJdbcHelper"/>
         <errorHandler dbms="DUCKDB_BRIKK" implementationClass="com.intellij.database.dialects.generic.GenericDatabaseErrorHandler"/>
         <connectionInterceptor implementation="dev.sort.duckdb.catalog.DuckdbHarvestConnectionInterceptor"/>

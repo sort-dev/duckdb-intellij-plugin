@@ -14,6 +14,8 @@ import dev.brikk.house.sql.intellij.catalog.LiveMergePolicy
 import dev.brikk.house.sql.intellij.catalog.RefreshLiveCatalogAction
 import dev.brikk.house.sql.intellij.catalog.StatementHeadDetector
 import dev.brikk.house.sql.intellij.catalog.StatementRules
+import dev.brikk.house.sql.intellij.catalog.StatementRule
+import dev.brikk.house.sql.intellij.catalog.StatementEffect
 import dev.brikk.house.sql.metadata.DUCKDB_METADATA
 import dev.sort.duckdb.DuckdbDbms
 import kotlinx.coroutines.CoroutineScope
@@ -45,7 +47,13 @@ object DuckdbExecutionObserverProfile : ExecutionObserverProfile {
     override val dataSources get() = duckdbDataSourceResolver
     override val liveCatalog = DuckdbLiveCatalogService::class.java
     override val autoIntrospect = DuckdbAutoIntrospectService::class.java
-    override val statements = StatementHeadDetector(StatementRules.DUCKDB.map { rule ->
+    override val statements = StatementHeadDetector((StatementRules.DUCKDB + listOf(
+        StatementRule("CREATE [OR REPLACE] [TEMP|TEMPORARY] TABLE|VIEW [IF NOT EXISTS]", StatementEffect.Namespace(3)),
+        StatementRule("ALTER TABLE|VIEW", StatementEffect.Namespace(3)),
+        StatementRule("DROP TABLE|VIEW [IF EXISTS]", StatementEffect.Namespace(3)),
+        StatementRule("CREATE SCHEMA [IF NOT EXISTS]", StatementEffect.Namespace(2)),
+        StatementRule("DROP SCHEMA [IF EXISTS]", StatementEffect.Namespace(2)),
+    )).map { rule ->
         if (rule.pattern in setOf("INSTALL", "FORCE INSTALL", "LOAD")) rule.notifying() else rule
     }, "duckdb")
 }

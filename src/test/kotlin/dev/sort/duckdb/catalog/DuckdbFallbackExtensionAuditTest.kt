@@ -19,7 +19,6 @@ class DuckdbFallbackExtensionAuditTest : BasePlatformTestCase() {
             "com.intellij.database.gridHelper" to "The UNKNOWN grid helper supplies generic result-grid editing and presentation.",
             "com.intellij.database.hookUpHelper" to "The UNKNOWN hookup helper supplies generic file-to-data-source association.",
             "com.intellij.database.jdbcMetadataWrapper" to "Retain existing JDBC metadata handling; PostgreSQL catalog probes need a separate DuckDB review.",
-            "com.intellij.database.jdbcSourceLoader" to "Retain existing source loading; pg_catalog routine and view queries need a separate DuckDB review.",
             "com.intellij.database.namingService" to "Retain PostgreSQL identifier quoting for the existing model and script generator.",
             "com.intellij.database.objectEditorFactory" to "Retain existing schema editors; PostgreSQL-only DDL options need a separate DuckDB review.",
             "com.intellij.database.objectEditorModelFactory" to "Retain existing schema-editor models alongside the PostgreSQL script generator.",

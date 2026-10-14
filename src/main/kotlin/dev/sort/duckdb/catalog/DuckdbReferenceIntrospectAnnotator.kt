@@ -23,6 +23,11 @@ class DuckdbReferenceIntrospectAnnotator : Annotator {
         val classifier = OutOfScopeClassifier(requests)
         for (reference in PsiTreeUtil.findChildrenOfType(file, SqlReferenceExpression::class.java)) {
             if (reference.referenceElementType.targetKind != ObjectKind.TABLE) continue
+            val classified = classifier.classify(reference)
+            if (classified is ReferenceScope.OutOfScope) {
+                requests.request(file, classified.dataSource, classified.namespace)
+                continue
+            }
             val path = generateSequence(reference) { it.qualifierExpression as? SqlReferenceExpression }
                 .mapNotNull { it.name }.toList().asReversed()
             if (path.size > 1) {
@@ -31,8 +36,8 @@ class DuckdbReferenceIntrospectAnnotator : Annotator {
                 requests.requestPath(file, path.dropLast(1))
                 continue
             }
-            val scope = classifier.classify(reference) as? ReferenceScope.OutOfScope ?: continue
-            requests.request(file, scope.dataSource, scope.namespace)
+            val current = requests.profile.dataSources.consoleNamespace(file)
+            if (current.isNotEmpty()) requests.requestPath(file, current)
         }
     }
 }
