@@ -20,12 +20,13 @@ class DuckdbReferenceIntrospectAnnotator : Annotator {
         if (file.language != DuckdbSqlDialect || DumbService.isDumb(file.project)) return
         val requests = file.project.service<DuckdbAutoIntrospectService>()
         if (!requests.profile.autoIntrospect || !requests.profile.outOfScopeReferences) return
+        if (file.project.service<DuckdbIntrospectionTransactions>().blocked(file)) return
         val classifier = OutOfScopeClassifier(requests)
         for (reference in PsiTreeUtil.findChildrenOfType(file, SqlReferenceExpression::class.java)) {
             if (reference.referenceElementType.targetKind != ObjectKind.TABLE) continue
             val classified = classifier.classify(reference)
             if (classified is ReferenceScope.OutOfScope) {
-                requests.discovery.request(file, classified.namespace.path)
+                requests.requestPath(file, classified.namespace.path)
                 continue
             }
             val path = generateSequence(reference) { it.qualifierExpression as? SqlReferenceExpression }
@@ -33,11 +34,11 @@ class DuckdbReferenceIntrospectAnnotator : Annotator {
             if (path.size > 1) {
                 // Native resolve may return an inline placeholder for an unloaded qualified name.
                 // The shared service still checks that the exact namespace is listed and childless.
-                requests.discovery.request(file, path.dropLast(1))
+                requests.requestPath(file, path.dropLast(1))
                 continue
             }
             val current = requests.profile.dataSources.consoleNamespace(file)
-            if (current.isNotEmpty()) requests.discovery.request(file, current)
+            if (current.isNotEmpty()) requests.requestPath(file, current)
         }
     }
 }

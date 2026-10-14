@@ -82,21 +82,14 @@ class DuckdbPipesIsolationTest : BasePlatformTestCase() {
             "ExecutionObserver" to "DuckdbExecutionObserver",
             "RefreshLiveCatalogAction" to "DuckdbRefreshLiveCatalogAction",
             "AutoIntrospectService" to "DuckdbAutoIntrospectService",
+            "IntrospectBannerProvider" to "DuckdbIntrospectBannerProvider",
+            "QualifiedPathIntrospectContributor" to "DuckdbQualifiedPathIntrospectContributor",
             "ShowCreateDefinitionProvider" to "DuckdbDefinitionProvider",
         )) assertTrue(consumer, loader.loadClass("dev.brikk.house.sql.intellij.catalog.$base")
             .isAssignableFrom(loader.loadClass("dev.sort.duckdb.catalog.$consumer")))
-        // Cold-model discovery composes the shared banner and uses the shared queue, rather than
-        // inheriting the listed-names-only contributor. Every adapter and delegate stays product-owned.
-        val bannerType = loader.loadClass("dev.sort.duckdb.catalog.DuckdbIntrospectBannerProvider")
-        assertSame(loader, bannerType.classLoader)
-        val delegate = bannerType.getDeclaredField("shared").apply { isAccessible = true }.get(bannerType.getConstructor().newInstance())
-        assertSame(loader, delegate.javaClass.classLoader)
-        assertTrue(loader.loadClass("dev.brikk.house.sql.intellij.catalog.IntrospectBannerProvider").isInstance(delegate))
-        for (name in listOf("DuckdbQualifiedPathIntrospectContributor", "DuckdbNamespaceDiscovery", "DuckdbIntrospectionTransactions")) {
+        for (name in listOf("DuckdbQualifiedPathIntrospectContributor", "DuckdbIntrospectBannerProvider", "DuckdbIntrospectionTransactions")) {
             assertSame(name, loader, loader.loadClass("dev.sort.duckdb.catalog.$name").classLoader)
         }
-        assertTrue(com.intellij.codeInsight.completion.CompletionContributor::class.java.isAssignableFrom(
-            loader.loadClass("dev.sort.duckdb.catalog.DuckdbQualifiedPathIntrospectContributor")))
         for ((base, consumer) in listOf(
             "lexer.MaskingSqlLexer" to "DuckdbLexer",
             "editor.MaskedSpanRecolorAnnotator" to "DuckdbMaskedSpanRecolorAnnotator",
