@@ -226,3 +226,32 @@ pack. Reproducers include `SELECT * FROM read_parquet('data/orders.parquet')` an
 and table-call PSI typing is retained. `DUCKDB_TABLE_FUNCTIONS` remains disabled
 in the contract rather than hiding these reports or claiming those cases pass.
 The failing trial log remains under `build/introspection-audit/morning-table-functions.log`.
+
+### Morning matrix and verifier
+
+The corpus presentation matcher now follows the shared label contract: nullable
+Kotlin display types may show `?`; SQL types do not, and an unspecified supplied
+type leaves a native decorated type intact. No semantic corpus expectation,
+known-difference list or fingerprint was changed. Explicit consumer assertions
+check SQL labels and one completion per visible column through a CTE chain.
+
+| Lane | 261 tests / skipped | 262 tests / skipped | 263 tests / skipped |
+| --- | ---: | ---: | ---: |
+| Optional language plugin present | 352 / 9 | 352 / 9 | 352 / 9 |
+| Optional language plugin absent | 264 / 9 | 264 / 9 | 264 / 9 |
+| Plugin isolation | 2 / 0 | 2 / 0 | 2 / 0 |
+
+Every lane has zero failures. The separate relation selection passes 88 tests.
+Its first attempt was interrupted by an external Gradle stop command and passed
+unchanged on retry. Logs/XML are under `build/introspection-audit/morning-final-*`
+and `build/introspection-audit/morning-brikk-retry-*`.
+
+Census parsing remains 226/226 on all three generations. Both native and injected
+relation corpus modes pass all 167 logical cases, retaining 76 recorded native
+adapter differences and introducing none.
+
+Plugin verification reports Compatible on DB-261.24374.56, DB-262.10315.132,
+IU-262.10968.63, IU-263.4732.28 and IU-263.5701.42. The configured compatibility
+gates pass; non-gating deprecated, scheduled-removal, experimental and internal
+API notices remain in the reports. Evidence is in
+`build/introspection-audit/morning-verifier.log` and `build/reports/pluginVerifier/`.

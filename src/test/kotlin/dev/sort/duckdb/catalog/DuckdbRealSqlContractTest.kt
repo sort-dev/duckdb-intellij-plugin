@@ -106,4 +106,17 @@ class DuckdbRealSqlContractTest : BasePlatformTestCase() {
         RealSqlContract(target(), RealSqlCases.TABLE_FUNCTIONS).check()
         println("DuckDB table-function contract: ${RealSqlCases.TABLE_FUNCTIONS.size} shared cases, filtered to applicable features")
     }
+
+    fun testCteChainOffersEachVisibleColumnOnce() {
+        install(RealSqlModel.STANDARD)
+        target().open("WITH a AS (SELECT * FROM sales.orders), b AS (SELECT * FROM a), c AS (SELECT * FROM b) SELECT c.<caret> FROM c")
+        try {
+            val names = myFixture.completeBasic().orEmpty().map { it.lookupString }
+            for (name in RealSqlModel.STANDARD.tables.getValue("shop.sales.orders")) {
+                assertEquals("$name must occur exactly once: $names", 1, names.count { it == name })
+            }
+        } finally {
+            com.intellij.codeInsight.lookup.LookupManager.getInstance(project).hideActiveLookup()
+        }
+    }
 }

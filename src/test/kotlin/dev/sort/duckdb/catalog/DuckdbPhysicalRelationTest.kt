@@ -36,6 +36,8 @@ class DuckdbPhysicalRelationTest : DuckdbCatalogTestCase() {
             val shown = LookupElementPresentation().also(columns.single()::renderElement)
             assertEquals("  column (orders)", shown.tailText)
             assertTrue(shown.typeText.orEmpty(), shown.typeText.orEmpty().contains("DECIMAL", ignoreCase = true))
+            assertFalse(shown.typeText.orEmpty(), '?' in shown.typeText.orEmpty())
+            assertFalse(shown.typeText.orEmpty(), shown.typeText.orEmpty().contains("nullability", ignoreCase = true))
         } finally {
             LookupManager.getInstance(project).hideActiveLookup()
             settings.enabled = previous

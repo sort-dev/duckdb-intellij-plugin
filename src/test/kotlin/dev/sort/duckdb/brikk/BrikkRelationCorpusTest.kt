@@ -763,10 +763,10 @@ class BrikkRelationCorpusTest : BasePlatformTestCase() {
                 val short = column.copy(displayType = column.displayType?.substringAfterLast('.'))
                 val label = brikkLabels.label(short)
                 val tail = "  ${label.origin}" + if (label.relation.isNotBlank()) " (${label.relation})" else ""
-                val typeText = (label.type ?: "unknown type") + when (label.nullable) {
-                    true -> "?"; false -> ""; null -> " (nullability unknown)"
-                }
-                shown.tailText == tail && shown.typeText == typeText
+                // Shared labels add '?' only to known nullable Kotlin display types.
+                // A missing supplied type leaves a decorated native type intact; it proves no SQL type.
+                val typeText = label.type?.let { if (label.nullable == true) "$it?" else it }
+                shown.tailText == tail && (typeText == null || shown.typeText == typeText)
             }
         }
         // Match actual output, not the corpus's expected columns. Preserve an unmatched/ambiguous item as a difference.
