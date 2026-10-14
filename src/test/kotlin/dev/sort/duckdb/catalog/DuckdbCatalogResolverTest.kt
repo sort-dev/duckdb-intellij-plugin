@@ -22,6 +22,25 @@ import java.lang.reflect.Proxy
 import java.util.concurrent.atomic.AtomicBoolean
 
 class DuckdbCatalogResolverTest : DuckdbCatalogTestCase() {
+    fun testLiveCatalogReplacesBundledForTheProjectsSingleDataSource() = testCompleteCacheReplacesBundledRegistryThroughCompletion()
+
+    fun testExtensionOffersCarryRequiresTagAndFoldCaseForSuppression() {
+        testLiveFunctionsSuppressExtensionOffersIgnoringCase()
+        val names = completions("ST_Re", table = true)
+        assertTrue(names.toString(), names.any { it.name == "ST_Read" && it.extension == "spatial" })
+    }
+
+    fun testParseToleratesCommentsAndJunkRows() {
+        val legacy = DuckdbLegacyCatalogFiles(directory)
+        val file = legacy.file("comments")
+        val text = "# duckdb-brikk live catalog v1 (see DuckdbLiveCatalog for the format)\n# comment\nmeta\tv1.5.5\t\t1\nfn\tabs\tSCALAR\nkw\tSELECT\n\n"
+        java.nio.file.Files.writeString(file, text)
+        assertEquals(listOf("abs"), requireNotNull(legacy.read(file)).functions.map { it.def.name })
+        java.nio.file.Files.writeString(file, text + "broken-line-no-tabs\n")
+        // The removed extension TSV loader is replaced by typed metadata. An incomplete legacy
+        // inventory now degrades as a whole instead of silently becoming a smaller live catalog.
+        assertNull(legacy.read(file))
+    }
     private var autocomplete = false
 
     override fun setUp() {

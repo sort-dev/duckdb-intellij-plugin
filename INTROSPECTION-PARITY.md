@@ -78,3 +78,33 @@ with nine optional skips, and isolation two with no skips, on 261/262/263.
 Logs/results are under `build/introspection-audit/inventory-*`. No production
 behavior changed in this inventory commit. Restoration and real-engine proof
 follow in separate commits.
+
+### Restoration step
+
+- Restored every baseline catalog test name: the four removed test classes and
+  the renamed harvest/resolver cases now execute against the current shared APIs.
+  The refresh tests exercise the real service/interceptor, the debounce tests use
+  its public inventory-change path with a deterministic coroutine scheduler, and
+  deadline tests check the shared runner rather than a test-only harvest replica.
+- Enabled out-of-scope references, registered the shared unresolved-report filter
+  and namespace intention, and added the missing reference-trigger annotator.
+  Qualified table-reference names go through `requestPath`; it refuses namespaces
+  not listed in the model or already loaded. Unqualified references use the shared
+  classifier and console namespace. The shared queue/retry/scope/banner owns sync.
+- A native unresolved reference can resolve to an inline placeholder. Treating
+  every non-null native answer as a real database object suppressed the trigger;
+  the shim therefore asks the shared model path resolver directly for qualified
+  table references. It does not parse SQL text or load models itself.
+- A registered-annotator test queues a reference without invoking completion.
+  The held fixture drives the registered annotator outside its strict immutable
+  highlighting pass; the real model-changing refresh is asynchronous by design.
+- `DuckdbRealIntrospectionTest` now opens actual file data sources through the IDE
+  JDBC process, with connection initialization attaching two file databases.
+  Namespace listing followed by one-element database refresh loads all three
+  catalogs and their schemas. No held executor or handwritten model update is
+  used. A namespace-list task alone lists catalogs, not all nested schemas.
+
+Restoration lanes: present 346/nine optional skips, absent 258/nine optional skips,
+isolation two/no skips, on 261/262/263. All baseline catalog names are accounted
+for; all eight JDBC metadata and three driver/transaction/cancellation tests remain.
+No company labels or source-directory scratch artifacts are required.

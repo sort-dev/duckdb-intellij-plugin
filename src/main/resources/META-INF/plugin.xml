@@ -169,6 +169,13 @@
         <postStartupActivity implementation="dev.sort.duckdb.catalog.DuckdbExecutionObserverStartup"/>
         <editorNotificationProvider implementation="dev.sort.duckdb.catalog.DuckdbIntrospectBannerProvider"/>
         <completion.contributor language="DuckDBSQL" implementationClass="dev.sort.duckdb.catalog.DuckdbQualifiedPathIntrospectContributor" order="first"/>
+        <annotator language="DuckDBSQL" implementationClass="dev.sort.duckdb.catalog.DuckdbReferenceIntrospectAnnotator"/>
+        <daemon.highlightInfoFilter implementation="dev.sort.duckdb.catalog.DuckdbOutOfScopeReferenceFilter"/>
+        <intentionAction>
+            <language>DuckDBSQL</language>
+            <className>dev.sort.duckdb.catalog.DuckdbIntrospectNamespaceIntention</className>
+            <category>DuckDB</category>
+        </intentionAction>
     </extensions>
 
     <extensions defaultExtensionNs="com.intellij.database">

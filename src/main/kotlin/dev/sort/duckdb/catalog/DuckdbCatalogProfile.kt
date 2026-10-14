@@ -10,5 +10,6 @@ object DuckdbCatalogProfile : CatalogProfile {
     override val quoteChars = "\""
     override val levels = listOf(ObjectKind.DATABASE, ObjectKind.SCHEMA)
     override val autoIntrospect = true
+    override val outOfScopeReferences = true
     override val dataSources = duckdbDataSourceResolver
 }

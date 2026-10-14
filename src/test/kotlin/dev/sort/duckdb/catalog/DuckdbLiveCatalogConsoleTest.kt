@@ -172,21 +172,10 @@ class DuckdbLiveCatalogConsoleTest : DuckdbCatalogTestCase() {
         }, 30)
     }
 
-    fun testOutOfScopeReferenceBehaviorStaysOff() {
-        assertFalse(DuckdbCatalogProfile.outOfScopeReferences)
-        val model = ModelFactory.BLACK_HOLE.createModel(DuckdbDbms.DUCKDB_BRIKK)
-        (model.root as PgRoot).databases.createOrGet("console").apply { name = "console" }
-        target.model = model
-        DbPsiFacade.getInstance(project).clearCaches()
-        val a = console("out-of-scope")
-        a.console.setSearchPath(SearchPath.of(ObjectPath.create("console", ObjectKind.DATABASE).append("main", ObjectKind.SCHEMA)))
-        myFixture.configureFromExistingVirtualFile(a.virtualFile)
-        WriteCommandAction.runWriteCommandAction(project) { myFixture.editor.document.setText("SELECT * FROM console.not_loaded.orders") }
-        PsiDocumentManager.getInstance(project).commitAllDocuments()
-        myFixture.enableInspections(dev.sort.duckdb.registeredSqlInspection("SqlResolveInspection"))
-        val reports = myFixture.doHighlighting()
-        assertTrue(reports.map { it.description }.toString(), reports.any {
-            it.severity == com.intellij.lang.annotation.HighlightSeverity.ERROR && it.description.orEmpty().contains("not_loaded")
+    fun testOutOfScopeReferenceIntrospectionIsEnabled() {
+        assertTrue(DuckdbCatalogProfile.outOfScopeReferences)
+        assertTrue(com.intellij.lang.LanguageAnnotators.INSTANCE.allForLanguage(DuckdbSqlDialect).any {
+            it.javaClass.name == "dev.sort.duckdb.catalog.DuckdbReferenceIntrospectAnnotator"
         })
     }
 

@@ -166,6 +166,29 @@ class DuckdbAutoIntrospectTest : BasePlatformTestCase() {
         }
     }
 
+    fun testReferencingAnUnloadedNamespaceQueuesItWithoutCompletion() {
+        fixture(":memory:", "archive")
+        configure("SELECT * FROM archive.analytics.events")
+        IndexingTestUtil.waitUntilIndexesAreReady(project)
+        val registered = com.intellij.lang.LanguageAnnotators.INSTANCE.allForLanguage(DuckdbSqlDialect).single {
+            it.javaClass.name == "dev.sort.duckdb.catalog.DuckdbReferenceIntrospectAnnotator"
+        }
+        val holder = com.intellij.codeInsight.daemon.impl.AnnotationHolderImpl(com.intellij.lang.annotation.AnnotationSession(myFixture.file), false)
+        holder.runAnnotatorWithContext(myFixture.file, com.intellij.lang.annotation.Annotator { _, annotations ->
+            registered.annotate(myFixture.file, annotations)
+        })
+        holder.assertAllAnnotationsCreated()
+        assertNotNull("No request queued; language=${myFixture.file.language}; dumb=${com.intellij.openapi.project.DumbService.isDumb(project)}; flags=${requests.profile.autoIntrospect}/${requests.profile.outOfScopeReferences}; loaders=${registered.javaClass.classLoader}/${DuckdbReferenceIntrospectAnnotator::class.java.classLoader}; references=" +
+            com.intellij.psi.util.PsiTreeUtil.findChildrenOfType(myFixture.file, com.intellij.sql.psi.SqlReferenceExpression::class.java)
+                .map { "${it.text}:${it.name}:${it.referenceElementType.targetKind}" }, requests.pending(myFixture.file.virtualFile))
+        val refresh = introspections.next()
+        assertEquals("archive", refresh.context.tasks.single().databaseName)
+        assertBanner("archive.analytics")
+        refresh.finish { loadTables("archive", "analytics") }
+        awaitIdle()
+        assertEquals(AutoIntrospectEngine.State.Done, state(listOf("archive", "analytics")))
+    }
+
     fun testUserRoutineNamedLikeABuiltinSurvivesMetadataDeduplication() {
         fixture(":memory:")
         val schema = database("memory").schemas.createOrGet("main")

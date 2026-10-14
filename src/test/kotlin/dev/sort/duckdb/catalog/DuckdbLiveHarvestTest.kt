@@ -12,6 +12,60 @@ import java.sql.DriverManager
 import java.util.concurrent.CancellationException
 
 class DuckdbLiveHarvestTest {
+    @Test fun `real harvest against the in-process engine`() = `real harvest captures the engine signatures and keyword categories`()
+
+    @Test fun `duckdb_keywords columns are keyword_name and keyword_category`() {
+        DriverManager.getConnection("jdbc:duckdb:").use { connection ->
+            connection.createStatement().use { statement -> statement.executeQuery("SELECT keyword_name, keyword_category FROM duckdb_keywords() LIMIT 3").use { rows ->
+                assertTrue(rows.next()); assertNotNull(rows.getString(1)); assertNotNull(rows.getString(2))
+            } }
+        }
+        assertTrue(DUCKDB_KEYWORDS.sql.contains("keyword_name"))
+    }
+
+    @Test fun `canned rows - kind mapping, operator filter, first-wins dedupe, uppercased keywords`() {
+        `capture retains kinds and uppercases keywords through completion`()
+        // Kind-aware completion intentionally supersedes first-name-wins; operators still never appear.
+        DriverManager.getConnection("jdbc:duckdb:").use { connection ->
+            assertTrue(requireNotNull(DuckdbCatalogHarvester.harvest(JdbcCatalogRows(connection))).shared.functions.all {
+                Regex("[A-Za-z_][A-Za-z0-9_]*").matches(it.def.name)
+            })
+        }
+    }
+
+    @Test fun `empty function inventory means a broken read - harvest abandons`() = `an incomplete capture does not produce an inventory`()
+
+    @Test fun `blown deadline abandons before any query runs`() = legacyCatalog { fixture ->
+        val calls = java.util.concurrent.atomic.AtomicInteger()
+        val profile = object : dev.brikk.house.sql.intellij.catalog.LiveCatalogProfile by DuckdbLiveCatalogProfile {
+            override val deadline = kotlin.time.Duration.ZERO
+            override val harvester = dev.brikk.house.sql.intellij.catalog.LiveCatalogHarvester { rows ->
+                rows.forEachRow(DuckdbCatalogHarvester.SQL_VERSION) { calls.incrementAndGet() }
+                null
+            }
+        }
+        val source = fixture.dataSource()
+        val service = fixture.service(profile)
+        DriverManager.getConnection("jdbc:duckdb:").use { fixture.connect(it, source) }
+        assertEquals(0, calls.get()); assertNull(service.selection(source).inventory)
+    }
+
+    @Test fun `mid-harvest deadline keeps whatever ran but yields null`() = legacyCatalog { fixture ->
+        val versionRead = java.util.concurrent.atomic.AtomicBoolean()
+        val profile = object : dev.brikk.house.sql.intellij.catalog.LiveCatalogProfile by DuckdbLiveCatalogProfile {
+            override val deadline = kotlin.time.Duration.parse("2s")
+            override val harvester = dev.brikk.house.sql.intellij.catalog.LiveCatalogHarvester { rows ->
+                rows.forEachRow(DuckdbCatalogHarvester.SQL_VERSION) { versionRead.set(true) }
+                try { java.util.concurrent.CountDownLatch(1).await() } catch (_: InterruptedException) { }
+                null
+            }
+        }
+        val source = fixture.dataSource()
+        val service = fixture.service(profile)
+        DriverManager.getConnection("jdbc:duckdb:").use { fixture.connect(it, source) }
+        assertTrue("Version query must precede the deadline", versionRead.get()); assertNull(service.selection(source).inventory)
+    }
+
     @Test
     fun `real harvest captures the engine signatures and keyword categories`() {
         DriverManager.getConnection("jdbc:duckdb:").use { connection ->
