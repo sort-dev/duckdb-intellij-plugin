@@ -143,7 +143,6 @@
     <extensions defaultExtensionNs="com.intellij">
         <sql.resolveExtension implementation="dev.sort.duckdb.brikk.DuckdbRelationResolveExtension"/>
         <sql.inspectionSuppressorDelegate implementation="dev.sort.duckdb.brikk.DuckdbRelationInspectionSuppressor"/>
-        <completion.contributor language="DuckDBSQL" implementationClass="dev.sort.duckdb.catalog.DuckdbPhysicalColumnScopeContributor" order="first, before duckdb.relations"/>
         <completion.contributor language="DuckDBSQL" implementationClass="dev.sort.duckdb.brikk.DuckdbRelationCompletionContributor" id="duckdb.relations" order="first"/>
         <gotoDeclarationHandler implementation="dev.sort.duckdb.brikk.DuckdbRelationGotoDeclarationHandler"/>
         <annotator language="DuckDBSQL" implementationClass="dev.sort.duckdb.brikk.DuckdbRelationAnnotator"/>

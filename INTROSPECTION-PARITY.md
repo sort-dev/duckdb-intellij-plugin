@@ -194,3 +194,17 @@ present and absent lanes. Full lane logs and copied test XML are under
 All 39 baseline catalog test names, including the optional remote-driver case,
 were matched against passing-matrix test XML; none are missing. The 38 local
 baseline catalog cases execute, and the remote case remains explicitly optional.
+
+## Morning shared-layer refresh
+
+The 2026-10-14 02:58 local dependency publish replaces the plugin's DDL namespace
+rules, physical-column completion filter and star-removal syntax rewrite. Those
+local copies are removed. Source-loader routing and the reference trigger remain
+plugin responsibilities. The shared SQL contract now supplies the engine's
+`EXCLUDE` variants and checks forbidden completion names as well as required ones.
+
+After dependency refresh, all seven targeted tests pass: the two real-JDBC tests,
+both SQL/model-state contract tests and all three observer-profile tests. The
+real-JDBC test still rejects the previous catalog's unique column after `USE` and
+proves actual CREATE/ALTER model refresh. Evidence is in
+`build/introspection-audit/morning-shared-parity.log`.

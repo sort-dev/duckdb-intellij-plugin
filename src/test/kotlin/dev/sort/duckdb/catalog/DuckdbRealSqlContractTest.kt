@@ -68,7 +68,12 @@ class DuckdbRealSqlContractTest : BasePlatformTestCase() {
 
     private fun target(): RealSqlTarget = object : RealSqlTarget {
         override val dialect = "duckdb"
-        override val features = RealSqlFeature.entries.toSet() - setOf(RealSqlFeature.BACKTICK_IDENTIFIERS, RealSqlFeature.DORIS)
+        override val features = RealSqlFeature.entries.toSet() - setOf(
+            RealSqlFeature.BACKTICK_IDENTIFIERS, RealSqlFeature.DORIS,
+            RealSqlFeature.CLICKHOUSE_TABLE_FUNCTIONS, RealSqlFeature.DORIS_TABLE_FUNCTIONS,
+            RealSqlFeature.TRINO_TABLE_FUNCTIONS, RealSqlFeature.DUCKDB_TABLE_FUNCTIONS,
+            RealSqlFeature.SET_RETURNING_FUNCTIONS,
+        )
         override val fixture get() = myFixture
         override fun install(model: RealSqlModel) = this@DuckdbRealSqlContractTest.install(model)
         override fun open(sql: String) {
@@ -82,26 +87,17 @@ class DuckdbRealSqlContractTest : BasePlatformTestCase() {
         }
     }
 
-    // STAR_EXCEPT is the pack's semantic feature name. DuckDB's spelling is EXCLUDE,
-    // including the completion query; keep native validation enabled on the valid dialect variant.
-    private fun duckdbVariants(cases: List<RealSqlCase>) = cases.map { case ->
-        if (RealSqlFeature.STAR_EXCEPT !in case.needs) case else case.copy(
-            variants = case.variants + ("duckdb" to case.sqlFor("duckdb").replace("* EXCEPT (", "* EXCLUDE (")),
-            completions = case.completions.map { it.copy(sql = it.sql.replace("* EXCEPT (", "* EXCLUDE (")) },
-        )
-    }
-
     fun testEverydaySqlUsesTheRealProductFeatures() {
         install(RealSqlModel.STANDARD)
         myFixture.enableInspections(dev.sort.duckdb.registeredSqlInspection("SqlResolveInspection"))
-        RealSqlContract(target(), duckdbVariants(RealSqlCases.ALL)).check()
+        RealSqlContract(target()).check()
         println("DuckDB everyday SQL contract: ${RealSqlCases.ALL.size} shared cases, native checking enabled")
     }
 
     fun testUnknownAndUnintrospectedModelStatesDoNotInventColumnErrors() {
         install(RealSqlModel.STANDARD)
         myFixture.enableInspections(dev.sort.duckdb.registeredSqlInspection("SqlResolveInspection"))
-        RealSqlContract(target()).checkModelStates(cases = duckdbVariants(RealSqlCases.EXTERNAL))
+        RealSqlContract(target()).checkModelStates()
         println("DuckDB model-state contract: ${RealSqlCases.EXTERNAL.size} cases across ${RealSqlModel.STATES.size} model states")
     }
 }
