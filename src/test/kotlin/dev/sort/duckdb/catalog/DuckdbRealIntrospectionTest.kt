@@ -46,6 +46,8 @@ class DuckdbRealIntrospectionTest : DuckdbCatalogTestCase() {
     private val finished = CopyOnWriteArrayList<DataRequest>()
     private val failures = CopyOnWriteArrayList<String>()
     private var autocomplete = false
+    private data class Sync(val context: LoaderContext, val tasks: List<String>, val catalogs: List<String?>)
+    private val syncs = CopyOnWriteArrayList<Sync>()
 
     override fun setUp() {
         super.setUp()
@@ -83,6 +85,7 @@ class DuckdbRealIntrospectionTest : DuckdbCatalogTestCase() {
             initScript = "ATTACH IF NOT EXISTS '${directory.resolve("lake-one.duckdb").toAbsolutePath()}' AS lake_one; " +
                 "ATTACH IF NOT EXISTS '${directory.resolve("lake-two.duckdb").toAbsolutePath()}' AS lake_two;"
         }
+        com.intellij.database.psi.DbPsiFacade.getInstance(project).clearCaches()
         setSqlDialectMapping(project, null, DuckdbSqlDialect)
         DataBus.addRootAuditor(project, object : DataAuditor {
             override fun error(context: DataRequest.Context, error: ErrorInfo) { failures += error.toString() }
@@ -91,6 +94,18 @@ class DuckdbRealIntrospectionTest : DuckdbCatalogTestCase() {
         val observer = DuckdbExecutionObserver(project, errors.newScope(testRootDisposable))
         Disposer.register(testRootDisposable, observer)
         observer.start()
+        // Observe the actual executor and delegate to it unchanged: no held tasks or fake metadata.
+        val field = DataSourceSyncManager::class.java.getDeclaredField("ourDefaultExecutor").apply { isAccessible = true }
+        val actual = field.get(null) as DataSourceSyncManager.DatabaseExecutor
+        DataSourceSyncManager.withDefaultExecutor(testRootDisposable) { task, path, force, consumer ->
+            if (syncs.none { it.context === task.context }) syncs += Sync(task.context,
+                task.context.tasks.map { "${it.javaClass.simpleName}:${it.name}" }, task.context.tasks.map { it.databaseName })
+            actual.perform(task, path, force) { connection ->
+                assertFalse("Metadata ran on EDT", com.intellij.openapi.application.ApplicationManager.getApplication().isDispatchThread)
+                assertTrue("Metadata connection must be in auto-commit", connection.autoCommit)
+                consumer.consume(connection)
+            }
+        }
     }
 
     override fun tearDown() {
@@ -111,6 +126,7 @@ class DuckdbRealIntrospectionTest : DuckdbCatalogTestCase() {
     }
 
     private fun root() = (target.model as com.intellij.database.model.basic.BasicModel).root as PgRoot
+    private fun rootOrNull() = (target.model as? com.intellij.database.model.basic.BasicModel)?.root as? PgRoot
 
     private fun namespaces() {
         introspect(LoaderContext.selectListNamespacesTask(project, target))
@@ -149,7 +165,7 @@ class DuckdbRealIntrospectionTest : DuckdbCatalogTestCase() {
 
     private fun waitLoaded(catalog: String, schema: String) {
         PlatformTestUtil.waitWithEventsDispatching("$catalog.$schema tables and columns are introspected", {
-            val namespace = root().databases.firstOrNull { it.name == catalog }?.schemas?.firstOrNull { it.name == schema }
+            val namespace = rootOrNull()?.databases?.firstOrNull { it.name == catalog }?.schemas?.firstOrNull { it.name == schema }
             namespace?.tables?.firstOrNull { it.name == "events" }?.columns?.isNotEmpty() == true && !DataSourceSyncManager.getInstance().isActive(target)
         }, 60)
         errors.assertNone()
@@ -166,6 +182,55 @@ class DuckdbRealIntrospectionTest : DuckdbCatalogTestCase() {
         open(sql)
         myFixture.enableInspections(dev.sort.duckdb.registeredSqlInspection("SqlResolveInspection"))
         assertEmpty("False errors after real introspection: $sql", myFixture.doHighlighting().filter { it.severity == HighlightSeverity.ERROR })
+    }
+
+    private fun clearModel() {
+        PlatformTestUtil.waitWithEventsDispatching("previous sync finishes before clearing", { !DataSourceSyncManager.getInstance().isActive(target) }, 30)
+        // The platform's clear operations, retaining the data source, console and plugin service.
+        val cleared = AtomicReference<Result<Unit>>()
+        errors.newScope(testRootDisposable).launch(kotlinx.coroutines.Dispatchers.IO) {
+            cleared.set(runCatching { target.clearIntrospectionCache(); target.clearModel() })
+        }
+        PlatformTestUtil.waitWithEventsDispatching("platform clears introspection data off EDT", { cleared.get() != null }, 30)
+        cleared.get().getOrThrow()
+        com.intellij.database.psi.DbPsiFacade.getInstance(project).clearCaches()
+        assertEmpty(target.model.modelRoots.toList())
+        syncs.clear()
+    }
+
+    private fun Console.references(sql: String) {
+        open(sql)
+        com.intellij.testFramework.IndexingTestUtil.waitUntilIndexesAreReady(project)
+        val registered = com.intellij.lang.LanguageAnnotators.INSTANCE.allForLanguage(DuckdbSqlDialect)
+            .single { it is DuckdbReferenceIntrospectAnnotator }
+        val holder = com.intellij.codeInsight.daemon.impl.AnnotationHolderImpl(com.intellij.lang.annotation.AnnotationSession(psi), false)
+        holder.runAnnotatorWithContext(psi, com.intellij.lang.annotation.Annotator { _, annotations -> registered.annotate(psi, annotations) })
+        holder.assertAllAnnotationsCreated()
+    }
+
+    private fun Console.assertBanner(active: Boolean) {
+        val banner = com.intellij.ui.EditorNotificationProvider.EP_NAME.getExtensions(project).filterIsInstance<DuckdbIntrospectBannerProvider>().single()
+        if (active) assertNotNull("Discovery banner missing", banner.collectNotificationData(project, file))
+        else assertNull("Discovery banner did not clear", banner.collectNotificationData(project, file))
+    }
+
+    private fun dispatchBriefly() {
+        val tick = com.intellij.util.concurrency.AppExecutorUtil.getAppScheduledExecutorService()
+            .schedule({}, 350, java.util.concurrent.TimeUnit.MILLISECONDS)
+        PlatformTestUtil.waitWithEventsDispatching("dispatch pending requests", { tick.isDone }, 3)
+        errors.assertNone()
+    }
+
+    private fun assertDiscovery(catalog: String, count: Int) {
+        assertEquals(syncs.toString(), count, syncs.size)
+        val rootTasks = LoaderContext.selectListNamespacesTask(project, target).tasks.map { "${it.javaClass.simpleName}:${it.name}" }
+        assertEquals("The first operation must be a cheap namespace list", rootTasks, syncs.first().tasks)
+        assertEquals(syncs.toString(), listOf(null), syncs.first().catalogs)
+        syncs.drop(1).forEach { assertEquals("Only the requested catalog may be deepened: $syncs", listOf(catalog), it.catalogs) }
+        syncs.forEach { assertEquals("Never full-scope or compound sync: $syncs", 1, it.context.countTasks()) }
+        for (other in listOf("primary", "lake_one", "lake_two") - catalog) {
+            assertTrue("Unrelated catalog's objects loaded: $other", root().databases.first { it.name == other }.schemas.all { it.tables.isEmpty() && it.views.isEmpty() })
+        }
     }
 
     private fun introspect(context: LoaderContext) {
@@ -188,6 +253,155 @@ class DuckdbRealIntrospectionTest : DuckdbCatalogTestCase() {
         assertTrue(root.databases.createOrGet("primary").schemas.any { it.name == "audit" })
         assertTrue(root.databases.createOrGet("lake_one").schemas.any { it.name == "sales" })
         assertTrue(root.databases.createOrGet("lake_two").schemas.any { it.name == "sales" })
+    }
+
+    fun testCompletionBootstrapsAttachedCatalogFromClearedModel() {
+        val editor = console()
+        editor.run("SELECT 1")
+        clearModel()
+        editor.columns("SELECT * FROM lake_one.<caret>")
+        editor.assertBanner(true)
+        PlatformTestUtil.waitWithEventsDispatching("catalog completion discovers root then just the attached catalog's schemas", {
+            rootOrNull()?.databases?.firstOrNull { it.name == "lake_one" }?.schemas?.any { it.name == "sales" } == true
+        }, 15)
+        val schemas = editor.columns("SELECT * FROM lake_one.<caret>")
+        assertTrue(schemas.toString(), "sales" in schemas)
+        assertDiscovery("lake_one", 2)
+        assertTrue(root().databases.first { it.name == "lake_one" }.schemas.all { it.tables.isEmpty() })
+        editor.columns("SELECT * FROM lake_one.sales.<caret>")
+        waitLoaded("lake_one", "sales")
+        assertTrue(editor.columns("SELECT e.<caret> FROM lake_one.sales.events e").contains("one_only"))
+        editor.assertBanner(false)
+        assertDiscovery("lake_one", 3)
+        clearModel()
+        editor.columns("SELECT * FROM lake_one.sales.<caret>")
+        waitLoaded("lake_one", "sales")
+        // Retained namespace scope can let the brief list include this catalog's schemas.
+        assertTrue(syncs.toString(), syncs.size in 2..3)
+        assertDiscovery("lake_one", syncs.size)
+    }
+
+    fun testRelativeSchemaCompletionBootstrapsTheCurrentCatalog() {
+        val editor = console()
+        editor.run("USE lake_two.sales")
+        clearModel()
+        editor.columns("SELECT * FROM sales.<caret>")
+        editor.assertBanner(true)
+        waitLoaded("lake_two", "sales")
+        assertTrue(editor.columns("SELECT * FROM sales.ev<caret>").any { it.equals("events", true) })
+        editor.assertBanner(false)
+        assertDiscovery("lake_two", 3)
+    }
+
+    fun testDisconnectedEmptySourceDiscoversWithoutExecutingConsoleSql() {
+        val editor = console()
+        clearModel()
+        editor.columns("SELECT * FROM lake_one.sales.<caret>")
+        editor.assertBanner(true)
+        waitLoaded("lake_one", "sales")
+        assertTrue(editor.columns("SELECT e.<caret> FROM lake_one.sales.events e").contains("one_only"))
+        assertDiscovery("lake_one", 3)
+        assertEmpty("No user console query was executed to bootstrap metadata",
+            finished.filterIsInstance<DataRequest.QueryRequest>().filter { it.owner === editor.console })
+    }
+
+    fun testSchemaOnlyCompletionUsesTheEngineDefaultCatalogFromAnEmptyModel() {
+        val editor = console()
+        clearModel()
+        editor.columns("SELECT * FROM web.<caret>")
+        waitLoaded("primary", "web")
+        assertTrue(editor.columns("SELECT e.<caret> FROM web.events e").contains("primary_only"))
+        assertTrue(syncs.toString(), syncs.size in 2..3)
+        assertDiscovery("primary", syncs.size)
+    }
+
+    fun testUnknownQualifiedReferenceDiscoversOnlyItsAttachedNamespace() {
+        val editor = console()
+        editor.run("SELECT 1")
+        clearModel()
+        editor.references("SELECT one_only FROM lake_one.sales.events")
+        editor.assertBanner(true)
+        waitLoaded("lake_one", "sales")
+        PlatformTestUtil.waitWithEventsDispatching("bootstrap banner finishes", {
+            project.getService(DuckdbAutoIntrospectService::class.java).discovery.pending(editor.file) == null
+        }, 10)
+        editor.assertBanner(false)
+        assertDiscovery("lake_one", 3)
+        editor.assertClean("SELECT one_only FROM lake_one.sales.events")
+    }
+
+    fun testMissingCatalogAndSchemaDoNotLoopOrInventModelObjects() {
+        val editor = console()
+        editor.run("SELECT 1")
+        clearModel()
+        editor.columns("SELECT * FROM does_not_exist.sales.<caret>")
+        PlatformTestUtil.waitWithEventsDispatching("the root list finishes even when the catalog does not exist", {
+            rootOrNull()?.databases?.isNotEmpty() == true && project.getService(DuckdbAutoIntrospectService::class.java).discovery.pending(editor.file) == null
+        }, 30)
+        assertEquals(syncs.toString(), 1, syncs.size)
+        repeat(3) {
+            editor.columns("SELECT * FROM does_not_exist.sales.<caret>")
+            editor.references("SELECT * FROM does_not_exist.sales.events")
+        }
+        dispatchBriefly()
+        assertEquals("A nonexistent catalog must not relist the root", 1, syncs.size)
+        editor.columns("SELECT * FROM lake_one.missing_schema.<caret>")
+        PlatformTestUtil.waitWithEventsDispatching("the catalog is listed once for an unknown schema", {
+            root().databases.first { it.name == "lake_one" }.schemas.isNotEmpty() &&
+                project.getService(DuckdbAutoIntrospectService::class.java).discovery.pending(editor.file) == null
+        }, 30)
+        repeat(3) {
+            editor.columns("SELECT * FROM lake_one.missing_schema.<caret>")
+            editor.references("SELECT * FROM lake_one.missing_schema.events")
+        }
+        dispatchBriefly()
+        assertDiscovery("lake_one", 2)
+        assertTrue(root().databases.none { it.name == "does_not_exist" })
+        assertTrue(root().databases.first { it.name == "lake_one" }.schemas.none { it.name == "missing_schema" })
+        editor.assertBanner(false)
+        editor.references("SELECT * FROM lake_one.sales.missing_table")
+        waitLoaded("lake_one", "sales")
+        repeat(3) { editor.references("SELECT * FROM lake_one.sales.missing_table") }
+        dispatchBriefly()
+        assertDiscovery("lake_one", 3)
+        assertTrue(root().databases.first { it.name == "lake_one" }.schemas.first { it.name == "sales" }.tables.none { it.name == "missing_table" })
+    }
+
+    fun testExplicitTransactionBlocksDiscoveryUntilCommit() {
+        val editor = console()
+        editor.run("BEGIN TRANSACTION")
+        clearModel()
+        editor.columns("SELECT * FROM lake_one.sales.<caret>")
+        editor.references("SELECT * FROM lake_one.sales.events")
+        dispatchBriefly()
+        assertEmpty(syncs)
+        assertEmpty(target.model.modelRoots.toList())
+        editor.assertBanner(false)
+        editor.run("COMMIT")
+        editor.columns("SELECT * FROM lake_one.sales.<caret>")
+        waitLoaded("lake_one", "sales")
+        assertDiscovery("lake_one", 3)
+    }
+
+    fun testManualCommitModeAlsoBlocksAlreadyListedTargets() {
+        namespaces()
+        val editor = console()
+        editor.run("SELECT 1")
+        editor.session.setAutoCommit(false)
+        editor.run("SELECT 1")
+        syncs.clear()
+        assertTrue(editor.session.currentTx != DataRequest.AUTO_COMMIT)
+        editor.columns("SELECT * FROM lake_one.sales.<caret>")
+        editor.references("SELECT * FROM lake_one.sales.events")
+        dispatchBriefly()
+        assertEmpty(syncs)
+        assertTrue(root().databases.first { it.name == "lake_one" }.schemas.first { it.name == "sales" }.tables.isEmpty())
+        editor.assertBanner(false)
+        editor.run("ROLLBACK")
+        // ROLLBACK does not switch a manual-commit console into auto-commit mode.
+        editor.columns("SELECT * FROM lake_one.sales.<caret>")
+        dispatchBriefly()
+        assertEmpty(syncs)
     }
 
     fun testCompletionReferenceUseAndRefreshReachTheRealJdbcModel() {

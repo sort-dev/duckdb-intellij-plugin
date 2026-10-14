@@ -53,6 +53,22 @@ object DuckdbExecutionObserverProfile : ExecutionObserverProfile {
 @Service(Service.Level.PROJECT)
 class DuckdbExecutionObserver(project: Project, scope: CoroutineScope) : ExecutionObserver(project, scope) {
     override val profile = DuckdbExecutionObserverProfile
+    private val transactions get() = project.getService(DuckdbIntrospectionTransactions::class.java)
+
+    override fun requestStarted(context: com.intellij.database.datagrid.DataRequest.Context) {
+        transactions.started(context)
+        super.requestStarted(context)
+    }
+
+    override fun error(context: com.intellij.database.datagrid.DataRequest.Context, info: com.intellij.database.connection.throwable.info.ErrorInfo) {
+        context.putUserData(DuckdbIntrospectionTransactions.FAILED, true)
+        super.error(context, info)
+    }
+
+    override fun requestFinished(context: com.intellij.database.datagrid.DataRequest.Context) {
+        transactions.finished(context)
+        super.requestFinished(context)
+    }
 }
 
 class DuckdbExecutionObserverStartup : ExecutionObserverStartup(DuckdbExecutionObserver::class.java)

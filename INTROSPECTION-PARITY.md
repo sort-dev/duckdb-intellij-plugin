@@ -273,3 +273,65 @@ isolation 2/0 pass on 261/262/263; the relation selection passes 88 tests.
 All five configured verifier targets report Compatible with the same non-gating
 API notices. One absent-lane attempt was externally stopped; its unchanged retry
 passed. Evidence is under `build/introspection-audit/refresh-2b95f60*`.
+
+## Cleared-model dogfood audit
+
+The previously staged build did not bootstrap an empty model. Reproducer: create
+a file data source with attached catalogs, clear its introspection cache/model,
+then invoke completion in `SELECT * FROM lake_one.<caret>` or reference
+`lake_one.sales.events`. The shared `requestPath` resolved only already listed
+namespaces and returned without queueing anything when no root matched. There
+was no root-list request, banner or new completion. The failing real-JDBC test is
+recorded in `build/introspection-audit/cleared-model-before.log`.
+
+The plugin now supplies the missing discovery adapter. It uses the shared dialect
+tokenizer for completion paths and the shared resolver/one-element queue for
+listed targets. When the root is unknown, a background brief namespace-list task
+runs first. Only a known childless ancestor and then the requested namespace are
+deepened. A retained scope may let the brief list include that catalog's schemas,
+so no redundant intermediate refresh is needed. No general/full-scope task is
+used, and unrelated catalogs' tables/views remain unloaded.
+
+Relative schema completion uses the console's current namespace, or the model's
+engine-reported default namespace when no console query has run. It never guesses
+the first attached catalog or scans all of them. Discovery is bounded and
+coalesced; absent names below a listed parent do not cause another sync. Clearing
+the same data source again invalidates old claims without replacing the console
+or plugin service. Failed root lists have a retry backoff.
+
+The adapter shows a banner across root discovery and targeted loading. Completion
+and highlighting are refreshed after loading; popup scheduling is restricted to
+the same unchanged, active document. The reference test invokes the registered
+annotator before real asynchronous loading, as in the earlier fixture boundary.
+
+Editor requests are blocked during explicit BEGIN transactions, manual-commit
+sessions and active console requests. The execution observer records explicit
+transaction control because currentTx alone does not represent every driver's
+BEGIN state. Blocked requests make no claims, so automatic loading works after
+COMMIT; a manual-commit console remains blocked after ROLLBACK until its mode
+changes. Metadata runs on separate auto-commit helper connections, never on EDT
+or on the console's transaction connection.
+
+Eight additional real-JDBC tests cover a cleared model, disconnected sources,
+catalog-only and schema-only completion, the current/default catalog, qualified
+references, a second clear on the same source, missing catalogs/schemas/tables,
+and explicit/manual transaction guards. The test wraps and delegates to the
+actual IDE JDBC executor. It asserts task kinds/counts/catalogs, background
+execution and helper auto-commit; it never holds tasks or supplies metadata.
+The platform clear methods run off EDT too. A fixture cache invalidation is
+needed before creating a console on 263 after directly configuring its source.
+
+Shared-kit follow-up: root/ancestor discovery, completion refresh, clear-aware
+claims and editor transaction gating are currently plugin adapters because the
+shared entry points and banner/contributor methods are not overridable. The
+listed-target queue, retry states and actual introspector remain shared.
+
+Cleared-model validation: present 360/nine optional skips, absent 272/nine optional
+skips and isolation two/no skips pass on 261/262/263. The relation selection passes
+88 tests. Both census tests pass, with 226/226 families parsing. All five configured
+verifier targets are Compatible; non-gating API notices remain. Logs/XML are under
+`build/introspection-audit/cleared-model-verified-*`, with verifier evidence in
+`build/introspection-audit/cleared-model-final-verifier.log`. A 262 corpus run hit
+the platform's random cached-value idempotence assertion while syncing a SQL-file
+source; an unchanged full-matrix retry passed. No checker or corpus expectation
+was disabled or relaxed for that retry.

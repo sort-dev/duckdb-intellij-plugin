@@ -25,7 +25,7 @@ class DuckdbReferenceIntrospectAnnotator : Annotator {
             if (reference.referenceElementType.targetKind != ObjectKind.TABLE) continue
             val classified = classifier.classify(reference)
             if (classified is ReferenceScope.OutOfScope) {
-                requests.request(file, classified.dataSource, classified.namespace)
+                requests.discovery.request(file, classified.namespace.path)
                 continue
             }
             val path = generateSequence(reference) { it.qualifierExpression as? SqlReferenceExpression }
@@ -33,11 +33,11 @@ class DuckdbReferenceIntrospectAnnotator : Annotator {
             if (path.size > 1) {
                 // Native resolve may return an inline placeholder for an unloaded qualified name.
                 // The shared service still checks that the exact namespace is listed and childless.
-                requests.requestPath(file, path.dropLast(1))
+                requests.discovery.request(file, path.dropLast(1))
                 continue
             }
             val current = requests.profile.dataSources.consoleNamespace(file)
-            if (current.isNotEmpty()) requests.requestPath(file, current)
+            if (current.isNotEmpty()) requests.discovery.request(file, current)
         }
     }
 }
