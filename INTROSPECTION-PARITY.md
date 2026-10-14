@@ -263,3 +263,13 @@ API notices remain in the reports. Evidence is in
 3. Wired shared table-function facts; kept existing native typing and documented the reader/generator gap.
 4. Verified unique CTE column suggestions and SQL type labels without Kotlin nullability notation.
 5. Passed all IDE/isolation lanes and five verifier targets; package from the clean pushed head, without publishing.
+
+### 04:03 dependency refresh
+
+The next shared publish refreshes caret-offset completion mapping, constants,
+CREATE TABLE clause diagnostics and the completion `once` contract. No plugin
+implementation or test changes were needed. Present 352/9, absent 264/9 and
+isolation 2/0 pass on 261/262/263; the relation selection passes 88 tests.
+All five configured verifier targets report Compatible with the same non-gating
+API notices. One absent-lane attempt was externally stopped; its unchanged retry
+passed. Evidence is under `build/introspection-audit/refresh-2b95f60*`.
