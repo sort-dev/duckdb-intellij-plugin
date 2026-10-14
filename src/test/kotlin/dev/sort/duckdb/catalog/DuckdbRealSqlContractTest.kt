@@ -72,7 +72,6 @@ class DuckdbRealSqlContractTest : BasePlatformTestCase() {
             RealSqlFeature.BACKTICK_IDENTIFIERS, RealSqlFeature.DORIS,
             RealSqlFeature.CLICKHOUSE_TABLE_FUNCTIONS, RealSqlFeature.DORIS_TABLE_FUNCTIONS,
             RealSqlFeature.TRINO_TABLE_FUNCTIONS, RealSqlFeature.DUCKDB_TABLE_FUNCTIONS,
-            RealSqlFeature.SET_RETURNING_FUNCTIONS,
         )
         override val fixture get() = myFixture
         override fun install(model: RealSqlModel) = this@DuckdbRealSqlContractTest.install(model)
@@ -99,5 +98,12 @@ class DuckdbRealSqlContractTest : BasePlatformTestCase() {
         myFixture.enableInspections(dev.sort.duckdb.registeredSqlInspection("SqlResolveInspection"))
         RealSqlContract(target()).checkModelStates()
         println("DuckDB model-state contract: ${RealSqlCases.EXTERNAL.size} cases across ${RealSqlModel.STATES.size} model states")
+    }
+
+    fun testApplicableSharedTableFunctionCases() {
+        install(RealSqlModel.STANDARD)
+        myFixture.enableInspections(dev.sort.duckdb.registeredSqlInspection("SqlResolveInspection"))
+        RealSqlContract(target(), RealSqlCases.TABLE_FUNCTIONS).check()
+        println("DuckDB table-function contract: ${RealSqlCases.TABLE_FUNCTIONS.size} shared cases, filtered to applicable features")
     }
 }

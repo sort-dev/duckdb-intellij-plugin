@@ -208,3 +208,21 @@ both SQL/model-state contract tests and all three observer-profile tests. The
 real-JDBC test still rejects the previous catalog's unique column after `USE` and
 proves actual CREATE/ALTER model refresh. Evidence is in
 `build/introspection-audit/morning-shared-parity.log`.
+
+### Table-function provider
+
+The relation profile now includes shared `TableFunctionFacts`, reading the active
+catalog snapshot alongside physical and optional host-language facts. The shared
+table-function pack runs the applicable `generate_series` cases, including joins
+and alias stars. All five targeted JDBC/contract tests pass; evidence is in
+`build/introspection-audit/morning-table-function-provider.log`.
+
+Native table-function typing is deferred, not reported as complete. A trial of
+`RelationTableTypes.ofTableFunction` found no fixed `range` output in the current
+metadata, and the native resolve inspection still reports unknown database
+function for `read_parquet`, `read_csv` and `range` in the shared DuckDB-specific
+pack. Reproducers include `SELECT * FROM read_parquet('data/orders.parquet')` and
+`SELECT r.range FROM range(3) AS r`. The trial hook was removed; existing scalar
+and table-call PSI typing is retained. `DUCKDB_TABLE_FUNCTIONS` remains disabled
+in the contract rather than hiding these reports or claiming those cases pass.
+The failing trial log remains under `build/introspection-audit/morning-table-functions.log`.
