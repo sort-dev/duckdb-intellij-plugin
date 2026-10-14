@@ -255,3 +255,11 @@ IU-262.10968.63, IU-263.4732.28 and IU-263.5701.42. The configured compatibility
 gates pass; non-gating deprecated, scheduled-removal, experimental and internal
 API notices remain in the reports. Evidence is in
 `build/introspection-audit/morning-verifier.log` and `build/reports/pluginVerifier/`.
+
+### Owner handoff since the previous parity build
+
+1. Refreshed the morning shared dependency publish from 2026-10-14 02:58.
+2. Removed local DDL rules, the physical-column filter and the EXCLUDE rewrite after real-JDBC proof.
+3. Wired shared table-function facts; kept existing native typing and documented the reader/generator gap.
+4. Verified unique CTE column suggestions and SQL type labels without Kotlin nullability notation.
+5. Passed all IDE/isolation lanes and five verifier targets; package from the clean pushed head, without publishing.
