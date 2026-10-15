@@ -6,7 +6,7 @@ dependencyResolutionManagement {
     versionCatalogs {
         create("libs") {
             from(files("build-logic/gradle/libs.versions.toml"))
-            // Shared wiring baseline: integration 64c35c0; runtime b8cf969.
+            // Frozen shared baseline: a62ad24447a0994a724712d7574aefafa6d48ede.
             version("brikk-sql-core", "0.20.0-SNAPSHOT")
             version("brikk-sql-intellij-support", "0.2.0-SNAPSHOT")
             version("brikk-engine-kotlin-intellij-support", "0.3.0-SNAPSHOT")
