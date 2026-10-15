@@ -9,7 +9,7 @@
         <b>GizmoSQL servers</b> (Arrow-free quack-jdbc driver).</p>
 
         <ul>
-            <li><b>Built-in PIPE authoring:</b> enable DuckDB PIPE under Settings &gt; Tools,
+            <li><b>Built-in PIPE authoring:</b> enable under Settings &gt; Tools &gt; Database &gt; DuckDB PIPE,
                 write <code>FROM t |&gt; WHERE ... |&gt; SELECT ...</code>, and execute as
                 DuckDB SQL. Includes generated-SQL preview and run-to-stage. No SQL Transpiler
                 plugin required; ordinary FROM-first queries are unchanged.</li>

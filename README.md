@@ -50,7 +50,7 @@ validating SQL with the real engine.
 ## PIPE queries
 
 This development build uses brikk-sql 0.20.0-SNAPSHOT and SQL IntelliJ support 0.2.0-SNAPSHOT for PIPE authoring. SQL Transpiler is
-not required. Enable **Settings > Tools > DuckDB PIPE > Enable PIPE syntax in
+not required. Enable **Settings > Tools > Database > DuckDB PIPE > Enable PIPE syntax in
 this project**; it defaults off and is saved per workspace.
 
 ```sql

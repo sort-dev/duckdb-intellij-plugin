@@ -2,7 +2,7 @@
     <extensions defaultExtensionNs="com.intellij">
         <dynamicActionConfigurationCustomizer implementation="dev.sort.duckdb.pipes.DuckdbPipesActionConfiguration"/>
         <actionPromoter implementation="dev.sort.duckdb.pipes.DuckdbPipesActionPromoter" order="first"/>
-        <projectConfigurable id="dev.sort.duckdb.pipes" displayName="DuckDB PIPE" parentId="tools"
+        <projectConfigurable id="dev.sort.duckdb.pipes" displayName="DuckDB PIPE" parentId="database.main"
                              nonDefaultProject="true" instance="dev.sort.duckdb.pipes.DuckdbPipesConfigurable"/>
         <intentionAction>
             <language>DuckDBSQL</language>
