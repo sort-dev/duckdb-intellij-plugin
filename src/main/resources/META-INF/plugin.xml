@@ -142,6 +142,8 @@
 
     <extensions defaultExtensionNs="com.intellij">
         <lang.documentationProvider language="DuckDBSQL" implementationClass="dev.brikk.house.sql.intellij.docs.SqlEngineDocumentationProvider" order="first"/>
+        <sql.resolveExtension implementation="dev.brikk.house.sql.intellij.dialect.PgFamilyResolveExtension"/>
+        <sql.inspectionSuppressorDelegate implementation="dev.brikk.house.sql.intellij.dialect.PgFamilyInspectionSuppressor"/>
         <sql.resolveExtension implementation="dev.sort.duckdb.brikk.DuckdbRelationResolveExtension"/>
         <sql.inspectionSuppressorDelegate implementation="dev.sort.duckdb.brikk.DuckdbRelationInspectionSuppressor"/>
         <completion.contributor language="DuckDBSQL" implementationClass="dev.sort.duckdb.brikk.DuckdbRelationCompletionContributor" id="duckdb.relations" order="first"/>
