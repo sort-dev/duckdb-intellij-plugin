@@ -19,7 +19,7 @@
         <annotator language="DuckDBSQL" implementationClass="dev.sort.duckdb.pipes.DuckdbPipeStageKeywordAnnotator"/>
     </extensions>
     <actions>
-        <group id="DuckdbPipes.EditorMenu" text="DuckDB PIPE" popup="true">
+        <group id="DuckdbPipes.EditorMenu" class="com.intellij.ide.actions.NonEmptyActionGroup" text="DuckDB PIPE" popup="true">
             <add-to-group group-id="EditorPopupMenu" anchor="first"/>
             <action id="DuckdbPipes.PreviewSql" class="dev.sort.duckdb.pipes.PreviewPipeSqlAction"
                     text="Preview Generated SQL" description="Preview the DuckDB SQL generated from this PIPE statement"/>
