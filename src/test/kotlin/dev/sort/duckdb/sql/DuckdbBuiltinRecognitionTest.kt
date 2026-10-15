@@ -5,6 +5,8 @@ import com.intellij.codeInsight.daemon.impl.HighlightInfo
 import com.intellij.lang.annotation.HighlightSeverity
 import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.sql.psi.SqlFunctionCallExpression
+import com.intellij.sql.psi.SqlReferenceExpression
+import com.intellij.sql.dialects.BuiltinFunction
 import com.intellij.testFramework.RunAll
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import dev.brikk.house.sql.intellij.testing.BackgroundErrors
@@ -147,6 +149,69 @@ class DuckdbBuiltinRecognitionTest : BasePlatformTestCase() {
             myFixture.lookup.currentItem = item
             myFixture.finishLookup('\n')
             myFixture.checkResult("$head $name(<caret>)")
+        }
+    }
+
+    fun testReaderNamedArgumentLabelsResolveForEngineSupportedOperators() {
+        val directory = Files.createTempDirectory(Files.createDirectories(Path.of("build", "r7-named-arguments")), "reader-")
+        val failures = mutableListOf<String>()
+        try {
+            val parquet = directory.resolve("synthetic.parquet").toAbsolutePath().toString().replace("'", "''")
+            val csv = directory.resolve("synthetic.csv").toAbsolutePath()
+            Files.writeString(csv, "sample_value,payload_text\n7,x\n")
+            DriverManager.getConnection("jdbc:duckdb:").use { connection ->
+                connection.createStatement().use { it.execute("COPY (SELECT 7 AS sample_value, 'x' AS payload_text) TO '$parquet' (FORMAT PARQUET)") }
+                for ((name, path, keys) in listOf(
+                    Triple("read_parquet", parquet, listOf("filename", "file_row_number")),
+                    Triple("read_csv", csv.toString().replace("'", "''"), listOf("header", "filename")),
+                )) {
+                    for (operator in listOf("=", ":=")) {
+                        val arguments = keys.joinToString(", ") { "$it $operator true" }
+                        val sql = "SELECT * FROM $name('$path', $arguments)"
+                        connection.createStatement().use { statement ->
+                            statement.executeQuery(sql).use { rows -> assertTrue("Local DuckDB must accept $name $operator", rows.next()) }
+                        }
+                        open(sql)
+                        val active = DuckdbCatalogResolver.activeCatalogFor(myFixture.file)
+                        val declared = active.snapshot.functions[name]?.overloads.orEmpty().flatMap { it.argNames.orEmpty() }.toSet()
+                        assertTrue("$name argument names already exist in the metadata: $declared", declared.containsAll(keys))
+                        val call = PsiTreeUtil.findChildrenOfType(myFixture.file, SqlFunctionCallExpression::class.java).single()
+                        val binding = call.nameElement?.resolveSymbol()
+                        println("$name $operator: binding=${binding?.javaClass?.name}, nativePrototypes=${(binding as? BuiltinFunction)?.prototypes?.size}, live=${active.live}")
+                        for (key in keys) {
+                            val leaf = checkNotNull(myFixture.file.findElementAt(sql.indexOf("$key $operator")))
+                            val reference = PsiTreeUtil.getParentOfType(leaf, SqlReferenceExpression::class.java, false)
+                            println("$name $operator $key: PSI=${generateSequence(leaf) { it.parent }.take(5).map { it.javaClass.simpleName }.toList()}, kind=${reference?.referenceElementType?.targetKind}, resolve=${reference?.resolveSymbol()}")
+                        }
+                        failures += reports().map { "$name $operator: ${it.evidence()}" }
+                    }
+                }
+            }
+            assertEmpty(failures.joinToString("\n"), failures)
+        } finally {
+            directory.toFile().deleteRecursively()
+        }
+    }
+
+    fun testArgumentValuesAndScalarEqualitiesKeepColumnResolution() {
+        val declaration = "CREATE TABLE parameter_inputs (flag_value BOOLEAN, number_value INTEGER);\n"
+        for (operator in listOf("=", ":=")) {
+            open(declaration + "SELECT * FROM parameter_inputs p CROSS JOIN read_parquet('synthetic-input.parquet', filename $operator p.flag_value)")
+            val value = PsiTreeUtil.findChildrenOfType(myFixture.file, SqlReferenceExpression::class.java).single { it.text == "p.flag_value" }
+            assertNotNull("A named-argument value must retain column binding", value.resolveSymbol())
+            open("SELECT * FROM read_parquet('synthetic-input.parquet', filename $operator missing_flag)")
+            val found = reports()
+            assertTrue(found.map { it.evidence() }.toString(), found.any { myFixture.file.text.substring(it.startOffset, it.endOffset) == "missing_flag" })
+        }
+        open(declaration + "SELECT abs(number_value), abs(CAST(number_value = number_value AS INTEGER)) FROM parameter_inputs")
+        assertEmpty(reports().map { it.evidence() })
+        for (sql in listOf(
+            "SELECT abs(missing_number) FROM parameter_inputs",
+            "SELECT abs(CAST(missing_number = number_value AS INTEGER)) FROM parameter_inputs",
+        )) {
+            open(declaration + sql)
+            val found = reports()
+            assertTrue(found.map { it.evidence() }.toString(), found.any { myFixture.file.text.substring(it.startOffset, it.endOffset) == "missing_number" })
         }
     }
 }
