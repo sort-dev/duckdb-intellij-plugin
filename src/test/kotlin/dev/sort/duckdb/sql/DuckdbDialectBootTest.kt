@@ -2,10 +2,11 @@ package dev.sort.duckdb.sql
 
 import com.intellij.psi.PsiErrorElement
 import com.intellij.psi.util.PsiTreeUtil
-import com.intellij.sql.dialects.SqlDialectMappings
+import dev.brikk.house.sql.intellij.testing.setSqlDialectMapping
 import com.intellij.sql.psi.SqlStatement
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import dev.sort.duckdb.DuckdbDbms
+import dev.brikk.house.sql.intellij.dialect.SqlDialectRegistry
 
 /** The seed contract: the dialect registers, maps, and parses friendly SQL with zero errors. */
 class DuckdbDialectBootTest : BasePlatformTestCase() {
@@ -14,14 +15,21 @@ class DuckdbDialectBootTest : BasePlatformTestCase() {
 
     private fun parse(sql: String): com.intellij.psi.PsiFile {
         val psi = myFixture.configureByText("b${counter++}.sql", sql)
-        SqlDialectMappings.getInstance(project).setMapping(psi.virtualFile, DuckdbSqlDialect.INSTANCE)
+        setSqlDialectMapping(project, psi.virtualFile, DuckdbSqlDialect)
         return com.intellij.psi.PsiManager.getInstance(project).findFile(psi.virtualFile)!!
     }
 
     fun testDialectRegistersWithOwnDbms() {
         assertEquals("DUCKDB_BRIKK", DuckdbDbms.DUCKDB_BRIKK.name)
-        assertEquals(DuckdbDbms.DUCKDB_BRIKK, DuckdbSqlDialect.INSTANCE.dbms)
-        assertEquals("DuckDBSQL", DuckdbSqlDialect.INSTANCE.id)
+        assertEquals(DuckdbDbms.DUCKDB_BRIKK, DuckdbSqlDialect.dbms)
+        assertEquals("DuckDBSQL", DuckdbSqlDialect.id)
+    }
+
+    fun testSharedRegistryRecognizesTheDialectAndDbms() {
+        val entry = requireNotNull(SqlDialectRegistry.forLanguage(DuckdbSqlDialect))
+        assertEquals("duckdb", entry.coreDialect)
+        assertEquals(entry, SqlDialectRegistry.forDbms(DuckdbDbms.DUCKDB_BRIKK))
+        assertEquals(entry, SqlDialectRegistry.forMarker("DUCKDB"))
     }
 
     fun testFriendlySqlParsesClean() {
@@ -36,7 +44,7 @@ class DuckdbDialectBootTest : BasePlatformTestCase() {
             LIMIT 10;
             """.trimIndent(),
         )
-        assertTrue(file.language.isKindOf(DuckdbSqlDialect.INSTANCE))
+        assertTrue(file.language.isKindOf(DuckdbSqlDialect))
         val errors = PsiTreeUtil.findChildrenOfType(file, PsiErrorElement::class.java)
         assertTrue("friendly SQL must parse clean, got: ${errors.map { it.errorDescription }}", errors.isEmpty())
         assertEquals(1, PsiTreeUtil.findChildrenOfType(file, SqlStatement::class.java).map { it.parent }.toSet().size)

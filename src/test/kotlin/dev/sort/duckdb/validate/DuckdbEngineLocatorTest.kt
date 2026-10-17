@@ -30,12 +30,13 @@ class DuckdbEngineLocatorTest {
     @Test
     fun `driver loads from explicit jar and validates through it`() {
         val jar = classpathJar("duckdb_jdbc").toString()
-        val driver = DuckdbEngineValidator.driverForJar(jar)
-        assertTrue("driver must load from jar", driver != null)
+        DuckdbEngineDrivers().use { drivers ->
+            assertTrue("driver must load from jar", drivers.driverForJar(jar) != null)
+        }
         val verdicts = DuckdbEngineValidator.verdicts(listOf("SELEC 1"), jar)
         assertTrue(
             "engine from jar must flag a parser error, got: $verdicts",
-            verdicts.single() is DuckdbEngineValidator.Verdict.Flagged,
+            verdicts.single() is dev.brikk.house.sql.verify.VerifyResult.Rejected,
         )
     }
 
@@ -54,6 +55,11 @@ class DuckdbEngineLocatorTest {
             Files.createDirectories(decoyDir)
             Files.copy(real, decoyDir.resolve("duckdb_jdbc-0.0.1.jar"))
             assertEquals(placed, DuckdbEngineLocator.systemDriversScan(base))
+            val newerDir = base.resolve("DuckDB JDBC (Brikk)").resolve("1.10.0")
+            Files.createDirectories(newerDir)
+            val newer = newerDir.resolve("duckdb_jdbc-1.10.0.jar")
+            Files.copy(real, newer)
+            assertEquals(newer, DuckdbEngineLocator.systemDriversScan(base))
         } finally {
             base.toFile().deleteRecursively()
         }

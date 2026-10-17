@@ -345,3 +345,407 @@ The user has requested commit/push to main before waiting for final versioned
 verification. That verification uses a frozen copy under
 `/tmp/opencode/duckdb-shared-column/frozen-035`, not the installable dogfood ZIP.
 No release branch, tag, GitHub release or Marketplace publication is requested.
+
+## Unification refresh, 91a5ed0
+
+Refreshed Maven Local dependencies published 2026-10-13 00:53 from brikk-sql
+`91a5ed0`, including the file-aware native-diagnostics hooks in `e7f1cc9`.
+No library source changes, publication or Plugin Verifier run.
+
+Resolved binary SHA-256 values:
+
+- SQL core 0.20.0-SNAPSHOT: `20d0cb97404c595b6154c7067590cac1e2e1bc59e9038126958caa50b0aafb8d`.
+- IntelliJ support 0.2.0-SNAPSHOT: `c1950eb271f8b089d5016429e8a204957b8fd461b65a79a4ee4f7c0dd756214f`.
+
+Default and Kotlin-present 261/262/263 lanes pass with 269 tests and nine skips.
+Kotlin-absent lanes pass with 204 tests and nine skips. Brikk passes 65 tests;
+real-loader isolation passes both tests with the local peer ZIPs. The old lane
+script referenced a removed transpiler ZIP; rerunning against its worktree ZIP
+passes. Census remains 226/226. No corpus expectations changed.
+
+The refresh resolves five known core execution differences on all three IDE
+generations: ORDER after LIMIT, EXTEND with a window after LIMIT, SET input
+aliases, and RIGHT/FULL JOIN after WHERE. The observed disagreement count is
+394 instead of 399, with all 132 native witnesses passing. The committed
+expectations still retain these five known differences; they were not rewritten
+to match the new implementation.
+
+## U-V3 native diagnostics
+
+`DuckdbErrorAnnotator` now delegates to `NativeErrorAnnotator` with one DuckDB
+profile. Its stable, application-owned validators wrap the located user driver
+through `NativeSqlValidator.of(ParseOnlyDuckdbVerifier(driver))`; disposal closes
+the parser connections before unloading drivers. The 100,000 UTF-16 statement
+cutoff is explicit. Local-parser and PSI-parser diagnostics, debounce and budgets
+remain off. There is no EXPLAIN, bind or execution fallback.
+
+PIPE lowering and Brikk single-statement checks use the file-aware
+`statementDiagnostics` hook. Read-side hooks copy per-file PIPE enablement,
+Brikk slots and interpolation issues into user data. Changes increment that
+file's diagnostic revision; background hooks do not read PSI. Shared application
+checks reject results after text, validator or metadata changes and map escaped,
+trimmed and supplementary-character injections to editable authored ranges.
+
+Newly visible behavior: the annotator is also registered on the optional Kotlin
+host. External annotators do not run on injected SQL fragments, so the old
+SQL-only registration did not expose these checks there. Kotlin DuckDB strings
+now show native parse-only errors, enabled PIPE lowering refusals, and Brikk
+template SQL errors. Brikk still uses its existing core parser instead of the
+engine, so valid DuckDB syntax outside that parser's coverage may receive a false
+Brikk syntax error in a Kotlin string. Ordinary SQL gets no new local grammar
+errors. Unsupported interpolation diagnostics stay on authored Kotlin; uncertain
+Frankenstein injections are skipped, and inspection placeholders are never sent
+to the engine.
+
+Default and Kotlin-present 261/262/263 lanes pass with 277 tests and nine skips,
+up from 269. Kotlin-absent lanes pass with 208 tests and nine skips. Brikk passes
+69 tests; isolation passes both tests. Parse-only safety tests remain green.
+Census is 226/226 and corpus expectations are unchanged. No Plugin Verifier or
+publication ran.
+
+## P6.e DuckDB catalog definitions
+
+Registered `DuckdbDefinitionProvider`, a
+`ShowCreateDefinitionProvider("duckdb", …)` subclass, for TABLE, VIEW,
+ROUTINE mapped to MACRO, SEQUENCE and INDEX. Namespace paths include DATABASE
+and SCHEMA, so attached catalogs and same-named objects are read independently.
+The fallback audit no longer permits an inherited PostgreSQL definition provider.
+
+Object source views now show DuckDB's catalog definitions. Macros retain
+overloads, quote parameter names and disclose that DuckDB does not report
+parameter defaults. Reads call qualified `system.main.duckdb_*` built-ins only;
+shadowing catalog or helper macros never advances the test sequence. A live
+IDE-driver test checks list-valued macro parameters without changing the
+connection's namespace. No DuckDB text-explain profile or action was added.
+
+Final default and Kotlin-present 261/262/263 lanes pass with 282 tests and nine
+skips. Kotlin-absent lanes pass with 213 tests and nine skips. Brikk passes 69
+tests; real-loader isolation passes both tests with all five plugins loaded.
+Census remains 226/226; corpus results remain 394 disagreements, five resolved
+and 132 passing native witnesses. No corpus expectations changed. No Plugin
+Verifier or publication ran.
+
+## Phase 5, step 1: dependency refresh
+
+Refreshed core/metadata/support/test-support from Maven Local brikk-sql `efd18f1`,
+published 2026-10-13 08:13, and Kotlin helper `0.3.0-SNAPSHOT`, published 06:24.
+The helper depends on core only. DuckDB compares `BrikkDialect` values with `==`
+and has no exhaustive enum `when` to repair. No files deleted; no consumer-visible
+behavior change in this dependency-only step.
+
+Support binary SHA-256 is
+`70993432a56864f5397dec0d12bc2ffaeb0d2ef8d885cace76ad077ee96ad48a`;
+helper binary SHA-256 is
+`70a84a80a40b93963e4d26999e0bc80d577eb94d5ed2fd0e6890ddc29c8c9445`.
+Default/present 261/262/263: 282 tests, nine skips. Absent: 213, nine skips.
+Brikk: 69; isolation: two; census: 226/226. No tests added or deleted.
+
+### Step 2: shared host injection
+
+`BrikkDuckdbInjector` is the first contributor and performer over `DuckdbHostSql`.
+The helper's `BrikkHosts.state` replaces DuckDB's remembered context and pending
+projection. Shared layout replaces places, character-origin tracking, trims and
+retries. Deleted `BrikkDuckdbInjectionContributor.kt` (22 lines) and
+`BrikkDuckdbInjectionPerformer.kt` (101 lines); the context adapter also loses its
+local projection. Colon-bind parsing uses the channel; a placeholder error filter
+is registered. INFO annotations follow the helper's remembered pending projection.
+
+Visible changes: literal custom `trimMargin` prefixes now work. Remembered SQL
+keeps an inspection-only placeholder projection during indexing, without pending
+errors. Never-recognized strongly evidenced Brikk strings are claimed without an
+injection, instead of falling through to native `@Language` injection. Placeholder
+errors alone are filtered rather than marking the whole SQL Frankenstein.
+
+Added three injection tests, also inherited by the relation-editing fixture, for
+six new test instances; none deleted. Default/present-equivalent 261/262/263 lanes:
+288 tests, nine skips. Absent lanes: 213, nine skips. Isolation: two. Census: 226/226.
+
+### Step 3: shared relation features
+
+One `DuckdbRelationProfile` registers the five shared feature subclasses, with a
+stable helper adapter from `ExternalRelationFacts.of` before `DasRelationFacts`.
+The optional helper contributes Brikk labels and navigation, not a second SQL
+analyzer. The legacy PIPE contributor now offers stage phrases only, preventing
+duplicate column suggestions from its separate shape fallback.
+
+Deleted nine production files (522 lines): `BrikkRelationProvider` (16),
+`BrikkSqlScopes` (226), `BrikkSqlEditorSupport` (36), `BrikkSqlResolveExtension`
+(86), `BrikkSqlInspectionSuppressor` (18), `BrikkSqlCompletionContributor` (54),
+`BrikkSqlGotoDeclarationHandler` (31), `BrikkSqlContractAnnotator` (38) and
+`KotlinBrikkRelationProvider` (17). Deleted the old scope-test file (139 lines,
+15 tests), replaced by seven tests of core's analyzer. Added a physical PIPE
+completion test and a lineage/icon test. Helper-inventory tests now ask the helper
+directly. The corpus fixture is being moved to public core facts/analysis; its
+full observation assessment is step 6.
+
+Visible changes: physical table columns now complete in PIPE with `column
+(<table>)` labels and SQL types. Known renames retain Kotlin types, Brikk labels
+and bricks icons; computed columns use the column icon. Shared missing/partial
+messages are `Unknown column 'x'` and `Column 'x' is not in the partial relation
+contract`. Shared scope rules replace DuckDB's divergent alias/stage propagation.
+
+The targeted feature lane passes 53 tests. The first corpus observation drops
+from 394 to 179 differences, with new native-observation differences still rejected
+by its old ledger. No corpus expectations were changed; the ledger and complete
+repeatability assessment remain for step 6.
+
+### Step 4: shared inspection-only execution
+
+`PipeDialect.hostSql` and `NativeErrorProfile.hostSql` now use the channel.
+Its optional `claimsHost` adapter calls `BrikkInspectionView`, including pending,
+foreign-dialect and externally injected Brikk strings. Deleted the old injected-
+profile-only guard (three lines); no files deleted. Added two host tests, inherited
+by the relation fixture, for four test instances. The targeted injection/execution,
+native-error and parse-only-safety lane passes 51 tests.
+
+Visible change: Execute from the real Kotlin host editor is refused inside an
+inspection-only string and still delegates outside strings. Pending/claimed strings
+are protected even when this plugin has no injected profile. Run-to-stage is not
+offered there. Native checks skip statements containing placeholders and suppress
+placeholder-caused diagnostics through the shared marker policy.
+
+### Step 5: gutter, banner deferred
+
+`BrikkDuckdbLineMarkerProvider` uses the shared host marker provider and bricks
+icon, one marker per claimed Kotlin string. Its named descriptor is togglable in
+Settings > Editor > General > Gutter Icons. The tooltip names DuckDB, PIPE editing,
+named binds and relation contracts, and says `inspection only, not executable`.
+Pending and indexing markers are dimmed and say `waiting for indexing`, including
+previously recognized injections cached before indexing started. The channel's
+caller data supplies the project for that last check; no message parsing is used.
+
+Two new gutter tests pass in the 31-test injection lane, also adding two inherited
+instances to the relation-editing fixture. No files deleted. The action-needed
+banner remains deferred pending the helper's typed status publication.
+
+### Step 6: corpus observer triage
+
+Native SQL files and genuine Kotlin injections now run independently against the
+unchanged v2.2 inputs. Both get 167/167 logical cases right, with zero scope,
+logical-reference, completion, order or execution differences. The corrected
+native-PSI ledger has 79 differences: resolve 74, navigation four, diagnostics one.
+Each entry has a classified reason and a lane-specific fingerprint. Unexpected
+axes or changed known observations fail; resolved entries may improve naturally.
+Input SHA-256 checks protect facts, cases and witnesses from expectation rewrites.
+
+| Axis | Previous count | Triage |
+| --- | ---: | --- |
+| Scope | 8 | Harness artifacts: use core's type equivalence, unspecified computed-type comparison, display type and computed identity contracts. Now zero. |
+| References | 1 | Harness artifact: a computed output's identity is not its current alias name. Now zero. |
+| Completion | 53 | Harness artifacts: origin/source labels are not visible SQL qualifiers; observe real items and match actual presentation to shared candidates. Supply physical facts for real SQL-file source fixtures. Now zero. |
+| Resolve | 81 | Normalize duplicate equivalent variants and visible aliases only after native identity/provenance independently agree. Never substitute core for missing native PSI. 74 remain. |
+| Navigation | 6 | Physical fixture targets now come from the real DAS source. Native set-output/declaration deference still loses or fabricates provenance in four cases. |
+| Diagnostics | 2 | Harness artifact: recognize the shared branch-count diagnostic as an operator problem. The stock open-catalog inspection remains separately visible. |
+
+The 76 support-layer entries are grouped into nine minimal reproducer families
+in `src/test/resources/relation-corpus/duckdb-support-reproducers.json`:
+
+- `pipe-where`, reference/caret 24: core resolves `src.id`; no native reference
+  exists. `PipeStatementGate` and `ExternalRelationResolveExtension` need a shared
+  flat-PIPE reference bridge. This family accounts for 57 resolve entries.
+- `self-join-same-slot`, reference/caret 7: core is ambiguous between two alias
+  occurrences; native equal provider-column symbols collapse that distinction.
+  `RelationColumnSymbol` / `ExternalRelationResolveExtension`.
+- `quoted-case-duckdb`, reference/caret 9: native and core offsets agree, core
+  resolves the quoted case-insensitive name, but native accepts no candidate.
+  `ExternalRelationResolveExtension` / `RelationColumnSymbol` quote/case bridge.
+- `ordinary-star-join-cte-duckdb`, reference/caret 69: core exposes `q.id_1`; native
+  has none. `RelationAnalysis.manages` must not reject star-derived columns merely
+  because an inner join predicate also mentions their source facts.
+- `ordinary-group-alias`, reference/caret 61: core retains `src.event_kind`
+  through `kind`; no native candidate. Projection lineage is excluded by
+  `RelationAnalysis.manages` / `ExternalRelationResolveExtension`.
+- `left-using-merged-star`, reference/caret 57: core picks the left merged key;
+  the stock result disagrees. Shared merged-key management needs to retain it.
+- `full-using-key-non-null-non-null`, reference/caret 9: core computes one merged
+  key with no single-provider provenance; the shared native resolver supplies no
+  corresponding computed symbol.
+- `set-nullability-names-intersect`, reference/caret 94: core retains left-input
+  provenance through `first_name`; native sees a SQL alias instead.
+  `RelationAnalysis.manages` / `ExternalRelationGotoDeclarationHandler`.
+- `ordinary-set-union-all`, reference/caret 61: core has computed/no provider
+  provenance; native still resolves/navigates to the left input. The resolve/goto
+  deference policy also retains an input after branch-count mismatch.
+
+Three platform entries remain with evidence: computed WHERE/lateral projection
+aliases have native PSI but no stock candidates, and `SqlResolveInspection` still
+reports a table while the shared open-catalog analysis has no absence proof.
+The JSON reproducers retain expected/actual cells, SQL, fact keys, offsets, raw
+native variants and presentation. No support workaround was added.
+
+Required feature/provider wiring was checked. The optional native slot table-type
+bridge was evaluated separately, with stock scalar typing preserved. It introduced
+additional lineage/navigation conflicts and a shadowed native completion item, so
+it is not enabled. A consumer test pins that unchanged default. The production
+parser and its scalar typing remain unchanged.
+
+The ledger generator is `tools/triage_relation_corpus.py --write`; it writes only
+the observed ledger and reproducer resources, never facts/cases/witnesses. Added
+the independent native corpus test and optional-type/default-policy test; no
+tests or files deleted. Full default/present 261/262/263 lanes pass 292 tests with
+nine skips; absent lanes pass 214 with nine skips. Brikk passes 78; isolation two;
+census 226/226; all 132 distinct native witnesses pass.
+
+Both corpus lanes ran twice, byte-identical on every generation. Native report
+SHA-256: `a25d2700ae19076544a0946842ea2b527f5f3cb3ea36ec0d08ba7e11ac47da84`.
+Injected report SHA-256: `cf87eff6aeb222f3454ef88457cb51e92df5b597e7148654ae8c3a8bdaa2cebb`.
+
+### Step 5 follow-up: typed helper actions
+
+Refreshed the helper published 2026-10-13 09:38 from `72157d0`.
+Helper JAR SHA-256:
+`7e5d080a6d97b33639f9aaab642c16519a6a8f2a478dfb973a12996181492805`.
+The optional `BrikkDuckdbActionBanner` uses the helper's cached typed actions,
+never text matching or fresh Kotlin analysis. Missing-dialect actions are shown
+only for DuckDB. Runtime/compiler actions open the nearest build file when it
+exists, otherwise their documentation URL. Recognition and fact discovery refresh
+editor notifications only when recorded relevant actions change. Healthy,
+indexing and write-action-pending hosts show no routine banner.
+
+Injected pending projections carry the typed cause to the gutter and INFO text.
+Indexing says `waiting for indexing`; write prohibition says `waiting for analysis`;
+resolution and generated-shape waits remain distinct from actionable runtime or
+compiler failures. Existing rename tests and a direct write-action test pass.
+
+One support API gap is reported, not worked around: a never-recognized
+`HostSqlClaim.Unavailable` carries only a reason string, and the gutter tooltip
+callback gets neither the host nor caller data. Its typed cause cannot reach the
+tooltip. It remains dimmed with the neutral `waiting for recognition`, rather than
+falsely claiming indexing. `Unavailable` needs caller data or the tooltip needs
+the host before this last path can use the typed cause.
+
+Added four tests, also inherited by the relation fixture, for eight new instances;
+no files/tests deleted. Full default/present 261/262/263 lanes pass 300 tests with
+nine skips. Absent passes 214 with nine skips; Brikk 86; isolation two; census
+226/226. The two corpus lanes still match the reasoned 79-entry ledger and retain
+167/167 logical passes and all 132 native witnesses.
+
+### Step 7: isolation-contract adoption deferred
+
+The shared kit was exercised through DuckDB's product loader, keeping Brikk jars
+off fixture core. Installed-peer, ownership and language checks passed. Its Execute
+check falsely requires SQL Transpiler's wrapper in the stock Execute chain merely
+because that peer bundles `CooperativeExecuteAction`. The loaded chain correctly
+has four dialect wrappers and the stock action; Transpiler does not register that
+wrapper. Reproducer: all five local plugin ZIPs loaded, call
+`PluginIsolationContract.everyExecuteChainKeepsEachPluginsWrapper()`;
+`wrappingLoaders()` includes `dev.sort.sql-transpiler-intellij-plugin` by resource
+presence and asserts a wrapper the plugin never installed.
+
+Adoption needs the kit to identify actual Execute customizers or accept explicit
+wrapping peers. No peer was excluded and no assertion disabled. The experiment was
+removed; both existing isolation tests, including all six dialect registration
+orders and detached predecessors, remain unchanged and pass. No production or
+test files deleted, no tests added/deleted, no visible behavior change.
+
+## Working-plugins gate
+
+### Gate 1: dependency refresh
+
+Refreshed SQL core/support/test-support from `654d6a8`, published to Maven Local
+2026-10-13 12:44. Registered the shared `HostSqlRunConsoleVeto` and its real-host
+contract test. The existing host execution contract now also checks selection.
+Adapted the obsolete text-explain test signature without enabling DuckDB explain.
+
+The new shared go-to fixes three provider-navigation waivers. The observer now
+honors a nonempty shared SQL-declaration answer even when it has no Kotlin/provider
+navigation id, instead of falling back and inventing a single input origin.
+Removed resolved navigation waivers for UNION ALL and renamed INTERSECT/EXCEPT.
+Both corpus lanes pass 167/167 logical cases; remaining ledger entries are 76:
+resolve 74, navigation one, stock diagnostics one. Corpus expectations are unchanged.
+
+The 262 harvested-macro completion test passed five independent reruns, without
+code changes. Kotlin-absent full suites pass 214 tests with nine skips on all
+three generations.
+
+The requested helper source is `44d6d47`, but Maven Local still holds the unchanged
+09:38 helper binary (`7e5d080a6d97b33639f9aaab642c16519a6a8f2a478dfb973a12996181492805`).
+It called the previous `RelationFacts` default constructor and failed against
+core's new search-path constructor. The owner republished helper `507fe04` at
+13:16, compiled against `654d6a8`; its binary SHA-256 is
+`ad0018265452a7061efff5e3acfba6f2d876f2e1bd8eca360aa145d02734380e`.
+After refresh, full default/present 261/262/263 lanes pass 302 tests with nine
+skips; absent lanes pass 214 with nine skips; Brikk passes 88. The constructor
+failure is gone. No binary shim, library source edit or publication was done here.
+
+### Gate 2: ZIP and Plugin Verifier
+
+Built `build/distributions/duckdb-intellij-plugin.zip` with the rebuilt helper.
+ZIP SHA-256:
+`9860865fb962a19da6d11332413df2ff6f791a8a5c76311bd77c2fea6662c94f`.
+The embedded helper matches Maven Local SHA-256 `ad001826…34380e`.
+
+Plugin Verifier reports **Compatible** on every configured target:
+
+| IDE | Verdict |
+| --- | --- |
+| DataGrip 261.24374.56 / 2026.1.3 | Compatible |
+| IDEA 262.10968.63 | Compatible |
+| DataGrip 262.10315.132 / 2026.2.5 | Compatible |
+| IDEA 263.4732.28 | Compatible |
+| IDEA 263.5701.42 | Compatible |
+
+No compatibility, missing-dependency, structure, non-extendable or override-only
+failures. All 15 internal-API notices come from the bundled
+`GenericJdbcIntrospectorGate` implementing/delegating the platform's
+`DBIntrospector.Factory` extension contract, not DuckDB-owned internal calls.
+That existing introspector/fallback integration is a documented exception; the
+PostgreSQL-family inheritance remains intentional. There are two scheduled-removal
+notices for the connection-interceptor compatibility hook, four deprecated notices
+on 261 and five on newer targets, and 662 experimental-API notices, largely for
+the bundled Brikk APIs. No exclusion was added to hide a verifier problem.
+
+Reports are under `build/reports/pluginVerifier/<IDE>/plugins/dev.sort.duckdb-intellij-plugin/0.3.5`.
+No publication was performed.
+
+### Gate 3: five-plugin isolation
+
+The same 261-compiled plugin passes the isolation suite on 261, 262 and 263:
+two tests per generation, no failures or skips. Every runtime reports all five
+plugins loaded: DuckDB, ClickHouse, Doris, Trino and SQL Transpiler. Existing
+private-library ownership, Execute chains, registration-order and detached-
+predecessor checks pass. No compatibility or routing fix was needed, and the
+deferred isolation-contract migration was not resumed.
+
+### Gate 4: plain-SQL smoke
+
+Added three focused smoke tests: ordinary table/column completion from the
+platform's synchronized SQL-file data-source model; whole-editor highlighting of
+self-contained DuckDB CTE/window/QUALIFY/EXCLUDE, struct/list/date and FROM-first
+queries without false ERROR annotations; and optional-Kotlin startup/editor work
+with no logged errors. Logging is collected before project setup through teardown.
+The absent lane asserts that Kotlin has no loaded plugin classloader.
+
+Existing tests cover keyword/function insertion, five-rerun live scalar/table
+macro completion, physical PIPE model columns, cooperative ordinary Execute
+delegation, statement/selection routing and translated PIPE execution. No new
+production fix was needed. A raw manually assigned LocalDataSource model was not
+used as a substitute for the platform's synchronized SQL resolution model.
+
+Final full default/present 261/262/263 lanes pass 305 tests with nine skips; absent
+lanes pass 217 with nine skips; Brikk 88; isolation two on each generation; census
+226/226. Both corpus lanes retain 167/167 logical passes and 76 reasoned native-PSI
+differences. Remaining gaps versus the ideal shared result are native resolve in
+flat PIPE/derived/alias cases (74), one native navigation fallback and one stock
+open-catalog inspection. These are documented, not patched with a second resolver.
+No plain-SQL smoke failure remains. No publication or stash was performed.
+
+## Named dev artifacts
+
+Synced conventions `0e64764` and changed DuckDB's declared base to `0.4.0`, not a
+release decision. Default ZIP and patched IDE versions now include HEAD's UTC
+committer minute, 12-character SHA and a dirty suffix when needed. Explicit
+`-Prelease=true` builds preserve the base. Two SDK-comparator tests pin the actual
+IntelliJ ordering, including the same-base downgrade caveat.
+
+Canonical tests cover deterministic Git identity, tracked/untracked/ignored
+changes and newest versioned sibling discovery. DuckDB dev and explicit release
+`buildPlugin`/`verifyDistribution` checks pass. The dirty dev-labelled ZIP is
+Compatible on all five configured verifier targets, and isolation passes without
+explicit sibling paths, exercising versioned/legacy ZIP discovery.
+
+The staging script was only dry-run. It reported dirty Doris/Trino trees and
+printed the remaining build commands, without building any peer or creating a
+staging directory. Its in-memory version bridge was tested by directly building
+DuckDB before syncing; both filename and descriptor used the same dev label and
+the source tree remained clean. The script is documented in the canonical README.

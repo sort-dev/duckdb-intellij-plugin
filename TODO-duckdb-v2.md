@@ -88,11 +88,10 @@ The engine's new PEG parser does not replace our IntelliJ `PgParser`.
 - [ ] Re-read the final DuckDB 2.0 notes for lambda defaults, storage-format
   changes, grammar-extension behavior, and any differences from the alpha.
   Update this list based on the released engine, not the preview alone.
-- [ ] Bump `duckdb_jdbc` in `build.gradle.kts` for tests and tools and the native
+- [ ] Bump `duckdb-jdbc` in `settings.gradle.kts` for tests and the native
   pin in `src/main/resources/config/duckdb-brikk-artifacts.xml` together.
-  Run `./gradlew harvestCensus harvestFunctionCatalog harvestExtensionCatalog`
-  and review the committed corpus and catalog diffs. The extension harvest
-  needs network access.
+  Run `./gradlew harvestCensus` and review the corpus diffs. Refresh the Brikk
+  metadata dependency for bundled function, keyword and extension catalogs.
 - [ ] Run `./gradlew test` and `./gradlew buildPlugin`; check the 1.5.5/2.0
   comparison in the IDE on both supported platform builds. Run the native and
   live Quack suites against a matching 2.0 server and driver before changing

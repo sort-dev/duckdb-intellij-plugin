@@ -1,74 +1,78 @@
 package dev.sort.duckdb.catalog
 
-import org.junit.Assert.assertEquals
+import dev.brikk.house.sql.intellij.catalog.LiveCatalogProfile
+import dev.brikk.house.sql.intellij.catalog.RefreshReason
+import dev.brikk.house.sql.intellij.testing.RecordingConsole
+import kotlinx.coroutines.*
+import org.junit.Assert.*
 import org.junit.Test
+import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.resume
+import kotlin.time.Duration.Companion.seconds
 
-/**
- * Deterministic debounce semantics via the injected scheduler seam — no clocks, no sleeps: the
- * fake captures scheduled tasks and the test fires them by hand.
- */
+/** Deterministic scheduler drives the real shared service's debounce path; no production replica. */
+@OptIn(InternalCoroutinesApi::class)
 class DuckdbRefreshDebouncerTest {
-
-    private class FakeScheduler {
-        val scheduled = ArrayList<Pair<Long, () -> Unit>>()
-        fun asSeam(): (Long, () -> Unit) -> Unit = { delay, task -> scheduled.add(delay to task) }
-        fun fireAll() {
-            // Drain a snapshot: a fired task may schedule anew (not in these tests, but safe).
-            val snapshot = ArrayList(scheduled)
-            scheduled.clear()
-            snapshot.forEach { it.second() }
+    private class Scheduler : CoroutineDispatcher(), Delay {
+        val queue = ArrayDeque<Runnable>()
+        val scheduled = mutableListOf<Pair<Long, Runnable>>()
+        override fun dispatch(context: CoroutineContext, block: Runnable) { queue += block }
+        override fun scheduleResumeAfterDelay(timeMillis: Long, continuation: CancellableContinuation<Unit>) {
+            scheduled += timeMillis to Runnable { if (continuation.isActive) continuation.resume(Unit) }
+        }
+        override fun invokeOnTimeout(timeMillis: Long, block: Runnable, context: CoroutineContext): DisposableHandle {
+            val entry = timeMillis to block
+            scheduled += entry
+            return DisposableHandle { scheduled.remove(entry) }
+        }
+        fun drain() { while (queue.isNotEmpty()) queue.removeFirst().run() }
+        fun fireAll() { val pending = scheduled.toList(); scheduled.clear(); pending.forEach { it.second.run() }; drain() }
+    }
+    private fun run(action: (LegacyCatalogFixture, Scheduler, ParityCatalogService, LiveCatalogProfile, (Boolean) -> Unit) -> Unit) = legacyCatalog { fixture ->
+        var allowRefresh = true
+        val profile = object : LiveCatalogProfile by DuckdbLiveCatalogProfile {
+            override val enabled get() = allowRefresh
+            override val refreshDelay = 2.seconds
+        }
+        val scheduler = Scheduler()
+        val job = SupervisorJob()
+        val service = ParityCatalogService(CoroutineScope(job + scheduler), profile, fixture.scratch)
+        try { action(fixture, scheduler, service, profile) { allowRefresh = it } } finally { job.cancel(); scheduler.drain() }
+    }
+    @Test fun `burst of submits for one key coalesces into one scheduled run`() = run { fixture, timer, service, _, enable ->
+        val source = fixture.dataSource()
+        RecordingConsole(fixture.testProject, fixture.sqlFile().virtualFile, source).use { console ->
+            repeat(5) { service.inventoryChanged(fixture.testProject, console.console.session, null, sessionFacts = false) }
+            timer.drain()
+            assertEquals(1, timer.scheduled.size); assertEquals(2000L, timer.scheduled.single().first); assertTrue(service.events.isEmpty())
+            enable(false); timer.fireAll(); assertEquals(1, service.events.size)
         }
     }
-
-    @Test
-    fun `burst of submits for one key coalesces into one scheduled run`() {
-        val scheduler = FakeScheduler()
-        val debouncer = DuckdbRefreshDebouncer(delayMillis = 2_000, schedule = scheduler.asSeam())
-        var runs = 0
-        repeat(5) { debouncer.submit("ds-1") { runs++ } } // INSTALL x; LOAD x; INSTALL y; ... burst
-        assertEquals("one window -> one scheduled task", 1, scheduler.scheduled.size)
-        assertEquals("the configured delay is what gets scheduled", 2_000L, scheduler.scheduled[0].first)
-        assertEquals("nothing runs until the window fires", 0, runs)
-        scheduler.fireAll()
-        assertEquals("the burst coalesced into exactly one run", 1, runs)
+    @Test fun `after the window fires a new submit opens a new window`() = run { fixture, timer, service, _, enable ->
+        RecordingConsole(fixture.testProject, fixture.sqlFile().virtualFile, fixture.dataSource()).use { console ->
+            repeat(2) {
+                enable(true); service.inventoryChanged(fixture.testProject, console.console.session, null, false); timer.drain()
+                assertEquals(1, timer.scheduled.size); enable(false); timer.fireAll()
+            }
+            assertEquals(2, service.events.size)
+        }
     }
-
-    @Test
-    fun `after the window fires a new submit opens a new window`() {
-        val scheduler = FakeScheduler()
-        val debouncer = DuckdbRefreshDebouncer(delayMillis = 2_000, schedule = scheduler.asSeam())
-        var runs = 0
-        debouncer.submit("ds-1") { runs++ }
-        scheduler.fireAll()
-        assertEquals(1, runs)
-        debouncer.submit("ds-1") { runs++ } // a later INSTALL must not be swallowed forever
-        assertEquals(1, scheduler.scheduled.size)
-        scheduler.fireAll()
-        assertEquals(2, runs)
+    @Test fun `distinct keys debounce independently`() = run { fixture, timer, service, _, enable ->
+        val one = fixture.dataSource(); val two = fixture.dataSource()
+        RecordingConsole(fixture.testProject, fixture.sqlFile().virtualFile, one).use { a ->
+            RecordingConsole(fixture.testProject, fixture.sqlFile().virtualFile, two).use { b ->
+                for (console in listOf(a, b, a)) service.inventoryChanged(fixture.testProject, console.console.session, null, false)
+                timer.drain(); assertEquals(2, timer.scheduled.size); enable(false); timer.fireAll()
+                assertEquals(setOf(one.uniqueId, two.uniqueId), service.events.map { it.first }.toSet())
+            }
+        }
     }
-
-    @Test
-    fun `distinct keys debounce independently`() {
-        val scheduler = FakeScheduler()
-        val debouncer = DuckdbRefreshDebouncer(delayMillis = 2_000, schedule = scheduler.asSeam())
-        val runsByKey = LinkedHashMap<String, Int>()
-        fun bump(key: String): () -> Unit = { runsByKey.merge(key, 1, Int::plus) }
-        debouncer.submit("ds-1", bump("ds-1"))
-        debouncer.submit("ds-2", bump("ds-2"))
-        debouncer.submit("ds-1", bump("ds-1")) // coalesces into ds-1's open window
-        assertEquals("one task per key", 2, scheduler.scheduled.size)
-        scheduler.fireAll()
-        assertEquals(mapOf("ds-1" to 1, "ds-2" to 1), runsByKey)
-    }
-
-    @Test
-    fun `only the window-opening action runs - coalesced submits are dropped`() {
-        val scheduler = FakeScheduler()
-        val debouncer = DuckdbRefreshDebouncer(delayMillis = 2_000, schedule = scheduler.asSeam())
-        val ran = ArrayList<String>()
-        debouncer.submit("ds-1") { ran.add("first") }
-        debouncer.submit("ds-1") { ran.add("second") }
-        scheduler.fireAll()
-        assertEquals(listOf("first"), ran)
+    @Test fun `only the window-opening action runs - coalesced submits are dropped`() = run { fixture, timer, service, _, enable ->
+        RecordingConsole(fixture.testProject, fixture.sqlFile().virtualFile, fixture.dataSource()).use { console ->
+            service.inventoryChanged(fixture.testProject, console.console.session, null, false, notify = false)
+            service.inventoryChanged(fixture.testProject, console.console.session, null, false, notify = true)
+            timer.drain(); enable(false); timer.fireAll()
+            assertEquals(RefreshReason.Executed(false), service.events.single().second)
+        }
     }
 }

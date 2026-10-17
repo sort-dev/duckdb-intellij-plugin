@@ -2,7 +2,7 @@
     <extensions defaultExtensionNs="com.intellij">
         <dynamicActionConfigurationCustomizer implementation="dev.sort.duckdb.pipes.DuckdbPipesActionConfiguration"/>
         <actionPromoter implementation="dev.sort.duckdb.pipes.DuckdbPipesActionPromoter" order="first"/>
-        <projectConfigurable id="dev.sort.duckdb.pipes" displayName="DuckDB PIPE" parentId="tools"
+        <projectConfigurable id="dev.sort.duckdb.pipes" displayName="DuckDB PIPE" parentId="database.main"
                              nonDefaultProject="true" instance="dev.sort.duckdb.pipes.DuckdbPipesConfigurable"/>
         <intentionAction>
             <language>DuckDBSQL</language>
@@ -15,10 +15,11 @@
             <category>DuckDB PIPE</category>
         </intentionAction>
         <notificationGroup id="DuckDB PIPE" displayType="BALLOON"/>
-        <completion.contributor language="DuckDBSQL" implementationClass="dev.sort.duckdb.pipes.DuckdbPipesCompletionContributor" order="first"/>
+        <completion.contributor language="DuckDBSQL" implementationClass="dev.sort.duckdb.pipes.DuckdbPipesCompletionContributor" order="first, before duckdb.metadata"/>
+        <annotator language="DuckDBSQL" implementationClass="dev.sort.duckdb.pipes.DuckdbPipeStageKeywordAnnotator"/>
     </extensions>
     <actions>
-        <group id="DuckdbPipes.EditorMenu" text="DuckDB PIPE" popup="true">
+        <group id="DuckdbPipes.EditorMenu" class="com.intellij.ide.actions.NonEmptyActionGroup" text="DuckDB PIPE" popup="true">
             <add-to-group group-id="EditorPopupMenu" anchor="first"/>
             <action id="DuckdbPipes.PreviewSql" class="dev.sort.duckdb.pipes.PreviewPipeSqlAction"
                     text="Preview Generated SQL" description="Preview the DuckDB SQL generated from this PIPE statement"/>

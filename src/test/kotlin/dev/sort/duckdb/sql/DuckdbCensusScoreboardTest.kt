@@ -2,8 +2,9 @@ package dev.sort.duckdb.sql
 
 import com.intellij.psi.PsiErrorElement
 import com.intellij.psi.util.PsiTreeUtil
-import com.intellij.sql.dialects.SqlDialectMappings
+import dev.brikk.house.sql.intellij.testing.setSqlDialectMapping
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
+import dev.brikk.house.sql.intellij.testing.assertRestartsMatchFullLex
 import java.io.File
 
 /**
@@ -15,13 +16,20 @@ import java.io.File
  */
 class DuckdbCensusScoreboardTest : BasePlatformTestCase() {
 
+    fun testCensusLexerRestarts() {
+        val dir = File(System.getProperty("corpus.dir"), "census")
+        val files = dir.listFiles { file -> file.extension == "sql" }.orEmpty()
+        assertEquals(226, files.size)
+        for (file in files) assertRestartsMatchFullLex(::DuckdbLexer, file.readText())
+    }
+
     private var counter = 0
 
     private data class Verdict(val errors: Int, val first: String?, val firstText: String?)
 
     private fun verdict(sql: String): Verdict {
         val psi = myFixture.configureByText("c${counter++}.sql", sql)
-        SqlDialectMappings.getInstance(project).setMapping(psi.virtualFile, DuckdbSqlDialect.INSTANCE)
+        setSqlDialectMapping(project, psi.virtualFile, DuckdbSqlDialect)
         val file = com.intellij.psi.PsiManager.getInstance(project).findFile(psi.virtualFile)!!
         val errs = PsiTreeUtil.findChildrenOfType(file, PsiErrorElement::class.java)
         val first = errs.firstOrNull()

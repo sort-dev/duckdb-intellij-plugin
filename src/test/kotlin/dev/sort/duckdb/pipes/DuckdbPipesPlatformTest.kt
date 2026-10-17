@@ -13,6 +13,8 @@ import dev.sort.duckdb.validate.DuckdbErrorAnnotator
 import dev.brikk.house.sql.intellij.CooperativeExecuteAction
 import dev.brikk.house.sql.intellij.ExecuteInterceptor
 import dev.brikk.house.sql.intellij.ExecutionClaim
+import dev.brikk.house.sql.intellij.pipe.isEnabled
+import dev.brikk.house.sql.intellij.testing.setSqlDialectMapping
 
 class DuckdbPipesPlatformTest : BasePlatformTestCase() {
     override fun tearDown() {
@@ -23,9 +25,9 @@ class DuckdbPipesPlatformTest : BasePlatformTestCase() {
     fun testSettingDefaultsOffAndDoesNotReplaceActions() {
         val manager = ActionManager.getInstance()
         val actions = DuckdbPipesActionConfiguration.EXECUTE_IDS.map { manager.getAction(it) }
-        assertFalse(DuckdbPipes.isEnabled(project))
+        assertFalse(DuckdbPipeDialect.isEnabled(project))
         project.service<DuckdbPipesSettings>().enabled = true
-        assertTrue(DuckdbPipes.isEnabled(project))
+        assertTrue(DuckdbPipeDialect.isEnabled(project))
         project.service<DuckdbPipesSettings>().enabled = false
         assertEquals(actions, DuckdbPipesActionConfiguration.EXECUTE_IDS.map { manager.getAction(it) })
     }
@@ -33,22 +35,23 @@ class DuckdbPipesPlatformTest : BasePlatformTestCase() {
         project.service<DuckdbPipesSettings>().enabled = true
         val longHead = (1..600).joinToString(", ") { "$it AS c$it" }
         val sql = "SELECT $longHead |> LIMIT 1; SELECT 2;"
-        val file = PsiFileFactory.getInstance(project).createFileFromText("pipe.sql", DuckdbSqlDialect.INSTANCE, sql)
+        val file = PsiFileFactory.getInstance(project).createFileFromText("pipe.sql", DuckdbSqlDialect, sql)
         val statements = PsiTreeUtil.findChildrenOfType(file, SqlStatement::class.java).filterNot { it.parent is SqlStatement }
         assertEquals(2, statements.size)
         assertTrue(statements.first().text.contains("|> LIMIT 1"))
     }
     fun testPipeDiagnosticsReplaceNativeValidatorErrors() {
         project.service<DuckdbPipesSettings>().enabled = true
-        val file = PsiFileFactory.getInstance(project).createFileFromText("pipe.sql", DuckdbSqlDialect.INSTANCE,
+        val file = PsiFileFactory.getInstance(project).createFileFromText("pipe.sql", DuckdbSqlDialect,
             "FROM range(3) |> LIMIT 1; FROM t |> BOGUS 2; SELECT FROM WHERE;")
         val annotator = DuckdbErrorAnnotator()
         val info = annotator.collectInformation(file)!!
-        assertEquals(2, info.pipes.size)
-        assertEquals(1, info.statements.size)
         val result = annotator.doAnnotate(info)!!
-        assertEquals(1, result.pipeErrors.size)
-        assertEquals(1, result.errors.size)
+        val annotations = com.intellij.codeInsight.daemon.impl.AnnotationHolderImpl(com.intellij.lang.annotation.AnnotationSession(file), false)
+        annotations.runAnnotatorWithContext(file, com.intellij.lang.annotation.Annotator { _, holder -> annotator.apply(file, result, holder) })
+        annotations.assertAllAnnotationsCreated()
+        assertEquals(1, annotations.count { it.message.startsWith("DuckDB PIPE:") })
+        assertEquals(1, annotations.count { it.message.startsWith("DuckDB: Parser Error") })
     }
     fun testCapturedActionsDelegateExactlyOnceAndClaimedFailuresNeverDelegate() {
         var calls = 0
@@ -105,16 +108,32 @@ class DuckdbPipesPlatformTest : BasePlatformTestCase() {
     }
     fun testStageKeywordsAndInputAliasesCompleteWithoutACatalog() {
         project.service<DuckdbPipesSettings>().enabled = true
-        dev.sort.duckdb.setSqlDialectMapping(project, null, DuckdbSqlDialect.INSTANCE)
+        setSqlDialectMapping(project, null, DuckdbSqlDialect)
         myFixture.configureByText("keywords.sql", "FROM range(3) |> <caret>")
         myFixture.completeBasic()
         assertTrue("Lookups: ${myFixture.lookupElementStrings}",
             myFixture.lookupElementStrings.orEmpty().any { it.equals("WHERE", true) })
+        assertFalse(myFixture.lookupElementStrings.orEmpty().contains("ABORT"))
         com.intellij.codeInsight.lookup.LookupManager.getInstance(project).hideActiveLookup()
         myFixture.configureByText("columns.sql", "FROM range(3) |> SELECT range AS my_output |> WHERE my_ou<caret>")
         myFixture.completeBasic()
         assertTrue(myFixture.lookupElementStrings.orEmpty().contains("my_output") ||
             myFixture.editor.document.text.contains("WHERE my_output"))
+    }
+    fun testWholeStagePhraseGetsKeywordColoring() {
+        project.service<DuckdbPipesSettings>().enabled = true
+        val sql = "FROM t |> FULL OUTER JOIN u ON t.id = u.id"
+        val file = myFixture.configureByText("stage-colors.sql", sql)
+        setSqlDialectMapping(project, file.virtualFile, DuckdbSqlDialect)
+        val colors = myFixture.doHighlighting().filter {
+            it.forcedTextAttributesKey == com.intellij.openapi.editor.DefaultLanguageHighlighterColors.KEYWORD
+        }
+        for (word in listOf("FULL", "OUTER", "JOIN")) {
+            val start = sql.indexOf(word)
+            assertTrue("Missing keyword color for $word: $colors", colors.any {
+                it.startOffset <= start && it.endOffset >= start + word.length
+            })
+        }
     }
     fun testBothPeerWrapperOrdersPreserveOwnershipAndOrdinaryExecution() {
         val event = AnActionEvent.createFromDataContext("PIPE chain test", Presentation(), DataContext.EMPTY_CONTEXT)

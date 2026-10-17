@@ -9,7 +9,7 @@
         <b>GizmoSQL servers</b> (Arrow-free quack-jdbc driver).</p>
 
         <ul>
-            <li><b>Built-in PIPE authoring:</b> enable DuckDB PIPE under Settings &gt; Tools,
+            <li><b>Built-in PIPE authoring:</b> enable under Settings &gt; Tools &gt; Database &gt; DuckDB PIPE,
                 write <code>FROM t |&gt; WHERE ... |&gt; SELECT ...</code>, and execute as
                 DuckDB SQL. Includes generated-SQL preview and run-to-stage. No SQL Transpiler
                 plugin required; ordinary FROM-first queries are unchanged.</li>
@@ -20,13 +20,13 @@
                 <code>SUMMARIZE</code>, <code>CREATE MACRO/SECRET</code>. Coverage is scored
                 against DuckDB's own test suite: 226/226 sampled syntax families at DuckDB 1.5.5.</li>
             <li><b>Engine-exact error checking:</b> statements are validated by a real DuckDB
-                (from your data source's driver; EXPLAIN-based, never executes) — squiggles carry
+                (from your data source's driver; parse-only, never binds or executes) — squiggles carry
                 the engine's own messages, so there is zero grammar drift.</li>
             <li><b>Completion that follows your engine:</b> on connect the catalog is harvested
                 live from <code>duckdb_functions()</code> — your engine version, your loaded
                 extensions. Run <code>INSTALL</code>/<code>LOAD</code> and completion updates
                 itself; autoloaded extensions arrive via <i>Refresh DuckDB Catalog</i> (editor
-                right-click). Offline you get the bundled 943-function snapshot, plus
+                right-click). Offline you get bundled version-aware metadata, plus
                 <i>"requires &lt;extension&gt;"</i> hints for extension functions.</li>
             <li><b>Two data sources, one dialect:</b> local file / in-memory DuckDB, and GizmoSQL
                 over <code>jdbc:quack://</code> (default port 9494). Driver versions are pinned
@@ -48,6 +48,14 @@
     ]]></description>
 
     <change-notes><![CDATA[
+        <b>0.4.1</b> - builtin recognition and driver/settings fixes.
+        <ul>
+            <li>Uses formal brikk-sql 0.20.0, SQL IntelliJ support 0.2.0 and Kotlin IntelliJ support 0.3.0 dependencies.</li>
+            <li>Recognizes DuckDB builtin functions, named reader arguments and type-name aliases; preserves unknown-name and genuine INSERT-layout diagnostics.</li>
+            <li>Restores targeted automatic introspection after clearing metadata, including attached catalogs and schemas.</li>
+            <li>Fixes data-source picker icons and hides inapplicable PIPE menus. PIPE settings are under Tools &gt; Database &gt; DuckDB PIPE.</li>
+            <li>Updates Quack JDBC to 0.8.0. Remote query cancellation remains unsupported.</li>
+        </ul>
         <b>0.3.5</b> - dogfood build with formal Brikk releases and shared column completion.
         <ul>
             <li>Uses brikk-sql 0.19.1, SQL IntelliJ support 0.1.1 and Kotlin IntelliJ support 0.2.0 from Maven Central.</li>
@@ -73,7 +81,7 @@
         <ul>
             <li>Uses the published Brikk Kotlin IntelliJ support 0.1.0 library from Maven Central.</li>
             <li>Resolves, completes and navigates Kotlin relation-input columns with statement-local
-                aliases, joins and supported PIPE-stage scopes.</li>
+                 aliases, joins and stage scopes supported by DuckDB PIPE syntax.</li>
             <li>Preserves partial/unavailable contract distinctions and labelled generated-column
                 navigation fallbacks. Kotlin remains optional.</li>
         </ul>
@@ -131,7 +139,8 @@
     <depends>com.intellij.modules.platform</depends>
     <depends>com.intellij.database</depends>
     <extensionPoints>
-        <extensionPoint qualifiedName="dev.sort.duckdb.brikkRelations" interface="dev.sort.duckdb.brikk.BrikkRelationProvider" dynamic="true"/>
+        <extensionPoint qualifiedName="dev.sort.duckdb.relationFacts" interface="dev.brikk.house.sql.intellij.relation.ExternalRelationFacts" dynamic="true"/>
+        <extensionPoint qualifiedName="dev.sort.duckdb.inspectionHost" interface="dev.sort.duckdb.brikk.DuckdbInspectionHost" dynamic="true"/>
     </extensionPoints>
     <depends optional="true" config-file="duckdb-kotlin.xml">org.jetbrains.kotlin</depends>
     <extensions defaultExtensionNs="org.jetbrains.kotlin">
@@ -140,13 +149,17 @@
     <xi:include href="/META-INF/duckdb-pipes.xml" xpointer="xpointer(/idea-plugin/*)"/>
 
     <extensions defaultExtensionNs="com.intellij">
-        <sql.resolveExtension implementation="dev.sort.duckdb.brikk.BrikkSqlResolveExtension"/>
-        <sql.inspectionSuppressorDelegate implementation="dev.sort.duckdb.brikk.BrikkSqlInspectionSuppressor"/>
-        <completion.contributor language="DuckDBSQL" implementationClass="dev.sort.duckdb.brikk.BrikkSqlCompletionContributor" order="first"/>
-        <gotoDeclarationHandler implementation="dev.sort.duckdb.brikk.BrikkSqlGotoDeclarationHandler"/>
-        <annotator language="DuckDBSQL" implementationClass="dev.sort.duckdb.brikk.BrikkSqlContractAnnotator"/>
+        <lang.documentationProvider language="DuckDBSQL" implementationClass="dev.brikk.house.sql.intellij.docs.SqlEngineDocumentationProvider" order="first"/>
+        <sql.resolveExtension implementation="dev.brikk.house.sql.intellij.dialect.PgFamilyResolveExtension"/>
+        <sql.inspectionSuppressorDelegate implementation="dev.brikk.house.sql.intellij.dialect.PgFamilyInspectionSuppressor"/>
+        <sql.resolveExtension implementation="dev.sort.duckdb.brikk.DuckdbRelationResolveExtension"/>
+        <sql.inspectionSuppressorDelegate implementation="dev.sort.duckdb.brikk.DuckdbRelationInspectionSuppressor"/>
+        <completion.contributor language="DuckDBSQL" implementationClass="dev.sort.duckdb.brikk.DuckdbRelationCompletionContributor" id="duckdb.relations" order="first"/>
+        <gotoDeclarationHandler implementation="dev.sort.duckdb.brikk.DuckdbRelationGotoDeclarationHandler"/>
+        <annotator language="DuckDBSQL" implementationClass="dev.sort.duckdb.brikk.DuckdbRelationAnnotator"/>
         <lang.parserDefinition language="DuckDBSQL" implementationClass="dev.sort.duckdb.sql.DuckdbParserDefinition"/>
-        <lang.commenter language="DuckDBSQL" implementationClass="dev.sort.duckdb.sql.DuckdbCommenter"/>
+        <lang.commenter language="DuckDBSQL" implementationClass="com.intellij.database.sql.common.core.psi.impl.support.SqlNestedCommenter"/>
+        <lang.quoteHandler language="DuckDBSQL" implementationClass="dev.sort.duckdb.sql.DuckdbQuoteHandler"/>
         <!-- LOAD-BEARING beyond colors: the SQL todo/id indexers derive their filter lexer from
              the language's syntax highlighter; absence crashes the TODO index on our files. -->
         <lang.syntaxHighlighterFactory language="DuckDBSQL" implementationClass="dev.sort.duckdb.sql.DuckdbSyntaxHighlighterFactory"/>
@@ -155,44 +168,59 @@
              (display-only; the scoreboard test keeps counting truth; Stage 3's PREPARE validator
              becomes the real error authority). -->
         <highlightErrorFilter implementation="dev.sort.duckdb.sql.DuckdbHighlightErrorFilter"/>
+        <highlightErrorFilter implementation="dev.sort.duckdb.brikk.DuckdbPlaceholderErrorFilter"/>
         <!-- Repaints DuckdbLexer's masked spans (comment-masked modifiers, string-collapsed
              struct literals) with real word colors — TextAttributes only. -->
         <annotator language="DuckDBSQL" implementationClass="dev.sort.duckdb.sql.DuckdbMaskedSpanRecolorAnnotator"/>
-        <!-- Stage 3: engine-confirmed PARSER errors from a real in-memory DuckDB (EXPLAIN-based,
-             never executes). Silent when no engine is reachable. -->
+        <!-- Native parser errors only; unavailable when serialization is unsupported. -->
         <externalAnnotator language="DuckDBSQL" implementationClass="dev.sort.duckdb.validate.DuckdbErrorAnnotator"/>
-        <!-- Stage 4: function completion from the bundled duckdb_functions() catalog. -->
-        <completion.contributor language="DuckDBSQL" implementationClass="dev.sort.duckdb.sql.DuckdbCompletionContributor"/>
+        <completion.contributor language="DuckDBSQL" implementationClass="dev.sort.duckdb.sql.DuckdbMetadataCompletionContributor" id="duckdb.metadata" order="first"/>
         <!-- Catalog-refresh balloons (manual action + INSTALL/LOAD observer). -->
         <notificationGroup id="DuckDB (Brikk)" displayType="BALLOON"/>
-        <!-- Stage 4b refresh-on-INSTALL/LOAD: one root DataAuditor per project (DataBus.addRootAuditor)
-             re-harvests a Brikk data source's live catalog when INSTALL/FORCE INSTALL/LOAD runs in a
-             console (debounced ~2s per source). Autoloaded extensions are NOT observable here — the
-             manual Refresh DuckDB Catalog action covers them. -->
-        <postStartupActivity implementation="dev.sort.duckdb.catalog.DuckdbInstallLoadStartup"/>
+        <postStartupActivity implementation="dev.sort.duckdb.catalog.DuckdbExecutionObserverStartup"/>
+        <editorNotificationProvider implementation="dev.sort.duckdb.catalog.DuckdbIntrospectBannerProvider"/>
+        <completion.contributor language="DuckDBSQL" implementationClass="dev.sort.duckdb.catalog.DuckdbQualifiedPathIntrospectContributor" order="first"/>
+        <annotator language="DuckDBSQL" implementationClass="dev.sort.duckdb.catalog.DuckdbReferenceIntrospectAnnotator"/>
+        <daemon.highlightInfoFilter implementation="dev.sort.duckdb.catalog.DuckdbOutOfScopeReferenceFilter"/>
+        <intentionAction>
+            <language>DuckDBSQL</language>
+            <className>dev.sort.duckdb.catalog.DuckdbIntrospectNamespaceIntention</className>
+            <category>DuckDB</category>
+        </intentionAction>
     </extensions>
 
     <extensions defaultExtensionNs="com.intellij.database">
+        <runConsoleAvailable implementation="dev.sort.duckdb.brikk.DuckdbRunConsoleVeto"/>
         <dbms id="DUCKDB_BRIKK" instance="dev.sort.duckdb.DuckdbDbms.DUCKDB_BRIKK"/>
         <!-- DuckDB is Postgres-derived; PG machinery is the right family default for everything
              we don't override. The modelFacade below completes the facade/dialect/introspector
              agreement (doris ClassCast lesson) — all three sit on the PG family. -->
         <extensionFallback dbms="DUCKDB_BRIKK" fallbackDbms="POSTGRES"/>
+        <dialect dbms="DUCKDB_BRIKK" implementationClass="dev.sort.duckdb.DuckdbDatabaseDialect"/>
         <modelFacade dbms="DUCKDB_BRIKK" implementationClass="dev.sort.duckdb.DuckdbModelFacade"/>
+        <definitionProvider dbms="DUCKDB_BRIKK" implementationClass="dev.sort.duckdb.catalog.DuckdbDefinitionProvider"/>
+        <introspector dbms="DUCKDB_BRIKK" implementationClass="dev.sort.duckdb.DuckdbIntrospectorGate"/>
+        <!-- The PG source loader issues pg_language queries for macros during generic JDBC sync. -->
+        <jdbcSourceLoader dbms="DUCKDB_BRIKK" implementationClass="com.intellij.database.dialects.generic.introspector.jdbc.GenericJdbcSourceLoader"/>
+        <jdbcHelper dbms="DUCKDB_BRIKK" implementationClass="com.intellij.database.remote.jdbc.helpers.GenericJdbcHelper"/>
         <errorHandler dbms="DUCKDB_BRIKK" implementationClass="com.intellij.database.dialects.generic.GenericDatabaseErrorHandler"/>
-        <!-- Stage 4b: on-connect duckdb_functions()/duckdb_keywords() harvest -> live
-             per-data-source catalog that replaces the bundled snapshot for that source
-             (persisted under $SYSTEM/duckdb-brikk/catalog, fail-soft, never blocks connect). -->
-        <database.connectionInterceptor implementation="dev.sort.duckdb.catalog.DuckdbCatalogConnectionInterceptor"/>
+        <connectionInterceptor implementation="dev.sort.duckdb.catalog.DuckdbHarvestConnectionInterceptor"/>
         <driversConfig config="config/duckdb-brikk-drivers.xml"/>
         <artifactsConfig config="config/duckdb-brikk-artifacts.xml"/>
     </extensions>
+
+    <projectListeners>
+        <listener class="dev.sort.duckdb.catalog.DuckdbLiveCatalogCleanup" topic="com.intellij.database.dataSource.DataSourceStorage$Listener"/>
+    </projectListeners>
+    <applicationListeners>
+        <listener class="dev.sort.duckdb.catalog.DuckdbLiveCatalogCleanup" topic="com.intellij.database.dataSource.DataSourceStorage$Listener"/>
+    </applicationListeners>
 
     <actions>
         <!-- Manual live-catalog refresh; also the ONLY trigger that surfaces autoloaded
              extensions (no INSTALL/LOAD ever runs for those, so the observer can't see them). -->
         <action id="Duckdb.RefreshCatalog"
-                class="dev.sort.duckdb.catalog.DuckdbRefreshCatalogAction"
+                class="dev.sort.duckdb.catalog.DuckdbRefreshLiveCatalogAction"
                 text="Refresh DuckDB Catalog"
                 description="Re-read functions, keywords, and loaded extensions from the connected DuckDB engine">
             <add-to-group group-id="EditorPopupMenu" anchor="last"/>

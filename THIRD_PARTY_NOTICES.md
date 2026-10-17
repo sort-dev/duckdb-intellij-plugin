@@ -1,28 +1,33 @@
 # Third-party notices
 
-## Brikk Kotlin IntelliJ support 0.2.0
+## Brikk Kotlin IntelliJ support 0.3.0
 
-This plugin embeds `dev.brikk.house:brikk-engine-kotlin-intellij-support:0.2.0`
+This plugin embeds `dev.brikk.house:brikk-engine-kotlin-intellij-support:0.3.0`
 from Maven Central. Jayson Minard and Sortdev SRL,
 https://github.com/brikk/brikk-house, Apache License 2.0. The helper contains
 Brikk context/interpolation and copied relation-contract APIs. Kotlin/IntelliJ
 APIs and compiler plugins are not bundled by this dependency.
 
-## Brikk SQL IntelliJ support 0.1.1
+## Brikk SQL IntelliJ support 0.2.0
 
-This plugin embeds `dev.brikk.house:brikk-sql-intellij-support:0.1.1` from
+This plugin embeds `dev.brikk.house:brikk-sql-intellij-support:0.2.0` from
 Maven Central. Jayson Minard and Sortdev SRL, https://github.com/brikk/brikk-sql,
 Apache License 2.0. The helper provides cooperative Execute actions, promotion,
 document snapshots, translated script models and shared column presentation. No IntelliJ SDK, SQL engine,
 native driver or verifier is supplied transitively by this library.
 
-## brikk-sql and metadata 0.19.1
+## brikk-sql and metadata 0.20.0
 
-Bundled translator artifacts: `dev.brikk.house:brikk-sql-jvm:0.19.1` and
-`dev.brikk.house:brikk-sql-metadata-jvm:0.19.1`, by Jayson Minard and Sortdev SRL.
+Bundled translator artifacts: `dev.brikk.house:brikk-sql-jvm:0.20.0` and
+`dev.brikk.house:brikk-sql-metadata-jvm:0.20.0`, by Jayson Minard and Sortdev SRL.
 Project: https://github.com/brikk/brikk-sql. Apache License 2.0, with the
-third-party-derived portions below. No native database engine or verifier is bundled.
-Published sources and license provenance are available from Maven Central.
+third-party-derived portions below. No native database engine is bundled.
+These artifacts are resolved from Maven Central.
+
+Bundled parse-only verifier artifacts: `dev.brikk.house:brikk-sql-verify-api:0.20.0`
+and `dev.brikk.house:brikk-sql-verify-duckdb:0.20.0`, by Jayson Minard and
+Sortdev SRL, https://github.com/brikk/brikk-sql, Apache License 2.0. The DuckDB JDBC
+dependency is excluded; verification uses the user's driver and never executes authored SQL.
 
 The parser, tokenizer, AST, optimizer and SQL generators include a Kotlin port of
 SQLGlot by Toby Mao and contributors, https://github.com/tobymao/sqlglot.
@@ -75,9 +80,9 @@ Copyright 2016-2026 ClickHouse, Inc.
 
 ## StarRocks Support (DataGrip plugin)
 
-The statement-dispatch and lenient-parsing approach in
-`src/main/kotlin/dev/sort/duckdb/sql/DuckdbPsiParser.kt` (bounded look-ahead helpers such as
-`wordAt` / `statementContainsAny`, and the lenient consume-to-`;` technique) is adapted from
+The statement-dispatch and lenient-parsing approach used by
+`src/main/kotlin/dev/sort/duckdb/sql/DuckdbPsiParser.kt`, with bounded scanning and lenient
+consumption now provided by Brikk SQL IntelliJ support, is adapted from
 StarRocks Support (https://github.com/ycyz97/starrocks-datagrip-plugin), Copyright the StarRocks
 Support contributors, licensed under the Apache License, Version 2.0 — by way of our own
 doris-intellij-plugin (https://github.com/sort-dev/doris-intellij-plugin), where the adaptation

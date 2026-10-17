@@ -29,10 +29,10 @@ validating SQL with the real engine.
 
 - **Correct statement & run-block boundaries** for the whole DuckDB statement surface — every
   statement gets a working run box, nothing bleeds into its neighbor.
-- **Engine-exact error checking**: your SQL is validated by a real DuckDB (`EXPLAIN` against an
-  in-memory instance found on your data source's driver — parses and binds, never executes).
-  Squiggles carry the engine's own messages, so there is zero grammar drift, ever. Only true
-  parser errors are shown; schema resolution stays with the IDE.
+- **Native parser error checking** uses DuckDB's `json_serialize_sql` in a restricted in-memory
+  instance from your data source's driver. SQL is never bound or executed. Unsupported serialization
+  is unavailable, so valid non-SELECT statements have no native validation. Parser failures still
+  carry the engine's messages; schema resolution stays with the IDE.
 - **Completion that follows your engine**: on connect, functions/keywords are harvested live from
   `duckdb_functions()` — your engine version, your loaded extensions — and cached per data source
   (survives restarts and offline sessions). Run `INSTALL`/`LOAD` in a console and completion
@@ -49,8 +49,8 @@ validating SQL with the real engine.
 
 ## PIPE queries
 
-Version 0.3.5 uses brikk-sql 0.19.1 and SQL IntelliJ support 0.1.1 for PIPE authoring. SQL Transpiler is
-not required. Enable **Settings > Tools > DuckDB PIPE > Enable PIPE syntax in
+The plugin uses brikk-sql 0.20.0 and SQL IntelliJ support 0.2.0 for PIPE authoring. SQL Transpiler is
+not required. Enable **Settings > Tools > Database > DuckDB PIPE > Enable PIPE syntax in
 this project**; it defaults off and is saved per workspace.
 
 ```sql
@@ -108,6 +108,8 @@ data source still resolves physical tables.
 
 ## Connecting to a remote Quack DuckDB server
 
+The remote template prefers `dev.brikk.duckdb:quack-jdbc:0.8.0`; older driver versions remain selectable.
+
 - The **connection token** goes in the Password field (it is stored in the IDE's secure storage and injected as
   the `token=` URL parameter at connect time). While leaving the user field blank.
 - **TLS is off by default** (matching the driver). For HTTPS endpoints add `tls=true` in the URL
@@ -118,7 +120,7 @@ data source still resolves physical tables.
 
 ## Known issues
 
-- **Query cancel over Quack is a no-op** in the current quack driver — Stop returns but the
+- **Query cancel over Quack 0.8.0 is a no-op** — Stop returns but the
   query keeps running server-side. Local/embedded cancel works correctly (interrupt in ~300 ms).
   When Quack allows cancellation, we will support it.
 - The stock User/Password fields cannot be hidden or relabeled from driver config — hence the
@@ -137,49 +139,75 @@ at every engine bump, so coverage is re-proven per DuckDB version, not asserted 
 
 ## Function coverage
 
-Live: whatever your connected engine reports — version- and extension-exact, replaced (never
-merged) per connection. Offline: **943 built-in functions** (with kind icons) and **489
-keywords** from `duckdb_functions()` / `duckdb_keywords()` of DuckDB 1.5.5, plus a harvested
-extension→functions map (189 functions across 5 extensions) powering the
-*"requires \<extension\>"* completion hints.
+Live function and keyword inventories come from the connected engine. Offline completion uses
+version-selected `brikk-sql-metadata`, defaulting to DuckDB 1.5.6. Grammar-only forms remain
+available with a live inventory; unloaded extension functions show *"requires \<extension\>"*.
 
 ## Requirements
 
-**DataGrip** or **IntelliJ IDEA Ultimate**, **2026.1 or 2026.2** (platform builds 261/262, one
-artifact for both). A native DuckDB engine for validation comes from your data source's
+**DataGrip** or **IntelliJ IDEA Ultimate**, **2026.1 through 2026.3** (platform builds 261 through 263, one
+artifact for the supported range). A native DuckDB engine for validation comes from your data source's
 driver. The built-in PIPE translator is independent of that driver.
 
 ## Building from source
 
 ```bash
-./gradlew buildPlugin   # → build/distributions/duckdb-intellij-plugin.zip
+./gradlew buildPlugin   # → build/distributions/duckdb-intellij-plugin-<version>.zip
+./gradlew buildPlugin -Prelease=true # → build/distributions/duckdb-intellij-plugin-0.4.1.zip
 ./gradlew test          # census scoreboard + validator grading + boundary contracts
-./gradlew verifyEmbeddedPipes verifyPlugin # ZIP contents, bytecode, IDE API compatibility
+./gradlew test262 test263 # same 261-compiled plugin on newer SQL and Kotlin APIs
+./gradlew verifyDistribution verifyPlugin # ZIP contents, bytecode, IDE API compatibility
 # optional: live wire suite against a quack server
 ./gradlew test -Dquack.live.url='jdbc:quack://localhost:9494?token=<token>'
 ```
+
+The declared base is `0.4.1`; source builds default to
+`0.4.1-dev.<commit time yyyyMMddHHmm UTC>+<12-character SHA>`, with `.dirty` for
+uncommitted changes. The ZIP and the IDE's plugin version use the same label.
+`-Prelease=true` uses the base unchanged and runs `verifyRelease`, rejecting development
+plugin labels and bundled snapshot dependencies; it does not publish or choose a release
+number. IntelliJ sorts the requested dev format above the same bare base, so a
+same-base release install needs a manual downgrade/removal.
+Pushes to `release-*` run the separate artifact-only `.github/workflows/release.yml`.
+It calls the shared `release-plugin-zip.yml` workflow pinned to
+`6e77690f0bea7aee30faf3808de3e27b4f7e44fa`: checkout, stable build with `-Prelease=true`,
+shared ZIP validation, matching Git tag/GitHub release and unchanged ZIP upload.
+Renaming a development ZIP does not make it a release. This workflow never uploads
+to JetBrains Marketplace; that upload is owner-only.
+
+Normal CI remains on `main`, `froze-over`, pull requests to `main` and manual dispatch.
+Release branch pushes do not start its broad tests or Plugin Verifier. Local checks
+and authorized verification precede the controller's release GO; the CI verifier
+remains available through manual dispatch.
+
+The canonical conventions repo provides `tools/stage-plugin-builds.sh --dry-run`.
+A real staging run builds clean checkouts only and places the five plugins' ZIPs
+and `MANIFEST.md` under `/home/jayson/DEV/sortdev/plugin-builds/<yyyyMMdd-HHmm UTC>/`.
+It never edits or commits the other plugins' sources.
 
 IntelliJ IDEA Ultimate 2026.1 SDK (auto-downloaded), Kotlin 2.4.10, JVM 21.
 The SDK supplies optional Kotlin injection APIs; Kotlin is not required to use
 the dialect or PIPE consoles in DataGrip.
 
-The plugin consumes
-`dev.brikk.house:brikk-engine-kotlin-intellij-support:0.2.0` from Maven Central.
-Cooperative Execute actions and translated script models come from
-`dev.brikk.house:brikk-sql-intellij-support:0.1.1`. DuckDB keeps its own execution
-eligibility, optional native validation, notifications and inspection-view guards.
-No Maven Local publication is required. The dependency does not bundle an
-IntelliJ SDK, Kotlin stdlib or compiler plugin.
+Internal dependencies are pinned to these formal Maven Central coordinates:
 
-All dependencies are pinned to formal releases. Maven Local resolution and the
-temporary comment-boundary guard have been removed; core 0.19.1 owns that fix.
+- `dev.brikk.house:brikk-sql-jvm:0.20.0` and `dev.brikk.house:brikk-sql-metadata-jvm:0.20.0`.
+- `dev.brikk.house:brikk-sql-verify-api:0.20.0` and `dev.brikk.house:brikk-sql-verify-duckdb:0.20.0`.
+- `dev.brikk.house:brikk-sql-intellij-support:0.2.0` and `dev.brikk.house:brikk-engine-kotlin-intellij-support:0.3.0`.
+- Test-only `dev.brikk.house:brikk-sql-intellij-test-support:0.2.0`, which is never bundled.
+
+The owner must publish these prerequisite releases to Maven Central before building or
+testing this cutover. There is no snapshot default or local fallback for these release
+coordinates. DuckDB supplies its dialect profile, session ownership and optional native
+validation; the support libraries do not bundle an IntelliJ SDK, Kotlin stdlib or compiler plugin.
+
 The earlier 0.3.4 local testing ZIP still contains the previously tested snapshot
 until explicitly replaced. Updating source dependencies does not alter an installed ZIP.
 
-**Engine bump checklist** (when moving to a new DuckDB): bump `duckdb_jdbc` in build.gradle.kts
-and the artifact pin in `config/duckdb-brikk-artifacts.xml`, then re-run all three harvests and
-commit their output: `./gradlew harvestCensus harvestFunctionCatalog harvestExtensionCatalog`
-(the last needs network for extension INSTALLs).
+**Engine bump checklist** (when moving to a new DuckDB): bump `duckdb-jdbc` in settings.gradle.kts
+and the artifact pin in `src/main/resources/config/duckdb-brikk-artifacts.xml`, then run
+`./gradlew harvestCensus` and review the corpus changes. Refresh the Brikk metadata dependency
+for bundled function, keyword and extension catalogs.
 
 For the upcoming 2.0 release, read [the plugin integration watch note](DUCKDB-2.0-WATCH.md)
 before bumping the engine. Grammar extensions and validator session state need more than a catalog

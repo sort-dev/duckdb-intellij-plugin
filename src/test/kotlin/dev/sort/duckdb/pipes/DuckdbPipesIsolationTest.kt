@@ -10,6 +10,15 @@ import com.intellij.testFramework.fixtures.BasePlatformTestCase
 class DuckdbPipesIsolationTest : BasePlatformTestCase() {
     fun testProductOwnsItsTranslatorAndCooperatesWithPeerActions() {
         if (System.getProperty("test.pluginIsolation") != "true") return
+        val requiredPeers = System.getProperty("test.siblingPlugins").orEmpty().split(',').filter(String::isNotBlank) +
+            listOfNotNull("sql-transpiler".takeIf { System.getProperty("test.sqlTranspiler") == "installed" })
+        for (peer in requiredPeers) {
+            val id = "dev.sort.$peer-intellij-plugin"
+            val installed = PluginManagerCore.getPlugin(PluginId.getId(id))
+            assertNotNull("Requested sibling $id must be installed", installed)
+            assertNotNull("Requested sibling $id must be loaded", installed!!.pluginClassLoader)
+        }
+        println("Isolation loaded plugins: ${listOf("duckdb") + requiredPeers}")
         val descriptor = PluginManagerCore.getPlugin(PluginId.getId("dev.sort.duckdb-intellij-plugin"))!!
         val loader = descriptor.pluginClassLoader!!
         assertEquals("com.intellij.ide.plugins.cl.PluginClassLoader", loader.javaClass.name)
@@ -17,16 +26,90 @@ class DuckdbPipesIsolationTest : BasePlatformTestCase() {
         assertSame(loader, fragment.classLoader)
         val contract = loader.loadClass("dev.brikk.house.intellij.ColumnContract")
         assertSame("The embedded helper is product-owned, not borrowed from fixture core", loader, contract.classLoader)
-        assertTrue(contract.getResource("ColumnContract.class").toString().contains("brikk-engine-kotlin-intellij-support-0.2.0.jar"))
+        assertTrue(contract.getResource("ColumnContract.class").toString().contains("brikk-engine-kotlin-intellij-support-0.3.0.jar"))
         val engineVersion = System.getProperty("test.brikkSqlVersion")
         assertNotNull(engineVersion)
         assertTrue(fragment.getResource("SqlFragment.class").toString().contains("brikk-sql-jvmMain-$engineVersion.jar"))
         val actionClass = loader.loadClass("dev.brikk.house.sql.intellij.CooperativeExecuteAction")
         assertSame(loader, actionClass.classLoader)
-        assertTrue(actionClass.getResource("CooperativeExecuteAction.class").toString().contains("brikk-sql-intellij-support-0.1.1.jar"))
+        assertTrue(actionClass.getResource("CooperativeExecuteAction.class").toString().contains("brikk-sql-intellij-support-0.2.0.jar"))
         val completionClass = loader.loadClass("dev.brikk.house.sql.intellij.SqlColumnCompletion")
         assertSame(loader, completionClass.classLoader)
-        assertTrue(completionClass.getResource("SqlColumnCompletion.class").toString().contains("brikk-sql-intellij-support-0.1.1.jar"))
+        assertTrue(completionClass.getResource("SqlColumnCompletion.class").toString().contains("brikk-sql-intellij-support-0.2.0.jar"))
+        val pipeClass = loader.loadClass("dev.brikk.house.sql.intellij.pipe.PipeDialect")
+        assertSame(loader, pipeClass.classLoader)
+        val verifierClass = loader.loadClass("dev.brikk.house.sql.verify.ParseOnlyDuckdbVerifier")
+        assertSame(loader, verifierClass.classLoader)
+        assertSame(loader, loader.loadClass("dev.brikk.house.sql.verify.VerifyResult").classLoader)
+        var settings: java.util.Properties? = null
+        val driver = java.lang.reflect.Proxy.newProxyInstance(java.sql.Driver::class.java.classLoader,
+            arrayOf(java.sql.Driver::class.java)) { _, method, arguments ->
+            if (method.name != "connect") throw AssertionError("Unexpected driver access: ${method.name}")
+            assertEquals("jdbc:duckdb:", arguments!![0])
+            settings = arguments[1] as java.util.Properties
+            null
+        }
+        val verifier = verifierClass.getConstructor(java.sql.Driver::class.java).newInstance(driver)
+        try {
+            val outcome = verifierClass.getMethod("verify", String::class.java).invoke(verifier, "SELECT 1")
+            assertEquals("dev.brikk.house.sql.verify.VerifyResult\$Unavailable", outcome.javaClass.name)
+            assertEquals("false", requireNotNull(settings).getProperty("enable_external_access"))
+            assertEquals("true", requireNotNull(settings).getProperty("lock_configuration"))
+        } finally {
+            verifierClass.getMethod("close").invoke(verifier)
+        }
+        for (name in listOf(
+            "lexer.MaskingSqlLexer", "lexer.CastTargetMask", "parser.LenientSqlParsingKt",
+            "pipe.PipeStatementGate", "editor.MaskedSpanRecolorAnnotator", "editor.SubstrateErrorFilter",
+            "editor.SqlDialectQuoteHandler", "editor.KeywordOverlayHighlighterFactory",
+            "dialect.PgFamilyDialect", "dialect.SqlDialectRegistry",
+            "catalog.PgFamilyModelFacade", "catalog.GenericJdbcIntrospectorGate", "catalog.DialectDataSourceResolver",
+            "catalog.LiveCatalogService", "catalog.LiveCatalogHarvester", "catalog.LiveCatalogStore",
+            "catalog.ExecutionObserver", "catalog.HarvestConnectionInterceptor", "catalog.RefreshLiveCatalogAction",
+            "catalog.CatalogProfile", "catalog.AutoIntrospectService", "catalog.IntrospectBannerProvider",
+            "catalog.QualifiedPathIntrospectContributor",
+            "catalog.ShowCreateDefinitionProvider", "diagnostics.NativeErrorAnnotator", "diagnostics.NativeErrorProfile",
+        )) assertSame(name, loader, loader.loadClass("dev.brikk.house.sql.intellij.$name").classLoader)
+        for ((base, consumer) in listOf(
+            "PgFamilyModelFacade" to "DuckdbModelFacade",
+            "GenericJdbcIntrospectorGate" to "DuckdbIntrospectorGate",
+        )) assertTrue(consumer, loader.loadClass("dev.brikk.house.sql.intellij.catalog.$base")
+            .isAssignableFrom(loader.loadClass("dev.sort.duckdb.$consumer")))
+        for ((base, consumer) in listOf(
+            "LiveCatalogService" to "DuckdbLiveCatalogService",
+            "LiveCatalogHarvester" to "DuckdbCatalogHarvester",
+            "HarvestConnectionInterceptor" to "DuckdbHarvestConnectionInterceptor",
+            "ExecutionObserver" to "DuckdbExecutionObserver",
+            "RefreshLiveCatalogAction" to "DuckdbRefreshLiveCatalogAction",
+            "AutoIntrospectService" to "DuckdbAutoIntrospectService",
+            "IntrospectBannerProvider" to "DuckdbIntrospectBannerProvider",
+            "QualifiedPathIntrospectContributor" to "DuckdbQualifiedPathIntrospectContributor",
+            "ShowCreateDefinitionProvider" to "DuckdbDefinitionProvider",
+        )) assertTrue(consumer, loader.loadClass("dev.brikk.house.sql.intellij.catalog.$base")
+            .isAssignableFrom(loader.loadClass("dev.sort.duckdb.catalog.$consumer")))
+        for (name in listOf("DuckdbQualifiedPathIntrospectContributor", "DuckdbIntrospectBannerProvider", "DuckdbIntrospectionTransactions")) {
+            assertSame(name, loader, loader.loadClass("dev.sort.duckdb.catalog.$name").classLoader)
+        }
+        for ((base, consumer) in listOf(
+            "lexer.MaskingSqlLexer" to "DuckdbLexer",
+            "editor.MaskedSpanRecolorAnnotator" to "DuckdbMaskedSpanRecolorAnnotator",
+            "editor.SubstrateErrorFilter" to "DuckdbHighlightErrorFilter",
+            "editor.SqlDialectQuoteHandler" to "DuckdbQuoteHandler",
+            "editor.KeywordOverlayHighlighterFactory" to "DuckdbSyntaxHighlighterFactory",
+            "dialect.PgFamilyDialect" to "DuckdbSqlDialect",
+        )) assertTrue(consumer, loader.loadClass("dev.brikk.house.sql.intellij.$base")
+            .isAssignableFrom(loader.loadClass("dev.sort.duckdb.sql.$consumer")))
+        assertTrue(loader.loadClass("dev.brikk.house.sql.intellij.diagnostics.NativeErrorAnnotator")
+            .isAssignableFrom(loader.loadClass("dev.sort.duckdb.validate.DuckdbErrorAnnotator")))
+        val sharedCompletion = loader.loadClass("dev.brikk.house.sql.intellij.completion.SqlCompletionContributor")
+        assertSame(loader, sharedCompletion.classLoader)
+        val completionProfile = loader.loadClass("dev.sort.duckdb.sql.DuckdbCompletionProfile")
+        assertSame(loader, completionProfile.classLoader)
+        assertTrue(sharedCompletion.isAssignableFrom(loader.loadClass("dev.sort.duckdb.sql.DuckdbMetadataCompletionContributor")))
+        assertSame(loader, loader.loadClass("dev.brikk.house.sql.metadata.FunctionPresentation").classLoader)
+        val profile = loader.loadClass("dev.sort.duckdb.pipes.DuckdbPipeDialect")
+        assertSame(loader, profile.classLoader)
+        assertTrue(pipeClass.isAssignableFrom(profile))
         val value = fragment.getConstructor(String::class.java, String::class.java)
             .newInstance("FROM range(3) |> LIMIT 1", "duckdb")
         val result = fragment.getMethod("toExecutable", String::class.java, Boolean::class.javaPrimitiveType,
@@ -42,7 +125,7 @@ class DuckdbPipesIsolationTest : BasePlatformTestCase() {
             assertNotNull("The product-owned core must contain the fix, not a fixture-core fallback",
                 statement.javaClass.getMethod("getBoundaryError").invoke(statement))
         }
-        for (peerId in listOf("dev.sort.doris-intellij-plugin", "dev.sort.trino-intellij-plugin", "dev.sort.sql-transpiler-intellij-plugin")) {
+        for (peerId in listOf("dev.sort.clickhouse-intellij-plugin", "dev.sort.doris-intellij-plugin", "dev.sort.trino-intellij-plugin", "dev.sort.sql-transpiler-intellij-plugin")) {
             val peer = PluginManagerCore.getPlugin(PluginId.getId(peerId)) ?: continue
             assertNotSame(fragment, peer.pluginClassLoader!!.loadClass(fragment.name))
         }
@@ -57,8 +140,11 @@ class DuckdbPipesIsolationTest : BasePlatformTestCase() {
                 (it as? ActionWithDelegate<*>)?.delegate as? com.intellij.openapi.actionSystem.AnAction
             }.any { it.javaClass === actionClass })
             assertTrue(types.toString(), types.last().startsWith("com.intellij.database.actions.RunQueryAction"))
-            if (PluginManagerCore.getPlugin(PluginId.getId("dev.sort.doris-intellij-plugin")) != null)
-                assertTrue(types.toString(), types.any { it.startsWith("dev.sort.doris.pipes.") })
+            PluginManagerCore.getPlugin(PluginId.getId("dev.sort.doris-intellij-plugin"))?.let { peer ->
+                assertTrue(types.toString(), generateSequence(ActionManager.getInstance().getAction(id)!!) {
+                    (it as? ActionWithDelegate<*>)?.delegate as? com.intellij.openapi.actionSystem.AnAction
+                }.any { it.javaClass.classLoader === peer.pluginClassLoader })
+            }
         }
     }
 
