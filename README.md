@@ -49,7 +49,7 @@ validating SQL with the real engine.
 
 ## PIPE queries
 
-This development build uses brikk-sql 0.20.0-SNAPSHOT and SQL IntelliJ support 0.2.0-SNAPSHOT for PIPE authoring. SQL Transpiler is
+The plugin uses brikk-sql 0.20.0 and SQL IntelliJ support 0.2.0 for PIPE authoring. SQL Transpiler is
 not required. Enable **Settings > Tools > Database > DuckDB PIPE > Enable PIPE syntax in
 this project**; it defaults off and is saved per workspace.
 
@@ -153,6 +153,7 @@ driver. The built-in PIPE translator is independent of that driver.
 
 ```bash
 ./gradlew buildPlugin   # → build/distributions/duckdb-intellij-plugin-<version>.zip
+./gradlew buildPlugin -Prelease=true # → build/distributions/duckdb-intellij-plugin-0.4.1.zip
 ./gradlew test          # census scoreboard + validator grading + boundary contracts
 ./gradlew test262 test263 # same 261-compiled plugin on newer SQL and Kotlin APIs
 ./gradlew verifyDistribution verifyPlugin # ZIP contents, bytecode, IDE API compatibility
@@ -163,9 +164,13 @@ driver. The built-in PIPE translator is independent of that driver.
 The declared base is `0.4.1`; source builds default to
 `0.4.1-dev.<commit time yyyyMMddHHmm UTC>+<12-character SHA>`, with `.dirty` for
 uncommitted changes. The ZIP and the IDE's plugin version use the same label.
-`-Prelease=true` uses the base unchanged, without publishing or choosing a release
+`-Prelease=true` uses the base unchanged and runs `verifyRelease`, rejecting development
+plugin labels and bundled snapshot dependencies; it does not publish or choose a release
 number. IntelliJ sorts the requested dev format above the same bare base, so a
 same-base release install needs a manual downgrade/removal.
+On `release-*` pushes, CI builds with this flag and checks the downloaded ZIP with
+`python3 build-logic/tools/verify-release-zip.py dist dev.sort.duckdb-intellij-plugin 0.4.1`
+before uploading it unchanged. Renaming a development ZIP does not make it a release.
 
 The canonical conventions repo provides `tools/stage-plugin-builds.sh --dry-run`.
 A real staging run builds clean checkouts only and places the five plugins' ZIPs
@@ -176,17 +181,18 @@ IntelliJ IDEA Ultimate 2026.1 SDK (auto-downloaded), Kotlin 2.4.10, JVM 21.
 The SDK supplies optional Kotlin injection APIs; Kotlin is not required to use
 the dialect or PIPE consoles in DataGrip.
 
-The plugin consumes
-`dev.brikk.house:brikk-engine-kotlin-intellij-support:0.2.0` from Maven Central.
-PIPE editing and execution come from
-`dev.brikk.house:brikk-sql-intellij-support:0.2.0-SNAPSHOT`. DuckDB supplies its dialect
-profile, session ownership and optional native validation.
-The SQL support and test-support snapshots must be published to Maven Local.
-Test-support supplies the shared recording console and is never bundled. Neither dependency
-bundles an IntelliJ SDK, Kotlin stdlib or compiler plugin.
+Internal dependencies are pinned to these formal Maven Central coordinates:
 
-Maven Local resolution is restricted to Brikk House snapshot coordinates. Core and metadata
-use 0.20.0-SNAPSHOT; other dependencies remain released versions.
+- `dev.brikk.house:brikk-sql-jvm:0.20.0` and `dev.brikk.house:brikk-sql-metadata-jvm:0.20.0`.
+- `dev.brikk.house:brikk-sql-verify-api:0.20.0` and `dev.brikk.house:brikk-sql-verify-duckdb:0.20.0`.
+- `dev.brikk.house:brikk-sql-intellij-support:0.2.0` and `dev.brikk.house:brikk-engine-kotlin-intellij-support:0.3.0`.
+- Test-only `dev.brikk.house:brikk-sql-intellij-test-support:0.2.0`, which is never bundled.
+
+The owner must publish these prerequisite releases to Maven Central before building or
+testing this cutover. There is no snapshot default or local fallback for these release
+coordinates. DuckDB supplies its dialect profile, session ownership and optional native
+validation; the support libraries do not bundle an IntelliJ SDK, Kotlin stdlib or compiler plugin.
+
 The earlier 0.3.4 local testing ZIP still contains the previously tested snapshot
 until explicitly replaced. Updating source dependencies does not alter an installed ZIP.
 

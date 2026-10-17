@@ -50,6 +50,7 @@
     <change-notes><![CDATA[
         <b>0.4.1</b> - builtin recognition and driver/settings fixes.
         <ul>
+            <li>Uses formal brikk-sql 0.20.0, SQL IntelliJ support 0.2.0 and Kotlin IntelliJ support 0.3.0 dependencies.</li>
             <li>Recognizes DuckDB builtin functions, named reader arguments and type-name aliases; preserves unknown-name and genuine INSERT-layout diagnostics.</li>
             <li>Restores targeted automatic introspection after clearing metadata, including attached catalogs and schemas.</li>
             <li>Fixes data-source picker icons and hides inapplicable PIPE menus. PIPE settings are under Tools &gt; Database &gt; DuckDB PIPE.</li>
