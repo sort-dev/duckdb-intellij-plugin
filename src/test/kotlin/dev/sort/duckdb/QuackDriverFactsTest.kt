@@ -1,9 +1,11 @@
 package dev.sort.duckdb
 
 import org.junit.Assert.assertTrue
+import org.junit.Assert.assertEquals
 import org.junit.Test
 import java.sql.Driver
 import java.util.ServiceLoader
+import java.util.Properties
 
 /**
  * Makes the quack-jdbc jar identify itself — the facts that keep
@@ -18,6 +20,13 @@ class QuackDriverFactsTest {
         val drivers = ServiceLoader.load(Driver::class.java)
             .filterNot { it.javaClass.name.startsWith("org.duckdb") }
         assertTrue("expected the quack driver on the test classpath", drivers.isNotEmpty())
+        val quack = drivers.single { it.javaClass.name == "com.gizmodata.quack.jdbc.sql.QuackDriver" }
+        assertEquals(0, quack.majorVersion)
+        assertEquals(8, quack.minorVersion)
+        assertTrue(quack.acceptsURL("jdbc:quack://localhost:9494/"))
+        val properties = quack.getPropertyInfo("jdbc:quack://localhost:9494/", Properties()).associateBy { it.name }
+        assertTrue(properties.keys.toString(), properties.keys.containsAll(listOf("token", "tokenEnv", "tokenFile", "tls", "connectTimeout", "requestTimeout")))
+        assertEquals("false", properties.getValue("tls").value)
 
         val candidates = listOf(
             "jdbc:quack://localhost:31337/",
@@ -30,6 +39,7 @@ class QuackDriverFactsTest {
         val report = StringBuilder("\n=== quack-jdbc facts ===\n")
         for (d in drivers) {
             report.append("driver-class: ${d.javaClass.name} (v${d.majorVersion}.${d.minorVersion})\n")
+            report.append("jar: ${d.javaClass.protectionDomain?.codeSource?.location}\n")
             for (url in candidates) {
                 val ok = runCatching { d.acceptsURL(url) }.getOrDefault(false)
                 if (ok) report.append("  accepts: $url\n")

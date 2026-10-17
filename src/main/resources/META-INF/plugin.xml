@@ -48,6 +48,13 @@
     ]]></description>
 
     <change-notes><![CDATA[
+        <b>0.4.1</b> - builtin recognition and driver/settings fixes.
+        <ul>
+            <li>Recognizes DuckDB builtin functions, named reader arguments and type-name aliases; preserves unknown-name and genuine INSERT-layout diagnostics.</li>
+            <li>Restores targeted automatic introspection after clearing metadata, including attached catalogs and schemas.</li>
+            <li>Fixes data-source picker icons and hides inapplicable PIPE menus. PIPE settings are under Tools &gt; Database &gt; DuckDB PIPE.</li>
+            <li>Updates Quack JDBC to 0.8.0. Remote query cancellation remains unsupported.</li>
+        </ul>
         <b>0.3.5</b> - dogfood build with formal Brikk releases and shared column completion.
         <ul>
             <li>Uses brikk-sql 0.19.1, SQL IntelliJ support 0.1.1 and Kotlin IntelliJ support 0.2.0 from Maven Central.</li>

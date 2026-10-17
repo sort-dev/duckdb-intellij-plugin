@@ -3,6 +3,7 @@ package dev.sort.duckdb
 import com.intellij.database.actions.DatabaseViewActions
 import com.intellij.database.dataSource.DatabaseDriverManager
 import com.intellij.database.dataSource.LocalDataSourceManager
+import com.intellij.database.dataSource.artifacts.DatabaseArtifactManager
 import com.intellij.ide.util.PropertiesComponent
 import com.intellij.openapi.actionSystem.Separator
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
@@ -11,6 +12,13 @@ class DuckdbDriverPickerIconTest : BasePlatformTestCase() {
     fun testEmbeddedDriverInNewAndRecentPickers() = checkPicker("duckdb-brikk-native")
 
     fun testQuackDriverInNewAndRecentPickers() = checkPicker("duckdb-brikk-quack")
+
+    fun testQuackDriverUsesPreferredArtifact() {
+        val driver = checkNotNull(DatabaseDriverManager.getInstance().getDriver("duckdb-brikk-quack"))
+        val artifact = checkNotNull(DatabaseArtifactManager.resolveVersion(driver, driver.artifacts.single()))
+        assertEquals("The IDE's default rolling Quack artifact must use the current release", "0.8.0", artifact.version.toString())
+        assertTrue(artifact.items.toString(), artifact.items.any { it.url == "dev.brikk.duckdb:quack-jdbc:0.8.0" })
+    }
 
     private fun checkPicker(id: String) {
         val driver = checkNotNull(DatabaseDriverManager.getInstance().getDriver(id))

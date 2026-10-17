@@ -1,6 +1,6 @@
 <artifacts>
   <!-- The GizmoSQL quack JDBC driver (brikk build) — plain JDBC, no Arrow, ZERO runtime
-       dependencies (verified from the 0.3.0 pom: junit + duckdb_jdbc are test-scope only), so
+       dependencies (the 0.8.0 POM declares test dependencies only), so
        the artifact is a single Maven item resolved from Central. Add a <version> block per new
        release; the driver entry references this artifact by NAME. -->
   <!-- The native DuckDB JDBC driver, pinned by US: JetBrains' built-in "DuckDB" artifact
@@ -15,6 +15,10 @@
   </artifact>
 
   <artifact id="quack-jdbc-brikk" name="Quack JDBC (Brikk)">
+    <version version="0.8.0">
+      <item type="maven" url="dev.brikk.duckdb:quack-jdbc:0.8.0"/>
+      <item type="license" url="https://opensource.org/licenses/MIT"/>
+    </version>
     <version version="0.5.0">
       <item type="maven" url="dev.brikk.duckdb:quack-jdbc:0.5.0"/>
       <item type="license" url="https://www.apache.org/licenses/LICENSE-2.0.txt"/>

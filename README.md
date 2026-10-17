@@ -108,6 +108,8 @@ data source still resolves physical tables.
 
 ## Connecting to a remote Quack DuckDB server
 
+The remote template prefers `dev.brikk.duckdb:quack-jdbc:0.8.0`; older driver versions remain selectable.
+
 - The **connection token** goes in the Password field (it is stored in the IDE's secure storage and injected as
   the `token=` URL parameter at connect time). While leaving the user field blank.
 - **TLS is off by default** (matching the driver). For HTTPS endpoints add `tls=true` in the URL
@@ -118,7 +120,7 @@ data source still resolves physical tables.
 
 ## Known issues
 
-- **Query cancel over Quack is a no-op** in the current quack driver — Stop returns but the
+- **Query cancel over Quack 0.8.0 is a no-op** — Stop returns but the
   query keeps running server-side. Local/embedded cancel works correctly (interrupt in ~300 ms).
   When Quack allows cancellation, we will support it.
 - The stock User/Password fields cannot be hidden or relabeled from driver config — hence the
@@ -158,8 +160,8 @@ driver. The built-in PIPE translator is independent of that driver.
 ./gradlew test -Dquack.live.url='jdbc:quack://localhost:9494?token=<token>'
 ```
 
-The declared base is `0.4.0`; source builds default to
-`0.4.0-dev.<commit time yyyyMMddHHmm UTC>+<12-character SHA>`, with `.dirty` for
+The declared base is `0.4.1`; source builds default to
+`0.4.1-dev.<commit time yyyyMMddHHmm UTC>+<12-character SHA>`, with `.dirty` for
 uncommitted changes. The ZIP and the IDE's plugin version use the same label.
 `-Prelease=true` uses the base unchanged, without publishing or choosing a release
 number. IntelliJ sorts the requested dev format above the same bare base, so a

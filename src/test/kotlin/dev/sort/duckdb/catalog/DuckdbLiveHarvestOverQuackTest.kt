@@ -27,7 +27,7 @@ class DuckdbLiveHarvestOverQuackTest {
     fun `harvest over a live quack connection carries the server engine, not the bundled one`() {
         val url = System.getProperty("quack.live.url")
         assumeTrue("quack.live.url not set — live wire test skipped", !url.isNullOrBlank())
-        // quack-jdbc 0.4.0 is a test-scope dependency; make sure DriverManager sees it.
+        // quack-jdbc is a test-scope dependency; make sure DriverManager sees it.
         Class.forName("com.gizmodata.quack.jdbc.sql.QuackDriver")
         DriverManager.getConnection(url).use { connection ->
             val harvest = DuckdbCatalogHarvester.harvest(JdbcCatalogRows(connection))
