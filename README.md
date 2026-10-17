@@ -168,17 +168,18 @@ uncommitted changes. The ZIP and the IDE's plugin version use the same label.
 plugin labels and bundled snapshot dependencies; it does not publish or choose a release
 number. IntelliJ sorts the requested dev format above the same bare base, so a
 same-base release install needs a manual downgrade/removal.
-Pushes to `release-*` run the separate artifact-only `.github/workflows/release.yml`.
-It calls the shared `release-plugin-zip.yml` workflow pinned to
-`6e77690f0bea7aee30faf3808de3e27b4f7e44fa`: checkout, stable build with `-Prelease=true`,
-shared ZIP validation, matching Git tag/GitHub release and unchanged ZIP upload.
+Commit release preparation to `main`, then create `release/<version>` from that commit.
+The shared workflow rejects a commit absent from main, builds with `-Prelease=true`, and runs API
+verification on IntelliJ 262 and 263. Internal usages without exact owner-confirmed call-site approvals
+block the GitHub release. Complete experimental/internal reports are retained.
+Compatible alone is not Marketplace approval. Version 0.4.1 was withdrawn; its tag and local ZIPs
+are audit evidence, not release-ready artifacts.
 Renaming a development ZIP does not make it a release. This workflow never uploads
 to JetBrains Marketplace; that upload is owner-only.
 
 Normal CI remains on `main`, `froze-over`, pull requests to `main` and manual dispatch.
-Release branch pushes do not start its broad tests or Plugin Verifier. Local checks
-and authorized verification precede the controller's release GO; the CI verifier
-remains available through manual dispatch.
+Release branch pushes run their own strict API verification, not the broad CI tests.
+The CI verifier also remains available through manual dispatch.
 
 The canonical conventions repo provides `tools/stage-plugin-builds.sh --dry-run`.
 A real staging run builds clean checkouts only and places the five plugins' ZIPs
