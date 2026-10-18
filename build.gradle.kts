@@ -3,7 +3,7 @@ plugins {
 }
 
 group = "dev.sort.duckdb"
-version = "0.4.1"
+version = "0.4.2"
 
 sqlDialectPlugin {
     embeddedLibraries = with(libs.versions) {

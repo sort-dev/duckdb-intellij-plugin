@@ -153,7 +153,7 @@ driver. The built-in PIPE translator is independent of that driver.
 
 ```bash
 ./gradlew buildPlugin   # → build/distributions/duckdb-intellij-plugin-<version>.zip
-./gradlew buildPlugin -Prelease=true # → build/distributions/duckdb-intellij-plugin-0.4.1.zip
+./gradlew buildPlugin -Prelease=true # → build/distributions/duckdb-intellij-plugin-0.4.2.zip
 ./gradlew test          # census scoreboard + validator grading + boundary contracts
 ./gradlew test262 test263 # same 261-compiled plugin on newer SQL and Kotlin APIs
 ./gradlew verifyDistribution verifyPlugin # ZIP contents, bytecode, IDE API compatibility
@@ -161,8 +161,8 @@ driver. The built-in PIPE translator is independent of that driver.
 ./gradlew test -Dquack.live.url='jdbc:quack://localhost:9494?token=<token>'
 ```
 
-The declared base is `0.4.1`; source builds default to
-`0.4.1-dev.<commit time yyyyMMddHHmm UTC>+<12-character SHA>`, with `.dirty` for
+The declared base is `0.4.2`; source builds default to
+`0.4.2-dev.<commit time yyyyMMddHHmm UTC>+<12-character SHA>`, with `.dirty` for
 uncommitted changes. The ZIP and the IDE's plugin version use the same label.
 `-Prelease=true` uses the base unchanged and runs `verifyRelease`, rejecting development
 plugin labels and bundled snapshot dependencies; it does not publish or choose a release
@@ -172,8 +172,11 @@ Commit release preparation to `main`, then create `release/<version>` from that 
 The shared workflow rejects a commit absent from main, builds with `-Prelease=true`, and runs API
 verification on IntelliJ 262 and 263. Internal usages without exact owner-confirmed call-site approvals
 block the GitHub release. Complete experimental/internal reports are retained.
-Compatible alone is not Marketplace approval. Version 0.4.1 was withdrawn; its tag and local ZIPs
+Compatible alone is not Marketplace approval. GitHub release 0.4.1 was withdrawn; its tag and local ZIPs
 are audit evidence, not release-ready artifacts.
+
+Manual dispatch on `release/<version>` runs the same guarded workflow. Use
+`gh workflow run release.yml --ref release/<version>` if `[skip ci]` skipped the push trigger.
 Renaming a development ZIP does not make it a release. This workflow never uploads
 to JetBrains Marketplace; that upload is owner-only.
 
@@ -197,9 +200,9 @@ Internal dependencies are pinned to these formal Maven Central coordinates:
 - `dev.brikk.house:brikk-sql-intellij-support:0.2.1`, optional `brikk-sql-intellij-jdbc-support:0.2.1`, and `dev.brikk.house:brikk-engine-kotlin-intellij-support:0.3.0`.
 - Test-only `dev.brikk.house:brikk-sql-intellij-test-support:0.2.1`, which is never bundled.
 
-The 0.2.1 common support, optional JDBC adapter and test-kit coordinates are currently local candidates.
-They need Central publication before default builds; explicit local validation uses a candidate repository
-override. Core0.20.0 and Kotlin helper0.3.0 are already public. There is no snapshot fallback for these release
+Common support, the optional JDBC adapter and test kit 0.2.1 are published on Maven Central,
+alongside core 0.20.0 and Kotlin helper 0.3.0. Normal builds require no local repository override.
+There is no snapshot fallback for these release
 coordinates. DuckDB supplies its dialect profile, session ownership and optional native
 validation; the support libraries do not bundle an IntelliJ SDK, Kotlin stdlib or compiler plugin.
 

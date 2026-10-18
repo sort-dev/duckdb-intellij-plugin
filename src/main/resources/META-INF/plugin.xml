@@ -48,6 +48,12 @@
     ]]></description>
 
     <change-notes><![CDATA[
+        <b>0.4.2</b> - SQL IntelliJ support and JDBC adapter 0.2.1.
+        <ul>
+            <li>Package JDBC routing in its dedicated adapter and remove redundant compatibility forwarding.</li>
+            <li>Remove experimental markers from Brikk's shared public APIs.</li>
+            <li>Keep Quack JDBC 0.8.0, embedded driver defaults and existing editing behavior.</li>
+        </ul>
         <b>0.4.1</b> - builtin recognition and driver/settings fixes.
         <ul>
             <li>Uses formal brikk-sql 0.20.0, SQL IntelliJ support 0.2.0 and Kotlin IntelliJ support 0.3.0 dependencies.</li>
