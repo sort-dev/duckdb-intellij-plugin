@@ -6,7 +6,8 @@
     <description><![CDATA[
         <p>A real <b>DuckDB SQL dialect</b> for DataGrip and IntelliJ-family IDEs, with
         ready-to-use data sources for <b>local/embedded DuckDB</b> and
-        <b>GizmoSQL servers</b> (Arrow-free quack-jdbc driver).</p>
+        <b>GizmoSQL servers</b>. Remote connections use Sortdev's fork of GizmoSQL's original
+        Arrow-free <code>quack-jdbc</code> driver, extended through Quack protocol v3 for DuckDB 2.0.</p>
 
         <ul>
             <li><b>Built-in PIPE authoring:</b> enable under Settings &gt; Tools &gt; Database &gt; DuckDB PIPE,
@@ -36,6 +37,9 @@
         <p><b>GizmoSQL connection notes:</b> paste your <b>token into the Password field</b>
         (stored in the IDE's secure storage) and <b>leave User blank</b>; TLS is off by default —
         add <code>tls=true</code> in the URL parameters for HTTPS endpoints.</p>
+
+        <p>GizmoSQL created the original <code>quack-jdbc</code> driver. The Sortdev fork used
+        here adds protocol v3 support for DuckDB 2.0; the original driver does not support it.</p>
 
         <p><b>Known issue:</b> cancelling a running query over a GizmoSQL connection is currently
         a no-op in the quack driver — the query keeps running server-side. Local/embedded cancel

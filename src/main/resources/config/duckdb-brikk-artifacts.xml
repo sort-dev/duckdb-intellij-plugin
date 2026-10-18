@@ -1,6 +1,7 @@
 <artifacts>
-  <!-- The GizmoSQL quack JDBC driver (brikk build) — plain JDBC, no Arrow, ZERO runtime
-       dependencies (the 0.8.0 POM declares test dependencies only), so
+  <!-- Sortdev's fork of GizmoSQL's original quack JDBC driver. The fork adds Quack protocol v3
+       support for DuckDB 2.0; the original driver does not. It is plain JDBC, with no Arrow and
+       ZERO runtime dependencies (the 0.8.0 POM declares test dependencies only), so
        the artifact is a single Maven item resolved from Central. Add a <version> block per new
        release; the driver entry references this artifact by NAME. -->
   <!-- The native DuckDB JDBC driver, pinned by US: JetBrains' built-in "DuckDB" artifact

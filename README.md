@@ -42,6 +42,9 @@ the in-memory URL template for a temporary database.
 
 Create a **DuckDB via Quack (sort.dev)** data source.
 
+The connection uses Sortdev's fork of GizmoSQL's original `quack-jdbc` driver. Our fork
+adds Quack protocol v3 support for DuckDB 2.0, which the original driver does not support.
+
 - The default port is `9494`.
 - Put the connection token in the **Password** field.
 - Leave the **User** field empty.
@@ -87,8 +90,8 @@ When no connection is available, the plugin uses its bundled DuckDB function cat
   community. This plugin is an independent project and is not affiliated with them.
   "DuckDB" and the DuckDB logo are trademarks of the DuckDB Foundation. The logo is used
   according to the [DuckDB design manual](https://duckdb.org/design/manual/).
-- [GizmoSQL](https://gizmosql.com) created the `quack-jdbc` driver, a JDBC implementation
-  of the Quack wire protocol.
+- [GizmoSQL](https://gizmosql.com) created the original `quack-jdbc` driver. This plugin
+  uses Sortdev's fork, which we have extended through Quack protocol v3 for DuckDB 2.0.
 - See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for full third-party attributions.
 
 ## License

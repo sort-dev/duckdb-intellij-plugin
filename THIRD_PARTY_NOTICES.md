@@ -1,5 +1,12 @@
 # Third-party notices
 
+## Quack JDBC driver
+
+GizmoSQL created the original `quack-jdbc` driver. The remote data source downloads
+Sortdev's fork, `dev.brikk.duckdb:quack-jdbc`, from Maven Central. Sortdev has extended
+the fork through Quack protocol v3 for DuckDB 2.0; the original GizmoSQL driver does not
+support protocol v3. The driver is distributed under the MIT License.
+
 ## Brikk Kotlin IntelliJ support 0.3.0
 
 This plugin embeds `dev.brikk.house:brikk-engine-kotlin-intellij-support:0.3.0`

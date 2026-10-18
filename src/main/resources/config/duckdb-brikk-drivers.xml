@@ -15,11 +15,13 @@
     <option name="auto-sync" value="true"/>
   </driver>
 
-  <!-- Remote DuckDB via GizmoSQL using the quack-jdbc driver (NOT Arrow/ADBC based — it decodes
-       the serialized results directly, so no add-opens / Arrow memory flags are needed).
+  <!-- Remote DuckDB via GizmoSQL using Sortdev's fork of the original GizmoSQL quack-jdbc
+       driver. The fork adds Quack protocol v3 support for DuckDB 2.0; the original does not.
+       It is NOT Arrow/ADBC based — it decodes the serialized results directly, so no add-opens
+       / Arrow memory flags are needed.
        Driver class + jdbc:quack:// scheme are FACTS extracted from
-        dev.brikk.duckdb:quack-jdbc:0.8.0 by QuackDriverFactsTest (the brikk build
-       keeps upstream's com.gizmodata package — relabel if/when the fork becomes permanent).
+       dev.brikk.duckdb:quack-jdbc:0.8.0 by QuackDriverFactsTest. The fork keeps the
+       original com.gizmodata package for compatibility.
        Downloadable via the "Quack JDBC (Brikk)" artifact (config/duckdb-brikk-artifacts.xml,
        resolved from Maven Central) — no manual jar attach needed. -->
   <driver id="duckdb-brikk-quack" name="DuckDB via Quack (sort.dev)" dialect="DuckDBSQL"
