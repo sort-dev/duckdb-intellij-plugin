@@ -153,6 +153,7 @@
         <extensionPoint qualifiedName="dev.sort.duckdb.inspectionHost" interface="dev.sort.duckdb.brikk.DuckdbInspectionHost" dynamic="true"/>
     </extensionPoints>
     <depends optional="true" config-file="duckdb-kotlin.xml">org.jetbrains.kotlin</depends>
+    <depends optional="true" config-file="duckdb-bsql.xml">dev.sort.sql-transpiler-intellij-plugin</depends>
     <extensions defaultExtensionNs="org.jetbrains.kotlin">
         <supportsKotlinPluginMode supportsK2="true" supportsK1="false"/>
     </extensions>

@@ -30,7 +30,8 @@ class DuckdbErrorAnnotator : NativeErrorAnnotator(DuckdbNativeErrorProfile)
 
 internal object DuckdbNativeErrorProfile : NativeErrorProfile {
     override val language get() = DuckdbSqlDialect
-    override val injectionHosts get() = setOfNotNull(Language.findLanguageByID("kotlin"))
+    // Kotlin strings, and blocks of SQL Transpiler's polyglot .bsql files.
+    override val injectionHosts get() = setOfNotNull(Language.findLanguageByID("kotlin"), Language.findLanguageByID("BrikkSQL"))
     override val dialect = "duckdb"
     override val label = "DuckDB"
     override val sizeCap = 100_000
