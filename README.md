@@ -1,61 +1,80 @@
-# SQL Dialect for DuckDB
+# DuckDB support for DataGrip & IntelliJ IDEA
 
-A DuckDB SQL plugin for DataGrip and IntelliJ IDEA Ultimate. It adds a proper DuckDB
-editor and ready-to-use connections for embedded DuckDB and remote Quack servers.
+A plugin that adds a real [DuckDB](https://duckdb.org) SQL dialect to DataGrip and IntelliJ IDEA
+Ultimate, with ready-to-use connections for embedded DuckDB and remote Quack servers.
 
-JetBrains' built-in DuckDB connection uses generic SQL support. This plugin understands
-DuckDB syntax and keeps statements, completion, and database objects in sync with DuckDB.
+> [!IMPORTANT]
+> **Not affiliated with DuckDB.** This is an independent plugin by Sortdev SRL. It is not developed,
+> endorsed or sponsored by DuckDB Labs, the DuckDB Foundation or GizmoSQL. "DuckDB" and the DuckDB
+> logo are trademarks of the DuckDB Foundation, used here only to name the database this plugin
+> works with. The logo is used according to the
+> [DuckDB design manual](https://duckdb.org/design/manual/).
 
-Use the `DuckDB (sort.dev)` dialect and data sources after installing the plugin.
+## Why
+
+The IDE's built-in DuckDB connection uses generic SQL support, which doesn't understand DuckDB
+syntax. This plugin adds a full DuckDB dialect and keeps statements, completion and database
+objects in sync with your DuckDB version.
+
+## Features
+
+- **DuckDB syntax** including `SELECT * EXCLUDE`, `QUALIFY`, `GROUP BY ALL`, `PIVOT`, `ATTACH`,
+  `SUMMARIZE`, FROM-first queries, lambdas, structs and lists.
+- **Correct statement boundaries** and run buttons for multi-statement scripts.
+- **DuckDB's own error checking** where native validation is available. Checking never runs your
+  SQL.
+- **Completion** for functions and keywords, based on your DuckDB version and loaded extensions.
+- **Database tree** with tables, views, columns, keys and attached databases.
+- **Ready-made data sources** for embedded DuckDB and Quack servers. The plugin downloads the JDBC
+  driver from Maven Central.
+- **DuckDB PIPE (optional).** Write pipe-syntax queries and run them in the normal console. See
+  [DuckDB PIPE](#duckdb-pipe).
 
 ## Requirements
 
-- DataGrip or IntelliJ IDEA Ultimate
-- IDE versions 2026.1 through 2026.3
+- DataGrip or IntelliJ IDEA Ultimate, **2026.1 to 2026.3**.
 
 ## Install
 
-1. Open **Settings > Plugins > Marketplace**.
-2. Search for **SQL Dialect for DuckDB (embedded & Quack)**.
-3. Install the plugin and restart the IDE if prompted.
-4. Add either **DuckDB Embedded (sort.dev)** or **DuckDB via Quack (sort.dev)** as a data source.
+**From the JetBrains Marketplace (recommended).** Open **Settings → Plugins → Marketplace**, search
+for *SQL Dialect for DuckDB (embedded & Quack)*, install it and restart the IDE.
 
-The plugin downloads the required JDBC driver from Maven Central.
+**From a file.** Download the zip from the
+[Releases](https://github.com/sort-dev/duckdb-intellij-plugin/releases) page, then use
+**Settings → Plugins → ⚙ → Install Plugin from Disk…** and restart.
 
-## What you get
+## Getting started
 
-- DuckDB syntax support for `SELECT * EXCLUDE`, `QUALIFY`, `GROUP BY ALL`, `PIVOT`,
-  `ATTACH`, `SUMMARIZE`, FROM-first queries, lambdas, structs, lists, and other DuckDB SQL.
-- Correct statement boundaries and run buttons for multi-statement scripts.
-- Parser errors from DuckDB itself where native validation is available. Validation does
-  not execute your SQL.
-- Function and keyword completion based on the connected DuckDB version and loaded extensions.
-- Tables, views, columns, keys, and attached databases in the database tree.
-- Optional PIPE queries that run in the normal console and results grid.
+Add a data source and pick one of the two types below. Both use the **DuckDB (sort.dev)** dialect.
 
-## Embedded DuckDB
+### Embedded DuckDB
 
-Create a **DuckDB Embedded (sort.dev)** data source. Choose a database file, or select
-the in-memory URL template for a temporary database.
+Create a **DuckDB Embedded (sort.dev)** data source. Choose a database file, or pick the in-memory
+URL template for a temporary database.
 
-## Remote Quack connection
+### Remote Quack server
 
 Create a **DuckDB via Quack (sort.dev)** data source.
 
-The connection uses Sortdev's fork of GizmoSQL's original `quack-jdbc` driver. Our fork
-adds Quack protocol v3 support for DuckDB 2.0, which the original driver does not support.
-
 - The default port is `9494`.
-- Put the connection token in the **Password** field.
-- Leave the **User** field empty.
+- Put the connection token in the **Password** field and leave **User** empty. The IDE keeps the
+  token in its secure credential storage.
 - Add `tls=true` to the URL parameters for HTTPS endpoints.
-- You can also add `tokenEnv`, `tokenFile`, `connectTimeout`, or `requestTimeout` as URL parameters.
+- You can also add `tokenEnv`, `tokenFile`, `connectTimeout` or `requestTimeout` as URL parameters.
 
-The IDE stores a token entered in the Password field in its secure credential storage.
+The connection uses Sortdev's fork of GizmoSQL's `quack-jdbc` driver. The fork adds Quack protocol
+v3 support for DuckDB 2.0, which the original driver doesn't have.
 
-## PIPE queries
+## Refreshing completion
 
-PIPE syntax is off by default. Enable it under **Settings > Tools > Database > DuckDB PIPE**.
+Completion refreshes when a connection opens and after `INSTALL` or `LOAD` runs. For autoloaded
+extensions, right-click in the editor and choose **Refresh DuckDB Catalog**. Without a connection,
+the plugin uses its bundled DuckDB function list.
+
+## DuckDB PIPE
+
+Write queries in [pipe syntax](https://cloud.google.com/bigquery/docs/pipe-syntax-guide) and run
+them on DuckDB.
 
 ```sql
 FROM range(5) AS t(i)
@@ -64,36 +83,51 @@ FROM range(5) AS t(i)
 |> ORDER BY doubled;
 ```
 
-Use **Preview Generated SQL** to inspect the DuckDB SQL before running it. **Run Stages
-up to Caret** executes only the pipeline through the current stage. Translation errors
-block execution instead of sending invalid PIPE syntax to the database.
+When you run it, the plugin converts the pipe query to plain DuckDB SQL and sends that to the
+database.
 
-## Refresh completion
+**Turn it on** in **Settings → Tools → Database → DuckDB PIPE**. It's off by default.
 
-Completion refreshes after a connection opens and after `INSTALL` or `LOAD` runs. For
-autoloaded extensions, right-click in the editor and choose **Refresh DuckDB Catalog**.
+What you get:
 
-When no connection is available, the plugin uses its bundled DuckDB function catalog.
+- Right-click → **DuckDB PIPE → Preview Generated SQL** shows the DuckDB SQL before you run
+  it.
+- Right-click → **DuckDB PIPE → Run Stages up to Caret** runs the pipeline only up to the stage
+  at your cursor.
+- If the conversion fails, nothing runs. The plugin never sends invalid pipe syntax to the
+  database.
 
 ## Known limitations
 
-- Stopping a query over Quack 0.8.0 does not cancel it on the server. Embedded DuckDB
-  cancellation works.
-- The Quack data source uses the standard User and Password fields, so the unused User
-  field remains visible.
-- Named constraints and indexes may not appear in the database tree because DuckDB JDBC
-  metadata does not return their names.
+- Stop doesn't cancel a query on a Quack 0.8.0 server. Cancel works for embedded DuckDB.
+- The Quack data source shows a **User** field it doesn't use.
+- Named constraints and indexes may be missing from the database tree, because DuckDB's JDBC
+  driver doesn't report their names.
 
-## Credits
+## Related plugins and tools
 
-- [DuckDB](https://duckdb.org) is developed by DuckDB Labs and the DuckDB Foundation
-  community. This plugin is an independent project and is not affiliated with them.
-  "DuckDB" and the DuckDB logo are trademarks of the DuckDB Foundation. The logo is used
-  according to the [DuckDB design manual](https://duckdb.org/design/manual/).
-- [GizmoSQL](https://gizmosql.com) created the original `quack-jdbc` driver. This plugin
-  uses Sortdev's fork, which we have extended through Quack protocol v3 for DuckDB 2.0.
-- See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for full third-party attributions.
+- [Apache Doris SQL](https://plugins.jetbrains.com/plugin/32777-sql-dialect-for-apache-doris)
+  dialect for JetBrains IDEs.
+- [ClickHouse SQL](https://github.com/sort-dev/clickhouse-intellij-plugin) dialect for JetBrains
+  IDEs.
+- [Trino SQL](https://plugins.jetbrains.com/plugin/33124-sql-dialect-for-trino) dialect for
+  JetBrains IDEs.
+- [SQL Transpiler](https://plugins.jetbrains.com/plugin/32900-sql-transpiler) converts SQL between
+  dialects in JetBrains IDEs.
+- [Trino Doris connector](https://github.com/brikk/trino-doris-connector) lets Trino query Doris.
+- [Trino DuckLake catalog](https://github.com/brikk/ducklake-integrations/tree/main/jvm/trino-ducklake)
+  with read and write support.
+- [Trino Duckbridge](https://github.com/brikk/duckbridge) gives Trino remote access to DuckDB.
+
+## Feedback
+
+Found a bug or SQL the plugin gets wrong?
+[Open an issue](https://github.com/sort-dev/duckdb-intellij-plugin/issues). A small, anonymized SQL
+sample helps a lot. Want to build or change the plugin? See
+[dev-docs/CONTRIBUTING.md](dev-docs/CONTRIBUTING.md).
 
 ## License
 
-Apache-2.0. Independent community plugin by Sortdev SRL.
+Apache License 2.0, see [LICENSE](LICENSE). Copyright 2026 Sortdev SRL. Bundled third-party parts,
+including the GizmoSQL `quack-jdbc` credit, are listed in
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
