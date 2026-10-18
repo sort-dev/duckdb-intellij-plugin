@@ -8,13 +8,20 @@ https://github.com/brikk/brikk-house, Apache License 2.0. The helper contains
 Brikk context/interpolation and copied relation-contract APIs. Kotlin/IntelliJ
 APIs and compiler plugins are not bundled by this dependency.
 
-## Brikk SQL IntelliJ support 0.2.0
+## Brikk SQL IntelliJ support 0.2.1
 
-This plugin embeds `dev.brikk.house:brikk-sql-intellij-support:0.2.0` from
-Maven Central. Jayson Minard and Sortdev SRL, https://github.com/brikk/brikk-sql,
+This plugin embeds `dev.brikk.house:brikk-sql-intellij-support:0.2.1`.
+Jayson Minard and Sortdev SRL, https://github.com/brikk/brikk-sql,
 Apache License 2.0. The helper provides cooperative Execute actions, promotion,
 document snapshots, translated script models and shared column presentation. No IntelliJ SDK, SQL engine,
 native driver or verifier is supplied transitively by this library.
+
+## Brikk SQL IntelliJ JDBC support 0.2.1
+
+This plugin embeds `dev.brikk.house:brikk-sql-intellij-jdbc-support:0.2.1`,
+Copyright 2026 Sortdev SRL, https://github.com/brikk/brikk-sql, Apache License 2.0.
+This optional adapter routes DuckDB to JDBC introspection. It contains its LICENSE and NOTICE;
+IntelliJ SDK classes are compile-only and are not bundled.
 
 ## brikk-sql and metadata 0.20.0
 

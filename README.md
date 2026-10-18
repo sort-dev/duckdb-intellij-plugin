@@ -49,7 +49,7 @@ validating SQL with the real engine.
 
 ## PIPE queries
 
-The plugin uses brikk-sql 0.20.0 and SQL IntelliJ support 0.2.0 for PIPE authoring. SQL Transpiler is
+The plugin uses brikk-sql 0.20.0 and SQL IntelliJ support 0.2.1 for PIPE authoring. SQL Transpiler is
 not required. Enable **Settings > Tools > Database > DuckDB PIPE > Enable PIPE syntax in
 this project**; it defaults off and is saved per workspace.
 
@@ -194,11 +194,12 @@ Internal dependencies are pinned to these formal Maven Central coordinates:
 
 - `dev.brikk.house:brikk-sql-jvm:0.20.0` and `dev.brikk.house:brikk-sql-metadata-jvm:0.20.0`.
 - `dev.brikk.house:brikk-sql-verify-api:0.20.0` and `dev.brikk.house:brikk-sql-verify-duckdb:0.20.0`.
-- `dev.brikk.house:brikk-sql-intellij-support:0.2.0` and `dev.brikk.house:brikk-engine-kotlin-intellij-support:0.3.0`.
-- Test-only `dev.brikk.house:brikk-sql-intellij-test-support:0.2.0`, which is never bundled.
+- `dev.brikk.house:brikk-sql-intellij-support:0.2.1`, optional `brikk-sql-intellij-jdbc-support:0.2.1`, and `dev.brikk.house:brikk-engine-kotlin-intellij-support:0.3.0`.
+- Test-only `dev.brikk.house:brikk-sql-intellij-test-support:0.2.1`, which is never bundled.
 
-The owner must publish these prerequisite releases to Maven Central before building or
-testing this cutover. There is no snapshot default or local fallback for these release
+The 0.2.1 common support, optional JDBC adapter and test-kit coordinates are currently local candidates.
+They need Central publication before default builds; explicit local validation uses a candidate repository
+override. Core0.20.0 and Kotlin helper0.3.0 are already public. There is no snapshot fallback for these release
 coordinates. DuckDB supplies its dialect profile, session ownership and optional native
 validation; the support libraries do not bundle an IntelliJ SDK, Kotlin stdlib or compiler plugin.
 
