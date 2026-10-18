@@ -6,7 +6,7 @@
     <description><![CDATA[
         <p>A real <b>DuckDB SQL dialect</b> for DataGrip and IntelliJ-family IDEs, with
         ready-to-use data sources for <b>local/embedded DuckDB</b> and
-        <b>GizmoSQL servers</b>. Remote connections use Sortdev's fork of GizmoSQL's original
+        <b>remote Quack servers</b>. Remote connections use Sortdev's fork of GizmoSQL's original
         Arrow-free <code>quack-jdbc</code> driver, extended through Quack protocol v3 for DuckDB 2.0.</p>
 
         <ul>
@@ -29,26 +29,29 @@
                 itself; autoloaded extensions arrive via <i>Refresh DuckDB Catalog</i> (editor
                 right-click). Offline you get bundled version-aware metadata, plus
                 <i>"requires &lt;extension&gt;"</i> hints for extension functions.</li>
-            <li><b>Two data sources, one dialect:</b> local file / in-memory DuckDB, and GizmoSQL
-                over <code>jdbc:quack://</code> (default port 9494). Driver versions are pinned
+            <li><b>Two data sources, one dialect:</b> local file / in-memory DuckDB, and remote Quack
+                servers over <code>jdbc:quack://</code> (default port 9494). Driver versions are pinned
                 and auto-download from Maven Central, matched to the tested engine.</li>
         </ul>
 
-        <p><b>GizmoSQL connection notes:</b> paste your <b>token into the Password field</b>
-        (stored in the IDE's secure storage) and <b>leave User blank</b>; TLS is off by default —
-        add <code>tls=true</code> in the URL parameters for HTTPS endpoints.</p>
+        <p><b>Remote Quack connection:</b> put the token in the <b>Password</b> field and
+        <b>leave User blank</b>. The IDE stores the token in its secure credential storage.
+        TLS is off by default; add <code>tls=true</code> to the URL parameters for HTTPS endpoints.</p>
 
         <p>GizmoSQL created the original <code>quack-jdbc</code> driver. The Sortdev fork used
         here adds protocol v3 support for DuckDB 2.0; the original driver does not support it.</p>
 
-        <p><b>Known issue:</b> cancelling a running query over a GizmoSQL connection is currently
-        a no-op in the quack driver — the query keeps running server-side. Local/embedded cancel
-        works. A driver fix is tracked.</p>
+        <p><b>Known issue:</b> cancelling a running query over a Quack connection (driver
+        0.8.0) is a no-op; the query keeps running on the server. Embedded DuckDB cancel works.
+        A driver fix is tracked.</p>
 
         <p><i>This is an independent, community plugin developed by Sortdev SRL, not affiliated
         with DuckDB Labs, the DuckDB Foundation, or GizmoSQL. "DuckDB" is a trademark of the
         DuckDB Foundation, used only to identify the database this plugin supports. DuckDB logo
         used per the <a href="https://duckdb.org/design/manual/">DuckDB design manual</a>.</i></p>
+
+        <p>Source, issues and documentation:
+        <a href="https://github.com/sort-dev/duckdb-intellij-plugin">github.com/sort-dev/duckdb-intellij-plugin</a></p>
     ]]></description>
 
     <change-notes><![CDATA[
