@@ -99,4 +99,5 @@ The engine's new PEG parser does not replace our IntelliJ `PgParser`.
   Quack; a local `EXPLAIN` does not prove remote behavior.
 - [ ] Update the README's pinned-engine, offline catalog, coverage, and Quack
   version statements with measured results. Follow the release decision rule
-  in `PLAN.md` before changing the plugin's own version or publishing it.
+  in [the archived coverage plan](archive/PLAN.md) before changing the plugin's
+  own version or publishing it.

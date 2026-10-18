@@ -1,57 +1,58 @@
-# SQL Dialect for DuckDB (embedded & Quack)
+# SQL Dialect for DuckDB
 
-A full **DuckDB SQL dialect** for DataGrip and IntelliJ-family IDEs, with ready-made data sources
-for **local/embedded DuckDB** and via the **[Quack protocol](https://duckdb.org/quack/)** (token-auth
-`quack-jdbc` driver — plain JDBC, no Arrow).
+A DuckDB SQL plugin for DataGrip and IntelliJ IDEA Ultimate. It adds a proper DuckDB
+editor and ready-to-use connections for embedded DuckDB and remote Quack servers.
 
-Part of our SQL-tooling family alongside:
+JetBrains' built-in DuckDB connection uses generic SQL support. This plugin understands
+DuckDB syntax and keeps statements, completion, and database objects in sync with DuckDB.
 
-* [**Trino native DuckLake Catalog** with full Read/Write support](https://github.com/brikk/ducklake-integrations/tree/main/jvm/trino-ducklake)
-* [**Trino Duckbridge** - remote access to DuckDB via Quack](https://github.com/brikk/duckbridge)
-* [**SQL Dialect Transpiler** for various datalake dialects and DataGrip & Jetbrains IDE's](https://plugins.jetbrains.com/plugin/32900-sql-transpiler)
-* [**Doris SQL Dialect** for DataGrip & Jetbrains IDE's](https://plugins.jetbrains.com/plugin/32777-sql-dialect-for-apache-doris)
-* [**Trino - Doris connector** allowing Trino to access your Doris data](https://github.com/brikk/trino-doris-connector)
-* [**Trino SQL Dialect** for DataGrip & Jetbrains IDE's](https://plugins.jetbrains.com/plugin/33124-sql-dialect-for-trino)
-* [**brikk-house** - Data engineering platform](https://github.com/brikk/brikk-house) (coming soon)
+Use the `DuckDB (sort.dev)` dialect and data sources after installing the plugin.
 
-> **In the IDE, use one of the `DuckDB (sort.dev)` dialects.**
+## Requirements
 
-## Why
+- DataGrip or IntelliJ IDEA Ultimate
+- IDE versions 2026.1 through 2026.3
 
-The built-in DataGrip / Intellij has only a minimal DuckDB dialect — DuckDB connects as a *generic* data source with the
-Generic SQL editor. Everything that makes DuckDB SQL worth using red-flags or breaks statement
-boundaries: `SELECT * EXCLUDE (…)`, `QUALIFY`, `GROUP BY ALL`, struct/list literals, lambdas,
-`PIVOT`, FROM-first queries, `ATTACH`, `SUMMARIZE`. This plugin gives DuckDB the first-class
-treatment, using the architecture proven by our other plugins: editing with custom parsers,
-validating SQL with the real engine.
+## Install
 
-## What it does
+1. Open **Settings > Plugins > Marketplace**.
+2. Search for **SQL Dialect for DuckDB (embedded & Quack)**.
+3. Install the plugin and restart the IDE if prompted.
+4. Add either **DuckDB Embedded (sort.dev)** or **DuckDB via Quack (sort.dev)** as a data source.
 
-- **Correct statement & run-block boundaries** for the whole DuckDB statement surface — every
-  statement gets a working run box, nothing bleeds into its neighbor.
-- **Native parser error checking** uses DuckDB's `json_serialize_sql` in a restricted in-memory
-  instance from your data source's driver. SQL is never bound or executed. Unsupported serialization
-  is unavailable, so valid non-SELECT statements have no native validation. Parser failures still
-  carry the engine's messages; schema resolution stays with the IDE.
-- **Completion that follows your engine**: on connect, functions/keywords are harvested live from
-  `duckdb_functions()` — your engine version, your loaded extensions — and cached per data source
-  (survives restarts and offline sessions). Run `INSTALL`/`LOAD` in a console and completion
-  updates itself within seconds; **autoloaded** extensions (used without INSTALL/LOAD) are picked
-  up by editor right-click → **Refresh DuckDB Catalog**. With no connection you get the bundled
-  snapshot (943 functions at DuckDB 1.5.5) plus *"requires \<extension\>"* hints for known
-  extension functions (spatial, inet, fts, sqlite_scanner, postgres_scanner).
-- **Object tree from DuckDB's JDBC metadata**: tables, views, columns (STRUCT/LIST spellings),
-  PK/FK — and `ATTACH`ed databases appear as catalogs, on both drivers.
-- **Two data-source templates, one dialect**: local/embedded DuckDB and Quack remote
-  (`jdbc:quack://`, default port 9494). Driver versions are pinned by the plugin and
-  auto-download from Maven Central — always matching the engine version the plugin is built and
-  tested against (currently **DuckDB 1.5.5**).
+The plugin downloads the required JDBC driver from Maven Central.
+
+## What you get
+
+- DuckDB syntax support for `SELECT * EXCLUDE`, `QUALIFY`, `GROUP BY ALL`, `PIVOT`,
+  `ATTACH`, `SUMMARIZE`, FROM-first queries, lambdas, structs, lists, and other DuckDB SQL.
+- Correct statement boundaries and run buttons for multi-statement scripts.
+- Parser errors from DuckDB itself where native validation is available. Validation does
+  not execute your SQL.
+- Function and keyword completion based on the connected DuckDB version and loaded extensions.
+- Tables, views, columns, keys, and attached databases in the database tree.
+- Optional PIPE queries that run in the normal console and results grid.
+
+## Embedded DuckDB
+
+Create a **DuckDB Embedded (sort.dev)** data source. Choose a database file, or select
+the in-memory URL template for a temporary database.
+
+## Remote Quack connection
+
+Create a **DuckDB via Quack (sort.dev)** data source.
+
+- The default port is `9494`.
+- Put the connection token in the **Password** field.
+- Leave the **User** field empty.
+- Add `tls=true` to the URL parameters for HTTPS endpoints.
+- You can also add `tokenEnv`, `tokenFile`, `connectTimeout`, or `requestTimeout` as URL parameters.
+
+The IDE stores a token entered in the Password field in its secure credential storage.
 
 ## PIPE queries
 
-The plugin uses brikk-sql 0.20.0 and SQL IntelliJ support 0.2.1 for PIPE authoring. SQL Transpiler is
-not required. Enable **Settings > Tools > Database > DuckDB PIPE > Enable PIPE syntax in
-this project**; it defaults off and is saved per workspace.
+PIPE syntax is off by default. Enable it under **Settings > Tools > Database > DuckDB PIPE**.
 
 ```sql
 FROM range(5) AS t(i)
@@ -60,176 +61,35 @@ FROM range(5) AS t(i)
 |> ORDER BY doubled;
 ```
 
-Execute uses the normal console and results grid. Right-click **DuckDB PIPE**
-or use Alt+Enter to preview generated SQL or run only the stages up to the
-caret. Translation errors and unsupported/lossy translations block execution;
-they never fall back to sending raw PIPE syntax. Mixed scripts keep ordinary
-SQL unchanged. Native FROM-first DuckDB queries do not require this setting.
-Stage completion offers operators and known output aliases from previous stages.
-Run-to-stage refuses a caret inside a nested pipeline. Execute discovers parameters
-through the core parser and substitutes values before lowering, including LIMIT
-and configured IDE parameters in literals. It preflights every selected PIPE
-before submitting any statement and refuses stale preparation.
-Server errors remain in the normal output against the generated SQL; exact
-source mapping is not yet enabled for DuckDB server errors.
+Use **Preview Generated SQL** to inspect the DuckDB SQL before running it. **Run Stages
+up to Caret** executes only the pipeline through the current stage. Translation errors
+block execution instead of sending invalid PIPE syntax to the database.
 
-Only the translator is bundled, not a native database engine. To disable PIPE
-globally as an emergency override, use `-Dduckdb.pipes=false`.
+## Refresh completion
 
-## Brikk Kotlin SQL
+Completion refreshes after a connection opens and after `INSTALL` or `LOAD` runs. For
+autoloaded extensions, right-click in the editor and choose **Refresh DuckDB Catalog**.
 
-Since 0.3.1, with the Kotlin K2 plugin installed, a resolved `Sql.duckdb(...)` call inside
-`dev.brikk.house.sql.runtime.BrikkSql` activates DuckDB's Brikk editing profile
-automatically. The injected language stays `DuckDBSQL`. PIPE editing is enabled
-for that SQL host even when the project's PIPE checkbox is off; other files
-and Doris calls are unchanged.
+When no connection is available, the plugin uses its bundled DuckDB function catalog.
 
-Scalar Kotlin interpolations such as `$tenant` and `${tenant}` appear to SQL
-inspections as named binds, `:tenant`, while the original Kotlin reference
-keeps usages, rename and navigation. `Rel` parameters stay relation slots,
-and literal SQL constants are inserted as text. Unsupported expressions or
-computed constants get host diagnostics rather than guessed SQL values. JSON
-paths, escaped dollars, `trimIndent()` and default `trimMargin()` retain their
-source mappings.
+## Known limitations
 
-This is an inspection view, not runnable SQL. Run the compiled/composed Brikk
-relation with its bindings. This plugin's Execute and run-to-stage handlers do
-not execute the inspection placeholders. `Rel<T>` input columns now resolve,
-complete and navigate through the shared Brikk Kotlin support library, including
-inherited trait bounds and available compiler-generated shapes. SQL aliases,
-outer-join nullability and supported PIPE stages have statement-local scopes.
-Column lookup presentation comes from the shared SQL IntelliJ renderer. It shows
-the Kotlin type and nullability with `brikk column` or `relation contract` and the
-source alias. Same-named columns from different join aliases stay distinct.
-Partial contracts supply known guarantees, not a closed runtime inventory;
-unavailable shapes do not invent missing-column errors. Exact SQL types and
-generated SQL-column source spans are not supplied by this contract. A DDL
-data source still resolves physical tables.
-
-## Connecting to a remote Quack DuckDB server
-
-The remote template prefers `dev.brikk.duckdb:quack-jdbc:0.8.0`; older driver versions remain selectable.
-
-- The **connection token** goes in the Password field (it is stored in the IDE's secure storage and injected as
-  the `token=` URL parameter at connect time). While leaving the user field blank.
-- **TLS is off by default** (matching the driver). For HTTPS endpoints add `tls=true` in the URL
-  parameters. The IDE's generic SSH/SSL tab is not what this driver reads — the `tls` URL parameter
-  is the only switch.
-- Default port **9494**; `tokenEnv`/`tokenFile`/`connectTimeout`/`requestTimeout` may be appended
-  as extra URL parameters.
-
-## Known issues
-
-- **Query cancel over Quack 0.8.0 is a no-op** — Stop returns but the
-  query keeps running server-side. Local/embedded cancel works correctly (interrupt in ~300 ms).
-  When Quack allows cancellation, we will support it.
-- The stock User/Password fields cannot be hidden or relabeled from driver config — hence the
-  "leave User blank" rule above. A dedicated token auth panel is planned.
-- Two known degraded parse shapes (parsed leniently, no false errors, reduced inner structure):
-  suffix-form `UNPIVOT` inside a `SELECT`, and `QUALIFY` after a named `WINDOW` clause.
-- Constraint and index *names* are not shown in the tree (DuckDB's JDBC metadata returns them
-  as null).
-
-## SQL coverage — measured, not claimed
-
-Coverage is scored in CI against a census sampled from **DuckDB's own test suite**
-(`test/sql/` at v1.5.5, via sqllogictest parsing): **226/226 syntax families / 880 statements
-parse clean (100%)**, plus a curated corpus of DuckDB idioms. The census re-harvests mechanically
-at every engine bump, so coverage is re-proven per DuckDB version, not asserted once.
-
-## Function coverage
-
-Live function and keyword inventories come from the connected engine. Offline completion uses
-version-selected `brikk-sql-metadata`, defaulting to DuckDB 1.5.6. Grammar-only forms remain
-available with a live inventory; unloaded extension functions show *"requires \<extension\>"*.
-
-## Requirements
-
-**DataGrip** or **IntelliJ IDEA Ultimate**, **2026.1 through 2026.3** (platform builds 261 through 263, one
-artifact for the supported range). A native DuckDB engine for validation comes from your data source's
-driver. The built-in PIPE translator is independent of that driver.
-
-## Building from source
-
-```bash
-./gradlew buildPlugin   # → build/distributions/duckdb-intellij-plugin-<version>.zip
-./gradlew buildPlugin -Prelease=true # → build/distributions/duckdb-intellij-plugin-0.4.2.zip
-./gradlew test          # census scoreboard + validator grading + boundary contracts
-./gradlew test262 test263 # same 261-compiled plugin on newer SQL and Kotlin APIs
-./gradlew verifyDistribution verifyPlugin # ZIP contents, bytecode, IDE API compatibility
-# optional: live wire suite against a quack server
-./gradlew test -Dquack.live.url='jdbc:quack://localhost:9494?token=<token>'
-```
-
-The declared base is `0.4.2`; source builds default to
-`0.4.2-dev.<commit time yyyyMMddHHmm UTC>+<12-character SHA>`, with `.dirty` for
-uncommitted changes. The ZIP and the IDE's plugin version use the same label.
-`-Prelease=true` uses the base unchanged and runs `verifyRelease`, rejecting development
-plugin labels and bundled snapshot dependencies; it does not publish or choose a release
-number. IntelliJ sorts the requested dev format above the same bare base, so a
-same-base release install needs a manual downgrade/removal.
-Commit release preparation to `main`, then create `release/<version>` from that commit.
-The shared workflow rejects a commit absent from main, builds with `-Prelease=true`, and runs API
-verification on IntelliJ 262 and 263. Internal usages without exact owner-confirmed call-site approvals
-block the GitHub release. Complete experimental/internal reports are retained.
-Compatible alone is not Marketplace approval. GitHub release 0.4.1 was withdrawn; its tag and local ZIPs
-are audit evidence, not release-ready artifacts.
-
-Manual dispatch on `release/<version>` runs the same guarded workflow. Use
-`gh workflow run release.yml --ref release/<version>` if `[skip ci]` skipped the push trigger.
-Renaming a development ZIP does not make it a release. This workflow never uploads
-to JetBrains Marketplace; that upload is owner-only.
-
-Normal CI remains on `main`, `froze-over`, pull requests to `main` and manual dispatch.
-Release branch pushes run their own strict API verification, not the broad CI tests.
-The CI verifier also remains available through manual dispatch.
-
-The canonical conventions repo provides `tools/stage-plugin-builds.sh --dry-run`.
-A real staging run builds clean checkouts only and places the five plugins' ZIPs
-and `MANIFEST.md` under `/home/jayson/DEV/sortdev/plugin-builds/<yyyyMMdd-HHmm UTC>/`.
-It never edits or commits the other plugins' sources.
-
-IntelliJ IDEA Ultimate 2026.1 SDK (auto-downloaded), Kotlin 2.4.10, JVM 21.
-The SDK supplies optional Kotlin injection APIs; Kotlin is not required to use
-the dialect or PIPE consoles in DataGrip.
-
-Internal dependencies are pinned to these formal Maven Central coordinates:
-
-- `dev.brikk.house:brikk-sql-jvm:0.20.0` and `dev.brikk.house:brikk-sql-metadata-jvm:0.20.0`.
-- `dev.brikk.house:brikk-sql-verify-api:0.20.0` and `dev.brikk.house:brikk-sql-verify-duckdb:0.20.0`.
-- `dev.brikk.house:brikk-sql-intellij-support:0.2.1`, optional `brikk-sql-intellij-jdbc-support:0.2.1`, and `dev.brikk.house:brikk-engine-kotlin-intellij-support:0.3.0`.
-- Test-only `dev.brikk.house:brikk-sql-intellij-test-support:0.2.1`, which is never bundled.
-
-Common support, the optional JDBC adapter and test kit 0.2.1 are published on Maven Central,
-alongside core 0.20.0 and Kotlin helper 0.3.0. Normal builds require no local repository override.
-There is no snapshot fallback for these release
-coordinates. DuckDB supplies its dialect profile, session ownership and optional native
-validation; the support libraries do not bundle an IntelliJ SDK, Kotlin stdlib or compiler plugin.
-
-The earlier 0.3.4 local testing ZIP still contains the previously tested snapshot
-until explicitly replaced. Updating source dependencies does not alter an installed ZIP.
-
-**Engine bump checklist** (when moving to a new DuckDB): bump `duckdb-jdbc` in settings.gradle.kts
-and the artifact pin in `src/main/resources/config/duckdb-brikk-artifacts.xml`, then run
-`./gradlew harvestCensus` and review the corpus changes. Refresh the Brikk metadata dependency
-for bundled function, keyword and extension catalogs.
-
-For the upcoming 2.0 release, read [the plugin integration watch note](DUCKDB-2.0-WATCH.md)
-before bumping the engine. Grammar extensions and validator session state need more than a catalog
-harvest.
+- Stopping a query over Quack 0.8.0 does not cancel it on the server. Embedded DuckDB
+  cancellation works.
+- The Quack data source uses the standard User and Password fields, so the unused User
+  field remains visible.
+- Named constraints and indexes may not appear in the database tree because DuckDB JDBC
+  metadata does not return their names.
 
 ## Credits
 
-- **[DuckDB](https://duckdb.org)** — the database this plugin exists for, built by DuckDB Labs
-  and the DuckDB Foundation community. We are an independent project: not affiliated with them,
-  and not them. "DuckDB" and the DuckDB logo are trademarks of the DuckDB Foundation; the logo is
-  used unmodified, per the [DuckDB design manual](https://duckdb.org/design/manual/), solely to
-  identify the database this plugin supports.
-- **[GizmoSQL](https://gizmosql.com)** — the `quack-jdbc` driver, their JDBC port of the Quack
-  wire protocol, is their work. The plugin currently ships a brikk-published build of the driver
-  (`dev.brikk.duckdb:quack-jdbc`) carrying fixes we are contributing back upstream; we expect to
-  return to the upstream artifact.
-- Full third-party attributions: THIRD_PARTY_NOTICES.md.
+- [DuckDB](https://duckdb.org) is developed by DuckDB Labs and the DuckDB Foundation
+  community. This plugin is an independent project and is not affiliated with them.
+  "DuckDB" and the DuckDB logo are trademarks of the DuckDB Foundation. The logo is used
+  according to the [DuckDB design manual](https://duckdb.org/design/manual/).
+- [GizmoSQL](https://gizmosql.com) created the `quack-jdbc` driver, a JDBC implementation
+  of the Quack wire protocol.
+- See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for full third-party attributions.
 
 ## License
 
