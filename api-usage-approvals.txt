@@ -1,0 +1,5 @@
+# Exact owner-approved internal API call sites.
+# Approved by the owner for 0.4.3 on 2026-10-18 (release run 39174673844): the shared
+# brikk-sql-intellij-jdbc-support gate references the stock introspector factory to route
+# DuckDB to JDBC introspection. No approval transfers to another plugin or class.
+Internal interface com.intellij.database.introspection.DBIntrospector.Factory is referenced in dev.brikk.house.sql.intellij.catalog.GenericJdbcIntrospectorGate.
