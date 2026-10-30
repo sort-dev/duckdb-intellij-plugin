@@ -67,6 +67,7 @@ class DuckdbExecutionObserver(project: Project, scope: CoroutineScope) : Executi
 
     override fun requestFinished(context: com.intellij.database.datagrid.DataRequest.Context) {
         transactions.finished(context)
+        project.getService(dev.sort.duckdb.grammar.DuckdbGrammarRuntime::class.java).finished(project, context)
         super.requestFinished(context)
     }
 }

@@ -13,9 +13,9 @@ import java.sql.Statement
  * STAGE-6 TRUTH: the console behaviors a DuckDB (Brikk) query console leans on, measured against the
  * NATIVE driver in-process (:memory:). Cancel, grid-shaped statements, and transaction semantics.
  *
- * The quack driver's own cancel() is a known no-op (bytecode: literal `return`, overriding the
- * skeletal `throw notSupported`) — that is a driver-team item restated in REPORT-stage6-console.md,
- * not something this offline test can exercise (no local GizmoSQL server).
+ * The archived REPORT-stage6-console.md records the older Quack driver's no-op cancel bytecode.
+ * Quack JDBC 0.11.1 v3 cancellation is covered separately by QuackV3CancellationTest using its own
+ * local server. This suite measures only the embedded native driver.
  */
 class DuckdbConsoleTruthTest {
 

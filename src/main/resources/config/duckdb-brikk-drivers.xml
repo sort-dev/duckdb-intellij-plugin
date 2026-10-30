@@ -2,8 +2,8 @@
   <!-- Local/embedded DuckDB under the DuckDB (Brikk) dialect. Uses OUR pinned
        "DuckDB JDBC (Brikk)" artifact (config/duckdb-brikk-artifacts.xml) rather than DataGrip's
        built-in "DuckDB" artifact: the built-in resolves from JetBrains' registry, which lags
-       Maven Central badly (their 1.3.1 vs Central's 1.5.5.0) — with our artifact, driver
-       auto-download always matches the engine version this plugin is built and graded against. -->
+       Maven Central. The rolling default is DuckDB 2.0 for grammar-profile support;
+       users can still select 1.5.5, the version of the historical parser census. -->
   <!-- forced-dbms supplies the official DuckDB icon, including its dark variant. -->
   <!-- Name "DuckDB Embedded (sort.dev)": distinct from DataGrip's stock generic "DuckDB" driver,
        matches the dialect label, and the new-data-source default name reads clearly. -->
@@ -20,7 +20,7 @@
        It is NOT Arrow/ADBC based — it decodes the serialized results directly, so no add-opens
        / Arrow memory flags are needed.
        Driver class + jdbc:quack:// scheme are FACTS extracted from
-       dev.brikk.duckdb:quack-jdbc:0.8.0 by QuackDriverFactsTest. The fork keeps the
+        dev.brikk.duckdb:quack-jdbc:0.11.1 by QuackDriverFactsTest. The fork keeps the
        original com.gizmodata package for compatibility.
        Downloadable via the "Quack JDBC (Brikk)" artifact (config/duckdb-brikk-artifacts.xml,
        resolved from Maven Central) — no manual jar attach needed. -->

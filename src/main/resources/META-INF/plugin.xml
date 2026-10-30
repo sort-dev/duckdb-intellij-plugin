@@ -4,35 +4,55 @@
     <vendor url="https://sort.dev" email="jayson@sort.dev">Sortdev SRL</vendor>
 
     <description><![CDATA[
-        <p>A real <b>DuckDB SQL dialect</b> for DataGrip and IntelliJ-family IDEs, with
-        ready-to-use data sources for <b>local/embedded DuckDB</b> and
-        <b>remote Quack servers</b>. Remote connections use Sortdev's fork of GizmoSQL's original
-        Arrow-free <code>quack-jdbc</code> driver, extended through Quack protocol v3 for DuckDB 2.0.</p>
+        <p><b>DuckDB 2.0 SQL support</b> for DataGrip and IntelliJ IDEA Ultimate: execute SQL against
+        <b>embedded database files</b>, <b>in-memory databases</b> and <b>remote Quack protocol v3 servers</b>.
+        Custom PEG SQL grammar plugins, including <code>psql</code>, can also drive native parser
+        checking and keyword completion on matching <b>file-backed</b> connections.</p>
 
         <ul>
-            <li><b>Built-in PIPE authoring:</b> enable under Settings &gt; Tools &gt; Database &gt; DuckDB PIPE,
+            <li><b>Custom grammar profiles:</b> open Data Sources and Drivers, select a DuckDB source,
+                then its <i>Grammars</i> tab. Registered grammar names are separate from installed extension
+                binaries. New registrations start enabled; explicit disabled choices and activation order
+                are remembered per project and source. <i>Apply grammar changes</i> updates idle sessions
+                without reconnecting, losing temporary data, or replaying scripts. Busy or transactional
+                sessions retain pending changes until safe.</li>
+            <li><b>Native grammar-aware checking:</b> isolated file-backed helpers apply and read back
+                the exact managed grammar order before calling DuckDB's parse-only JSON serializer.
+                Authored SQL is never prepared, bound or executed for editor checking. Missing grammars,
+                unmatched connection state and unsupported serialization produce no syntax verdict,
+                rather than a rejection from an unrelated base parser.</li>
+            <li><b>Native keyword completion:</b> explicitly <code>LOAD autocomplete</code> on the connected
+                source to get engine keyword suggestions for its active grammar, including native
+                <code>psql</code> pipe stages. This is independent of the Brikk PIPE toggle. Existing
+                identifier and function completion stays available. Missing prerequisites are visible in
+                the Grammars tab, console status action and manual completion notifications.</li>
+            <li><b>Optional Brikk PIPE authoring:</b> enable under Settings &gt; Tools &gt; Database &gt; DuckDB PIPE,
                 write <code>FROM t |&gt; WHERE ... |&gt; SELECT ...</code>, and execute as
                 DuckDB SQL. Includes generated-SQL preview and run-to-stage. No SQL Transpiler
                 plugin required; ordinary FROM-first queries are unchanged.</li>
-            <li><b>DuckDB syntax, measured:</b> correct statement and run-block boundaries across
+            <li><b>DuckDB editing:</b> statement and run-block boundaries for
                 the DuckDB statement surface — <code>SELECT * EXCLUDE(...)</code>,
                 <code>QUALIFY</code>, <code>GROUP BY ALL</code>, struct/list literals, lambdas,
                 <code>PIVOT</code>/<code>UNPIVOT</code>, FROM-first queries, <code>ATTACH</code>,
-                <code>SUMMARIZE</code>, <code>CREATE MACRO/SECRET</code>. Coverage is scored
-                against DuckDB's own test suite: 226/226 sampled syntax families at DuckDB 1.5.5.</li>
-            <li><b>Engine-exact error checking:</b> statements are validated by a real DuckDB
-                (from your data source's driver; parse-only, never binds or executes) — squiggles carry
-                the engine's own messages, so there is zero grammar drift.</li>
+                <code>SUMMARIZE</code>, <code>CREATE MACRO/SECRET</code>. Historical parser evidence covers
+                226/226 sampled syntax families at DuckDB 1.5.5; this is not a full DuckDB 2.0 census.</li>
             <li><b>Completion that follows your engine:</b> on connect the catalog is harvested
                 live from <code>duckdb_functions()</code> — your engine version, your loaded
                 extensions. Run <code>INSTALL</code>/<code>LOAD</code> and completion updates
                 itself; autoloaded extensions arrive via <i>Refresh DuckDB Catalog</i> (editor
                 right-click). Offline you get bundled version-aware metadata, plus
                 <i>"requires &lt;extension&gt;"</i> hints for extension functions.</li>
-            <li><b>Two data sources, one dialect:</b> local file / in-memory DuckDB, and remote Quack
-                servers over <code>jdbc:quack://</code> (default port 9494). Driver versions are pinned
-                and auto-download from Maven Central, matched to the tested engine.</li>
+            <li><b>Ready-to-use connections:</b> the embedded driver defaults to DuckDB JDBC 2.0.0.0;
+                1.5.5.0 remains selectable. Quack servers use <code>jdbc:quack://</code>, default port 9494,
+                through Sortdev's Arrow-free <code>quack-jdbc</code> fork with protocol v3 support.</li>
         </ul>
+
+        <p><b>Native helper limits:</b> file-backed native validation/completion requires a helper that can
+        reproduce the selected profile. It is currently unavailable for in-memory, remote and
+        follow-console modes, although those connections still support SQL execution. Native completion
+        is keyword-only; injected SQL, unverified offsets, Unicode-space normalization cases and foreign
+        attached catalogs are conservatively skipped. File suggestions are disabled. The plugin never
+        silently installs or loads grammar/autocomplete modules, and does not disable signature checks.</p>
 
         <p><b>Remote Quack connection:</b> put the token in the <b>Password</b> field and
         <b>leave User blank</b>. The IDE stores the token in its secure credential storage.
@@ -41,9 +61,10 @@
         <p>GizmoSQL created the original <code>quack-jdbc</code> driver. The Sortdev fork used
         here adds protocol v3 support for DuckDB 2.0; the original driver does not support it.</p>
 
-        <p><b>Known issue:</b> cancelling a running query over a Quack connection (driver
-        0.8.0) is a no-op; the query keeps running on the server. Embedded DuckDB cancel works.
-        A driver fix is tracked.</p>
+        <p><b>Query cancellation:</b> the preferred Quack JDBC 0.11.1 driver supports standard JDBC
+        cancellation on Quack v3 servers. Existing sources may need their driver files upgraded;
+        the older 0.8.0 driver silently ignores cancellation. JDBC statement query timeouts are not
+        enforced by this driver; <code>requestTimeout</code> bounds individual HTTP requests.</p>
 
         <p><i>This is an independent, community plugin developed by Sortdev SRL, not affiliated
         with DuckDB Labs, the DuckDB Foundation, or GizmoSQL. "DuckDB" is a trademark of the
@@ -55,6 +76,26 @@
     ]]></description>
 
     <change-notes><![CDATA[
+        <b>Unreleased</b> - Quack JDBC 0.11.1 adoption.
+        <ul>
+            <li>Prefers Quack JDBC 0.11.1, with standard Statement.cancel() support on Quack v3 servers and a bounded cancellation-control deadline. Unconfirmed cancellation closes the session rather than claiming success. Older driver versions remain selectable; existing source URLs, credentials and grammar profiles are unchanged.</li>
+            <li>Remote, memory and follow-console native grammar helper limitations are unchanged. No shared Brikk dependency changes.</li>
+        </ul>
+        <b>0.5.1</b> - Grammars tab compatibility with the IntelliJ 2026.3 EAP.
+        <ul>
+            <li>Implements the new native option-provider stored-default method to prevent AbstractMethodError on IU-263.7307.44. The host placeholder remains false; this method never saves grammar profiles or reconnects data sources.</li>
+            <li>Retains the 2026.1 compile baseline and 2026.1/2026.2 runtime support. Shared Brikk dependencies and grammar behavior are unchanged.</li>
+        </ul>
+        <b>0.5.0</b> - DuckDB 2.0, custom SQL grammars and native keyword completion.
+        <ul>
+            <li>Default embedded JDBC driver 2.0.0.0, with 1.5.5.0 retained. Embedded file, in-memory and Quack v3 execution connectivity are supported.</li>
+            <li>Per-project/source Grammars tab with ordered activation, new registered grammars enabled by default, and remembered disabled choices. Explicit grammar Apply saves outside connection configuration and updates idle sessions without reconnecting; busy/transactional sessions defer safely.</li>
+            <li>Matching file-backed parse-only validation for custom PEG grammar plugins, tested with signed community psql. Missing state and unsupported serialization remain unavailable/unverified.</li>
+            <li>Native keyword/stage completion through explicitly loaded autocomplete, independent of Brikk PIPE. Preserves existing identifiers/functions, handles UTF-8 offsets and intraword insertion, and retains following SQL.</li>
+            <li>Visible missing-autocomplete and unsupported-memory diagnostics even when a lookup is empty; source-bound status action and helper lifecycle guards.</li>
+            <li>Native memory/remote/follow-console helper parity remains unavailable. No silent module installation/loading, authored-SQL execution for checking, or relaxed signature policy.</li>
+            <li>Uses the aligned Brikk SQL 0.20.1 and SQL IntelliJ support/JDBC adapter 0.2.4 release coordinates.</li>
+        </ul>
         <b>0.4.4</b> - platform API cleanup.
         <ul>
             <li>SQL IntelliJ support 0.2.3: no deprecated, scheduled-for-removal or experimental platform calls that have stable equivalents; no behavior changes.</li>
@@ -172,6 +213,7 @@
     <xi:include href="/META-INF/duckdb-pipes.xml" xpointer="xpointer(/idea-plugin/*)"/>
 
     <extensions defaultExtensionNs="com.intellij">
+        <completion.contributor language="DuckDBSQL" implementationClass="dev.sort.duckdb.completion.DuckdbNativeKeywordContributor" id="duckdb.nativeKeywords" order="first, before duckdb.metadata, before duckdb.relations, before duckdb.pipes"/>
         <lang.documentationProvider language="DuckDBSQL" implementationClass="dev.brikk.house.sql.intellij.docs.SqlEngineDocumentationProvider" order="first"/>
         <sql.resolveExtension implementation="dev.brikk.house.sql.intellij.dialect.PgFamilyResolveExtension"/>
         <sql.inspectionSuppressorDelegate implementation="dev.brikk.house.sql.intellij.dialect.PgFamilyInspectionSuppressor"/>
@@ -213,6 +255,7 @@
     </extensions>
 
     <extensions defaultExtensionNs="com.intellij.database">
+        <optionProvider implementation="dev.sort.duckdb.grammar.DuckdbGrammarOptionProvider"/>
         <runConsoleAvailable implementation="dev.sort.duckdb.brikk.DuckdbRunConsoleVeto"/>
         <dbms id="DUCKDB_BRIKK" instance="dev.sort.duckdb.DuckdbDbms.DUCKDB_BRIKK"/>
         <!-- DuckDB is Postgres-derived; PG machinery is the right family default for everything
@@ -228,6 +271,7 @@
         <jdbcHelper dbms="DUCKDB_BRIKK" implementationClass="com.intellij.database.remote.jdbc.helpers.GenericJdbcHelper"/>
         <errorHandler dbms="DUCKDB_BRIKK" implementationClass="com.intellij.database.dialects.generic.GenericDatabaseErrorHandler"/>
         <connectionInterceptor implementation="dev.sort.duckdb.catalog.DuckdbHarvestConnectionInterceptor"/>
+        <connectionInterceptor implementation="dev.sort.duckdb.grammar.DuckdbGrammarConnectionInterceptor" order="first"/>
         <driversConfig config="config/duckdb-brikk-drivers.xml"/>
         <artifactsConfig config="config/duckdb-brikk-artifacts.xml"/>
     </extensions>
@@ -236,10 +280,26 @@
         <listener class="dev.sort.duckdb.catalog.DuckdbLiveCatalogCleanup" topic="com.intellij.database.dataSource.DataSourceStorage$Listener"/>
     </projectListeners>
     <applicationListeners>
+        <listener class="dev.sort.duckdb.grammar.DuckdbGrammarConnectionListener" topic="com.intellij.database.dataSource.DatabaseConnectionManager$Listener"/>
         <listener class="dev.sort.duckdb.catalog.DuckdbLiveCatalogCleanup" topic="com.intellij.database.dataSource.DataSourceStorage$Listener"/>
     </applicationListeners>
 
     <actions>
+        <action id="Duckdb.CheckNativeCompletion" class="dev.sort.duckdb.grammar.DuckdbCheckNativeCompletionAction" text="Check Native Keyword Completion">
+            <add-to-group group-id="EditorPopupMenu" anchor="last"/>
+        </action>
+        <action id="Duckdb.GrammarStatus" class="dev.sort.duckdb.grammar.DuckdbGrammarStatusAction" text="Show DuckDB Grammar State">
+            <add-to-group group-id="EditorPopupMenu" anchor="last"/>
+        </action>
+        <action id="Duckdb.RefreshGrammar" class="dev.sort.duckdb.grammar.DuckdbRefreshGrammarAction" text="Refresh DuckDB Grammar State">
+            <add-to-group group-id="EditorPopupMenu" anchor="last"/>
+        </action>
+        <action id="Duckdb.FollowGrammar" class="dev.sort.duckdb.grammar.DuckdbFollowConsoleGrammarAction" text="Follow Console DuckDB Grammars">
+            <add-to-group group-id="EditorPopupMenu" anchor="last"/>
+        </action>
+        <action id="Duckdb.AdoptGrammar" class="dev.sort.duckdb.grammar.DuckdbAdoptConsoleGrammarAction" text="Adopt Console Grammars as Managed Profile">
+            <add-to-group group-id="EditorPopupMenu" anchor="last"/>
+        </action>
         <!-- Manual live-catalog refresh; also the ONLY trigger that surfaces autoloaded
              extensions (no INSTALL/LOAD ever runs for those, so the observer can't see them). -->
         <action id="Duckdb.RefreshCatalog"

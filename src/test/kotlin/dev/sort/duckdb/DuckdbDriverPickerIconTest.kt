@@ -16,8 +16,21 @@ class DuckdbDriverPickerIconTest : BasePlatformTestCase() {
     fun testQuackDriverUsesPreferredArtifact() {
         val driver = checkNotNull(DatabaseDriverManager.getInstance().getDriver("duckdb-brikk-quack"))
         val artifact = checkNotNull(DatabaseArtifactManager.resolveVersion(driver, driver.artifacts.single()))
-        assertEquals("The IDE's default rolling Quack artifact must use the current release", "0.8.0", artifact.version.toString())
-        assertTrue(artifact.items.toString(), artifact.items.any { it.url == "dev.brikk.duckdb:quack-jdbc:0.8.0" })
+        assertEquals("The IDE's default rolling Quack artifact must use the current release", "0.11.1", artifact.version.toString())
+        assertTrue(artifact.items.toString(), artifact.items.any { it.url == "dev.brikk.duckdb:quack-jdbc:0.11.1" })
+        val config = requireNotNull(javaClass.getResource("/config/duckdb-brikk-artifacts.xml")).readText()
+        for (version in listOf("0.11.0", "0.8.0", "0.5.0", "0.4.0", "0.3.0")) {
+            assertTrue("Older Quack $version must remain selectable", config.contains("<version version=\"$version\">"))
+        }
+    }
+
+    fun testEmbeddedDriverDefaultsToGrammarCapableDuckdb2() {
+        val driver = checkNotNull(DatabaseDriverManager.getInstance().getDriver("duckdb-brikk-native"))
+        val artifact = checkNotNull(DatabaseArtifactManager.resolveVersion(driver, driver.artifacts.single()))
+        assertEquals("Registered grammar profiles require DuckDB 2.0", "2.0.0.0", artifact.version.toString())
+        assertTrue(artifact.items.toString(), artifact.items.any { it.url == "org.duckdb:duckdb_jdbc:2.0.0.0" })
+        val config = requireNotNull(javaClass.getResource("/config/duckdb-brikk-artifacts.xml")).readText()
+        assertTrue("The older JDBC release must remain selectable", config.contains("<version version=\"1.5.5.0\">"))
     }
 
     private fun checkPicker(id: String) {

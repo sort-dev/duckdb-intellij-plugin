@@ -3,7 +3,7 @@ plugins {
 }
 
 group = "dev.sort.duckdb"
-version = "0.4.4"
+version = "0.5.1"
 
 sqlDialectPlugin {
     embeddedLibraries = with(libs.versions) {
@@ -13,8 +13,8 @@ sqlDialectPlugin {
             "brikk-engine-kotlin-intellij-support-${brikk.engine.kotlin.intellij.support.get()}.jar",
             "brikk-sql-intellij-support-${brikk.sql.intellij.support.get()}.jar",
             "brikk-sql-intellij-jdbc-support-${brikk.sql.intellij.support.get()}.jar",
-            "brikk-sql-verify-api-${brikk.sql.core.get()}.jar",
-            "brikk-sql-verify-duckdb-${brikk.sql.core.get()}.jar",
+            "brikk-sql-verify-api-${brikk.sql.verify.get()}.jar",
+            "brikk-sql-verify-duckdb-${brikk.sql.verify.get()}.jar",
         )
     }
     requiredNotices = with(libs.versions) {
@@ -23,8 +23,8 @@ sqlDialectPlugin {
             "brikk-engine-kotlin-intellij-support:${brikk.engine.kotlin.intellij.support.get()}",
             "brikk-sql-intellij-support:${brikk.sql.intellij.support.get()}",
             "brikk-sql-intellij-jdbc-support:${brikk.sql.intellij.support.get()}",
-            "brikk-sql-verify-api:${brikk.sql.core.get()}",
-            "brikk-sql-verify-duckdb:${brikk.sql.core.get()}",
+            "brikk-sql-verify-api:${brikk.sql.verify.get()}",
+            "brikk-sql-verify-duckdb:${brikk.sql.verify.get()}",
         )
     }
 }
@@ -34,12 +34,12 @@ dependencies {
     implementation(libs.brikk.sql.intellij.jdbc.support)
     implementation(libs.brikk.engine.kotlin.intellij.support)
     implementation(libs.brikk.sql.jvm)
-    implementation("dev.brikk.house:brikk-sql-verify-duckdb:${libs.versions.brikk.sql.core.get()}") {
+    implementation("dev.brikk.house:brikk-sql-verify-duckdb:${libs.versions.brikk.sql.verify.get()}") {
         exclude(group = "org.duckdb")
     }
     testImplementation(libs.brikk.sql.intellij.test.support)
     testImplementation(libs.duckdb.jdbc)
-    testImplementation("dev.brikk.duckdb:quack-jdbc:0.8.0")
+    testImplementation("dev.brikk.duckdb:quack-jdbc:0.11.1")
     testImplementation("dev.brikk.ducklake:slt-format:0.3.0")
 }
 
@@ -49,6 +49,23 @@ tasks.withType<Test>().configureEach {
     doFirst { check(testTmp.isDirectory || testTmp.mkdirs()) }
     systemProperty("test.brikkSqlVersion", libs.versions.brikk.sql.core.get())
     systemProperty("corpus.dir", layout.projectDirectory.dir("src/test/resources/corpus").asFile.absolutePath)
+    val quackExtension = providers.gradleProperty("test.quackExtension").orNull
+    val httpfsExtension = providers.gradleProperty("test.httpfsExtension").orNull
+    require((quackExtension == null) == (httpfsExtension == null)) {
+        "Provide both test.quackExtension and test.httpfsExtension for isolated Quack v3 tests"
+    }
+    if (quackExtension != null && httpfsExtension != null) {
+        for ((key, path) in mapOf("test.quackExtension" to quackExtension, "test.httpfsExtension" to httpfsExtension)) {
+            require(file(path).isFile) { "Missing signed fixture: $path" }
+            systemProperty(key, file(path).absolutePath)
+        }
+    } else {
+        filter.excludeTestsMatching("dev.sort.duckdb.probe.QuackV3CancellationTest")
+    }
+    providers.gradleProperty("test.psqlExtension").orNull?.let {
+        require(file(it).isFile) { "Missing signed psql grammar fixture: $it" }
+        systemProperty("test.psqlExtension", file(it).absolutePath)
+    } ?: filter.excludeTestsMatching("dev.sort.duckdb.catalog.DuckdbLiveCatalogConsoleTest.testNativePsql*")
     if (name == "test") {
         providers.gradleProperty("test.brikkCompilerPlugin").orNull?.let {
             require(file(it).isFile) { "Missing compiler fixture JAR: $it" }

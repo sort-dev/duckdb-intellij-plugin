@@ -47,6 +47,11 @@ class DuckdbIntrospectionTransactions {
         }
     }
 
+    fun blocked(session: DatabaseSession): Boolean = synchronized(sessions) {
+        val state = sessions[session]
+        session.currentTx != DataRequest.AUTO_COMMIT || state?.explicit == true || (state?.busy ?: 0) > 0
+    }
+
     private fun session(context: DataRequest.Context): DatabaseSession? {
         val owner = context.request.owner
         // Metadata helpers must not block their own level-by-level discovery or completion refresh.

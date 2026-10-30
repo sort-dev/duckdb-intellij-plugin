@@ -24,6 +24,8 @@ import dev.sort.duckdb.brikk.DuckdbHostSql
 import dev.brikk.house.sql.shape.SqlFragment
 import dev.sort.duckdb.pipes.DuckdbPipeDialect
 import dev.sort.duckdb.sql.DuckdbSqlDialect
+import dev.sort.duckdb.grammar.DuckdbGrammarVerification
+import dev.sort.duckdb.grammar.GrammarIdentity
 
 /** Parse-only native errors, with shared stale-result checks and injected source mapping. */
 class DuckdbErrorAnnotator : NativeErrorAnnotator(DuckdbNativeErrorProfile)
@@ -37,13 +39,16 @@ internal object DuckdbNativeErrorProfile : NativeErrorProfile {
     override val sizeCap = 100_000
     override val hostSql get() = DuckdbHostSql
 
-    private data class State(val pipes: Boolean, val brikk: BrikkDuckdbProfile?, val slots: Set<String>)
+    private data class State(val pipes: Boolean, val brikk: BrikkDuckdbProfile?, val slots: Set<String>, val grammar: GrammarIdentity?)
     private data class Revision(val state: State, val count: Long)
     private val stateKey = Key.create<Revision>("duckdb.native.errors.state")
 
     override fun validator(file: PsiFile): NativeSqlValidator? {
         capture(file)
         if (BrikkDuckdbProfile.forFile(file) != null) return null
+        if (file.project.service<DuckdbGrammarVerification>().identity(file) != null) {
+            return file.project.service<DuckdbGrammarVerification>().validator(file)
+        }
         val jar = DuckdbEngineLocator.engineJarFor(file)?.toString()
         return service<DuckdbEngineDriverService>().drivers.validatorForJar(jar)
     }
@@ -54,7 +59,7 @@ internal object DuckdbNativeErrorProfile : NativeErrorProfile {
             it.copy(binds = it.binds.toList(), slots = it.slots.toList(), issues = it.issues.toList())
         }
         val state = State(DuckdbPipeDialect.isEditingEnabled(file), brikk,
-            brikk?.slots?.toSet().orEmpty())
+            brikk?.slots?.toSet().orEmpty(), file.project.service<DuckdbGrammarVerification>().identity(file))
         val previous = file.getUserData(stateKey)
         if (previous?.state == state) return previous
         return Revision(state, (previous?.count ?: 0) + 1).also { file.putUserData(stateKey, it) }
