@@ -44,7 +44,7 @@ class DuckdbNativeKeywordsTest {
         val keyword = mapOf("suggestion" to "WHERE ", "extra_char" to " ", "suggestion_type" to "keyword", "suggestion_start" to "22", "suggestion_score" to "0")
         val result = DuckdbNativeKeywords.query(p) { sql, _ -> when (sql) {
             DuckdbNativeKeywords.FOREIGN_CATALOGS -> emptyList()
-            DuckdbNativeKeywords.REGISTERED -> listOf(mapOf("function_name" to "sql_auto_complete"))
+            DuckdbNativeKeywords.REGISTERED -> listOf(mapOf("extension_name" to "autocomplete", "parameters" to "[\"sql\",\"max_suggestion_count\",\"max_file_suggestion_count\",\"max_exact_suggestion_count\"]", "parameter_types" to "[\"VARCHAR\",\"UBIGINT\",\"UBIGINT\",\"UBIGINT\"]", "varargs" to null))
             else -> listOf(keyword, keyword, keyword + ("suggestion_type" to "column"), keyword + ("suggestion_start" to "20"))
         } }
         assertEquals(listOf(NativeKeyword("WHERE", ' ', 0)), result.items)

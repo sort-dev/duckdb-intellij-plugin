@@ -1,5 +1,42 @@
 # DuckDB 2.0 TODO for the IntelliJ plugin
 
+## Current non-nested release scope
+
+User decision, 2026-11-02: ship the DuckDB 2.0 catch-up without recursive-schema IDE support,
+then return to that work after release. Completed core SQL support and existing safe refusals
+stay intact. No flat-name substitute or model-replacement spike is part of this release.
+The stable 78-item library checklist is `brikk-sql/TODO-duckdb-2.0.md`; its completed audit
+items do not by themselves qualify this plugin distribution. The preview checklist below is
+historical context, not an instruction to restore the old engine pins or EXPLAIN validation.
+
+### DDB20-067: bounded helper safety fixes
+
+- [x] R3: require the one reviewed autocomplete-extension origin/signature; reject application
+  UDFs, unknown metadata and mixed/shadowed registrations before binding or invoking completion.
+  Eight focused keyword tests pass, including a real Java UDF with zero bind/init/apply callbacks.
+- [ ] R1: correlate every bound console with its actual runtime even in managed-profile mode;
+  another console must not bypass a routed/unavailable state. Add two-console/staleness tests.
+- [ ] R2: capture connection/driver configuration identity and reject stale helpers/cache results
+  after same-URL property, working-directory or module changes. Do not reconnect or replay settings.
+- [ ] Qualify these guards with genuine native autocomplete/grammar integration and supported IDE
+  targets. Keep source-level findings distinct from freshly executed integration evidence.
+
+### Still deferred or separately unqualified
+
+- DDB20-002: recursive IDE schema tree, introspection, editing/navigation and any new model family.
+  This is explicitly post-release; retain top-level schemas, including literal dotted names.
+- General DDB20-067: exact follow-console, unnamed/named-memory and remote matching helpers.
+  They remain unavailable; native SQL execution and ordinary completion are separate features.
+- DDB20-070: a future chunked/native executor and vector/composite ownership implementation.
+  Review release-relevant existing client behavior separately; do not start a new executor.
+- Existing uncommitted Quack 0.12/cancellation/result work is user work. Its intended release
+  inclusion and qualification remain a separate decision; do not silently commit or overwrite it.
+- Main/Java-17/version reconciliation, actual integrated candidate JARs, packaged ABI/dependency
+  checks, plugin IDE/Verifier/install gates, exact release versions and publication remain pending.
+  No consumer pin changes, merge, tag or publication are implied by a helper safety fix.
+
+## Historical preview checklist (retained)
+
 September 23, 2026. This is the work list for this repository, based on
 [DUCKDB-2.0-WATCH.md](DUCKDB-2.0-WATCH.md). DuckDB 2.0 is still in alpha. Keep
 the 1.5.5 pins until the final release and the checks below are complete.
