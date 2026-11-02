@@ -2,6 +2,7 @@ package dev.sort.duckdb.grammar
 
 import com.intellij.database.dataSource.DatabaseConnectionManager
 import com.intellij.database.dataSource.LocalDataSource
+import com.intellij.database.console.session.DatabaseSession
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.progress.ProgressManager
@@ -29,7 +30,8 @@ internal data class GrammarIdentity(
     val unavailable: String?,
 )
 
-internal data class GrammarTarget(val identity: GrammarIdentity, val source: WeakReference<LocalDataSource>)
+internal data class GrammarTarget(val identity: GrammarIdentity, val source: WeakReference<LocalDataSource>,
+    val session: WeakReference<DatabaseSession>? = null)
 
 /** No PSI or discovery is used by the connection supplier, which runs on the verifier's worker. */
 @Service(Service.Level.PROJECT)
@@ -38,7 +40,9 @@ internal class DuckdbGrammarVerification(private val owner: Project) {
         override fun removeEldestEntry(eldest: MutableMap.MutableEntry<GrammarIdentity, NativeSqlValidator>?) = size > 32
     }
 
-    fun identity(file: PsiFile): GrammarIdentity? {
+    fun identity(file: PsiFile): GrammarIdentity? = target(file)?.identity
+
+    fun target(file: PsiFile): GrammarTarget? {
         if (file.project !== owner) return null
         val resolver = DuckdbCatalogProfile.dataSources
         val source = resolver.resolve(file).dataSource ?: return null
@@ -46,19 +50,15 @@ internal class DuckdbGrammarVerification(private val owner: Project) {
         val session = resolver.consoleSession(file)
         val runtime = owner.service<DuckdbGrammarRuntime>()
         val follow = runtime.follows(session)
-        val state = runtime.runtime(source, session.takeIf { follow })
+        // Managed profile selection is independent of console routing. A bound
+        // console must never borrow another console's more recent runtime.
+        val state = runtime.runtime(source, session)
         val configured = owner.service<DuckdbGrammarSettings>().profile(source)
         val profile = if (follow) DuckdbGrammarProfile(state?.snapshot?.effective.orEmpty()) else configured
-        val reason = when {
-            state == null -> "Connect the data source and refresh its grammar state"
-            !state.snapshot.supported -> state.snapshot.unavailable
-            state.routed -> "Validation unavailable after session routing changes; reconnect to restore the managed connection"
-            follow -> "Follow-console validation unavailable: the IDE cannot duplicate the source runtime using the currently supported APIs"
-            !isFileBacked(source.url) -> "Validation unavailable: a matching in-memory or remote helper cannot be established"
-            else -> null
-        }
-        return GrammarIdentity(source.uniqueId, source.url, source.username, profile, follow,
-            runtime.sessionIdentity(session.takeIf { follow }), state, runtime.stamp, reason)
+        val reason = unavailable(source,state,follow)
+        val identity = GrammarIdentity(source.uniqueId, source.url, source.username, profile, follow,
+            runtime.sessionIdentity(session), state, runtime.stamp, reason)
+        return GrammarTarget(identity, WeakReference(source), session?.let(::WeakReference))
     }
 
     fun validator(file: PsiFile): NativeSqlValidator? {
@@ -74,13 +74,31 @@ internal class DuckdbGrammarVerification(private val owner: Project) {
         }
     }
 
-    fun target(file: PsiFile): GrammarTarget? {
-        val identity = identity(file) ?: return null
-        val source = DuckdbCatalogProfile.dataSources.resolve(file).dataSource ?: return null
-        return GrammarTarget(identity, WeakReference(source))
+    fun isCurrent(target: GrammarTarget): Boolean {
+        if (owner.isDisposed) return false
+        val source = target.source.get() ?: return false
+        val session = target.session?.get()
+        val identity = target.identity
+        if (identity.session != null && session == null) return false
+        if (source.uniqueId != identity.sourceId || source.url != identity.url || source.username != identity.user) return false
+        val runtime = owner.service<DuckdbGrammarRuntime>()
+        if (runtime.stamp != identity.revision || runtime.follows(session) != identity.follow ||
+            runtime.sessionIdentity(session) !== identity.session) return false
+        val state = runtime.runtime(source, session)
+        if (state == null || state !== identity.runtime) return false
+        val profile = if (identity.follow) DuckdbGrammarProfile(state.snapshot.effective)
+            else owner.service<DuckdbGrammarSettings>().profile(source)
+        return profile == identity.profile && unavailable(source,state,identity.follow) == identity.unavailable
     }
 
-    fun isCurrent(target: GrammarTarget): Boolean = !owner.isDisposed && target.source.get()?.let { isCurrent(it, target.identity) } == true
+    private fun unavailable(source: LocalDataSource, state: DuckdbGrammarRuntime.Runtime?, follow: Boolean): String? = when {
+        state == null -> "Connect the data source and refresh its grammar state"
+        !state.snapshot.supported -> state.snapshot.unavailable
+        state.routed -> "Validation unavailable after session routing changes: no matching isolated helper is established"
+        follow -> "Follow-console validation unavailable: the IDE cannot duplicate the source runtime using the currently supported APIs"
+        !isFileBacked(source.url) -> "Validation unavailable: a matching in-memory or remote helper cannot be established"
+        else -> null
+    }
 
     fun openHelper(target: GrammarTarget): DuckdbGrammarHelper? =
         recoverEditorOperation {
@@ -103,11 +121,6 @@ internal class DuckdbGrammarVerification(private val owner: Project) {
                 throw error
             }
         }.getOrElse { throw SQLException(it.message ?: "Grammar helper initialization failed", it) }
-
-    private fun isCurrent(source: LocalDataSource, identity: GrammarIdentity): Boolean =
-        source.url == identity.url && source.username == identity.user &&
-            owner.service<DuckdbGrammarSettings>().profile(source) == identity.profile &&
-            owner.service<DuckdbGrammarRuntime>().let { it.stamp == identity.revision && it.runtime(source) != null }
 
     companion object {
         fun isFileBacked(url: String?): Boolean {

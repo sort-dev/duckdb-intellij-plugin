@@ -14,8 +14,11 @@ historical context, not an instruction to restore the old engine pins or EXPLAIN
 - [x] R3: require the one reviewed autocomplete-extension origin/signature; reject application
   UDFs, unknown metadata and mixed/shadowed registrations before binding or invoking completion.
   Eight focused keyword tests pass, including a real Java UDF with zero bind/init/apply callbacks.
-- [ ] R1: correlate every bound console with its actual runtime even in managed-profile mode;
-  another console must not bypass a routed/unavailable state. Add two-console/staleness tests.
+- [x] R1: correlate every bound console with its actual runtime even in managed-profile mode;
+  retain weak console correlation and session-specific cache identities. Availability is
+  rechecked even before a revision notification, so another console cannot bypass routing.
+  Five focused real IDE console tests pass. The routing flag is controlled by the regression;
+  this does not qualify live remote routing or enable the still-deferred helper modes.
 - [ ] R2: capture connection/driver configuration identity and reject stale helpers/cache results
   after same-URL property, working-directory or module changes. Do not reconnect or replay settings.
 - [ ] Qualify these guards with genuine native autocomplete/grammar integration and supported IDE

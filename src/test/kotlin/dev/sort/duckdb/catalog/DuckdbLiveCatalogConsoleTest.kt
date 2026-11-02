@@ -704,6 +704,34 @@ class DuckdbLiveCatalogConsoleTest : DuckdbCatalogTestCase() {
         }
     }
 
+    fun testManagedRoutedConsoleCannotBorrowAnotherConsolesRuntime() {
+        val a=console("managed-routed-a")
+        val b=console("managed-unrouted-b")
+        a.run("SELECT 1");b.run("SELECT 1")
+        val first=a.grammarRuntime();val second=b.grammarRuntime()
+        val runtime=project.service<DuckdbGrammarRuntime>()
+        val factory=project.service<DuckdbGrammarVerification>()
+        val old=requireNotNull(factory.target(a.file))
+        // Model the runtime flag produced by CONNECT without opening a remote
+        // server or pretending this test qualifies live routing itself.
+        first.routed=true
+        assertFalse("A routing change is unsafe even before the revision notification",factory.isCurrent(old))
+        runtime.changed()
+        b.run("SET active_grammar_extensions=[]")
+        assertSame(second,runtime.runtime(target))
+        val routed=requireNotNull(factory.target(a.file))
+        val other=requireNotNull(factory.target(b.file))
+        assertSame(first,routed.identity.runtime)
+        assertSame(second,other.identity.runtime)
+        assertNotNull(routed.identity.unavailable)
+        assertNull(other.identity.unavailable)
+        assertNotSame(routed.identity.session,other.identity.session)
+        assertFalse(factory.isCurrent(old))
+        assertTrue(a.verifyGrammar("SELECT 42") is VerifyResult.Unavailable)
+        assertEquals(VerifyResult.Accepted,b.verifyGrammar("SELECT 42"))
+        assertTrue(first.routed)
+    }
+
     fun testFollowConsoleDoesNotContaminateOtherConsoleOrManagedProfile() {
         val a = console("grammar-follow-a")
         val b = console("grammar-follow-b")
