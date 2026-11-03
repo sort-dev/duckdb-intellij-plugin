@@ -42,6 +42,10 @@
                 itself; autoloaded extensions arrive via <i>Refresh DuckDB Catalog</i> (editor
                 right-click). Offline you get bundled version-aware metadata, plus
                 <i>"requires &lt;extension&gt;"</i> hints for extension functions.</li>
+            <li><b>Refreshed DuckDB 2.0 metadata:</b> bundled functions, overloads, keywords and types
+                include the 2.0 JSON/VARIANT and ICU inventory. Window, aggregate, scalar and table-valued
+                functions keep distinct completion kinds. Shared builtin typing preserves ordinary scalar
+                expressions and does not invent reader-output column layouts.</li>
             <li><b>Ready-to-use connections:</b> the embedded driver defaults to DuckDB JDBC 2.0.0.0;
                 1.5.5.0 remains selectable. Quack servers use <code>jdbc:quack://</code>, default port 9494,
                 through Sortdev's Arrow-free <code>quack-jdbc</code> fork with protocol v3 support.</li>
@@ -54,6 +58,10 @@
         attached catalogs are conservatively skipped. File suggestions are disabled. The plugin never
         silently installs or loads grammar/autocomplete modules, and does not disable signature checks.</p>
 
+        <p><b>IDE model scope:</b> the updated shared Brikk SQL parser/scope model does not imply full
+        native IDE PSI, typing or introspection coverage for every DuckDB 2.0 form. Recursive schema
+        browsing, introspection and editing are not included in this release.</p>
+
         <p><b>Remote Quack connection:</b> put the token in the <b>Password</b> field and
         <b>leave User blank</b>. The IDE stores the token in its secure credential storage.
         TLS is off by default; add <code>tls=true</code> to the URL parameters for HTTPS endpoints.</p>
@@ -61,7 +69,7 @@
         <p>GizmoSQL created the original <code>quack-jdbc</code> driver. The Sortdev fork used
         here adds protocol v3 support for DuckDB 2.0; the original driver does not support it.</p>
 
-        <p><b>Query cancellation:</b> the preferred Quack JDBC 0.11.1 driver supports standard JDBC
+        <p><b>Query cancellation:</b> the preferred Quack JDBC 0.12.1 driver supports standard JDBC
         cancellation on Quack v3 servers. Existing sources may need their driver files upgraded;
         the older 0.8.0 driver silently ignores cancellation. JDBC statement query timeouts are not
         enforced by this driver; <code>requestTimeout</code> bounds individual HTTP requests.</p>
@@ -76,10 +84,16 @@
     ]]></description>
 
     <change-notes><![CDATA[
-        <b>Unreleased</b> - Quack JDBC 0.11.1 adoption.
+        <b>0.6.0</b> - DuckDB 2.0 language, metadata and Quack driver updates.
         <ul>
-            <li>Prefers Quack JDBC 0.11.1, with standard Statement.cancel() support on Quack v3 servers and a bounded cancellation-control deadline. Unconfirmed cancellation closes the session rather than claiming success. Older driver versions remain selectable; existing source URLs, credentials and grammar profiles are unchanged.</li>
-            <li>Remote, memory and follow-console native grammar helper limitations are unchanged. No shared Brikk dependency changes.</li>
+            <li>Uses Brikk SQL/metadata/verifier 0.23.0 and SQL IntelliJ support/JDBC/test support 0.4.0 from Maven Central. DuckDB engine/JDBC remains 2.0.0/2.0.0.0.</li>
+            <li>Refreshes offline DuckDB 2.0 functions, overloads, keywords and types, including JSON/VARIANT and ICU functions. Preserves window-function and scalar/table-valued completion distinctions.</li>
+            <li>Updates the bundled Brikk SQL language model and scope analysis for UPDATE/MERGE, side-effecting CTEs, keyed recursion, NEAREST joins, VARIANT and newer COPY forms. This shared parser/scope/lowering support is not a claim of complete native IDE coverage or recursive schema browsing.</li>
+            <li>Updates builtin return-type handling while preserving scalar/relation separation, unknown-name diagnostics and real INSERT-layout errors. Unknown reader outputs are not guessed into table shapes.</li>
+            <li>Aligns parse-only checking with the 2.0 serializer; unsupported statements remain unverified. Native autocomplete verifies the reviewed extension origin/signature, and helpers reject stale console, connection/driver and module identities without reconnecting or replaying user scripts.</li>
+            <li>Prefers Quack JDBC 0.12.1, with standard Statement.cancel() support on Quack v3 servers and a bounded cancellation-control deadline. Unconfirmed cancellation closes the session rather than claiming success. Older driver versions remain selectable; existing source URLs, credentials and grammar profiles are unchanged.</li>
+            <li>Updates driver result classification so SELECT and RETURNING rows named Count or rows_affected remain result sets, while affected-row counts and end-of-results remain distinct.</li>
+            <li>Recursive IDE schema support remains deferred. Remote, memory and follow-console native grammar helper limitations are unchanged; authored SQL is never prepared or executed for editor checking, and mutations are not retried to recover results.</li>
         </ul>
         <b>0.5.1</b> - Grammars tab compatibility with the IntelliJ 2026.3 EAP.
         <ul>

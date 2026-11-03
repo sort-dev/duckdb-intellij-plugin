@@ -41,6 +41,36 @@ use DuckDB's own parser with the selected active grammar order when that state c
 - **DuckDB PIPE (optional).** Write pipe-syntax queries and run them in the normal console. See
   [DuckDB PIPE](#duckdb-pipe).
 
+## 0.6.0 release changes
+
+This build adopts **Brikk SQL 0.23.0**, **SQL IntelliJ support 0.4.0** and **Quack JDBC 0.12.1**.
+DuckDB remains pinned to engine **2.0.0 LTS** and official JDBC **2.0.0.0**.
+
+- **Refreshed offline completion.** Functions, overloads, keywords and types come from the DuckDB
+  2.0 capture, including its JSON/VARIANT and ICU functions. Window, aggregate, scalar and table-valued
+  functions retain their distinct completion kinds; same-named scalar/table functions are not collapsed.
+- **Updated shared SQL analysis.** The bundled Brikk parser and scope analysis include DuckDB 2.0
+  UPDATE/MERGE, side-effecting CTEs, keyed recursion, NEAREST joins, VARIANT and newer COPY forms.
+  These are shared-language capabilities used by Brikk-based analysis/lowering, not a claim that every
+  form has full native IDE PSI, typing or introspection coverage. See the
+  [shared DuckDB language guide](https://github.com/brikk/brikk-sql/tree/main/brikk-sql#duckdb-20-native-support).
+- **Engine-aware builtin types.** Shared IDE support resolves builtin scalar/table functions and
+  their return-type contracts without treating ordinary scalar expressions as relation tables.
+  Unknown names and genuine INSERT-layout errors still produce diagnostics; unknown reader outputs
+  do not become invented column layouts.
+- **Safer native checking and completion.** Syntax checks follow the 2.0 parse-only serializer;
+  unsupported serialization stays unverified. Autocomplete checks its reviewed extension origin and
+  signature. Helper results are rejected when the originating console, connection/driver configuration
+  or module identity no longer matches. Checking never prepares or executes authored SQL.
+- **Quack cancellation and result handling.** Standard JDBC cancellation works on v3 servers, with
+  a bounded control deadline and a closed-session fallback when cancellation cannot be confirmed.
+  SELECT/RETURNING columns named `Count` or `rows_affected` remain result sets, distinct from DML
+  affected-row counts. Failed result retrieval is not a reason to retry a mutation.
+
+Recursive schema browsing/introspection/editing is **not included**. General memory, remote and
+follow-console native-helper matching remains unavailable. Shared SQL support for nested names
+does not change those IDE limits, and the historical 1.5.5 parser census is not a full 2.0 IDE census.
+
 ## Requirements
 
 - DataGrip or IntelliJ IDEA Ultimate, **2026.1 to 2026.3**.
@@ -80,7 +110,7 @@ Create a **DuckDB via Quack (sort.dev)** data source.
 The connection uses Sortdev's fork of GizmoSQL's `quack-jdbc` driver. The fork adds Quack protocol
 v3 support for DuckDB 2.0, which the original driver doesn't have.
 
-The preferred Quack JDBC driver is **0.11.1**. It supports `Statement.cancel()` on Quack v3 servers.
+The preferred Quack JDBC driver is **0.12.1**. It supports `Statement.cancel()` on Quack v3 servers.
 Existing sources may need their driver files upgraded under **Data Sources and Drivers > Drivers >
 DuckDB via Quack > Driver files**. Older driver choices remain available; URLs, credentials and grammar
 preferences are not migrated. Cancellation control requests have a two-second deadline. If the server

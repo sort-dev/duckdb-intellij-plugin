@@ -20,7 +20,7 @@
        It is NOT Arrow/ADBC based — it decodes the serialized results directly, so no add-opens
        / Arrow memory flags are needed.
        Driver class + jdbc:quack:// scheme are FACTS extracted from
-        dev.brikk.duckdb:quack-jdbc:0.11.1 by QuackDriverFactsTest. The fork keeps the
+        dev.brikk.duckdb:quack-jdbc:0.12.1 by QuackDriverFactsTest. The fork keeps the
        original com.gizmodata package for compatibility.
        Downloadable via the "Quack JDBC (Brikk)" artifact (config/duckdb-brikk-artifacts.xml,
        resolved from Maven Central) — no manual jar attach needed. -->

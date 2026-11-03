@@ -16,8 +16,11 @@ class DuckdbEngineValidatorGradingTest {
 
     private val corpusDir get() = File(System.getProperty("corpus.dir"))
 
-    // These errors require binding the embedded query, not parsing the outer SELECT.
-    private val bindingOnlyErrors = setOf(
+    // Historical 1.5.5 parser failures accepted by the real 2.0 parse-only serializer.
+    // query() does not parse its embedded text here; GROUPING() is now syntactically accepted.
+    private val parseAcceptedErrors = setOf(
+        "aggregate/grouping_sets/grouping.test:186",
+        "aggregate/grouping_sets/grouping.test:191",
         "catalog/function/query_function.test:80",
         "catalog/function/query_function.test:85",
         "catalog/function/query_function.test:90",
@@ -28,11 +31,12 @@ class DuckdbEngineValidatorGradingTest {
         "catalog/function/query_function.test:191",
     )
 
-    // Duplicate PKs, temp-schema table creation and PRAGMA value checks are not serializable SELECTs.
+    // These historical failures are outside the 2.0 serializer's supported statement surface.
     private val unavailableErrors = setOf(
         "catalog/test_incorrect_table_creation.test:16",
         "catalog/test_incorrect_table_creation.test:21",
         "catalog/test_temporary.test:34",
+        "cte/insert_cte_bug_3417.test:14",
         "order/test_nulls_first.test:124",
     )
 
@@ -44,16 +48,20 @@ class DuckdbEngineValidatorGradingTest {
                 record.get("expectedError")?.takeUnless { it.isJsonNull }?.asString?.contains("Parser Error") == true)
         }
         val parserOrigins = cases.filter { it.parserFailure }.map { it.origin }.toSet()
-        val exceptions = bindingOnlyErrors + unavailableErrors
+        val exceptions = parseAcceptedErrors + unavailableErrors
         assertEquals("stale parser exceptions", exceptions, parserOrigins.intersect(exceptions))
         val verdicts = DuckdbEngineValidator.verdicts(cases.map { it.sql })
         requireNotNull(DuckDBDriver().connect("jdbc:duckdb:", Properties())).use { connection ->
             cases.zip(verdicts).forEach { (case, verdict) ->
                 val expected = when {
                     !case.parserFailure -> nativeExpectation(case.sql, connection)
-                    case.origin in bindingOnlyErrors -> Expected.CLEAN
+                    case.origin in parseAcceptedErrors -> Expected.CLEAN
                     case.origin in unavailableErrors -> Expected.UNAVAILABLE
                     else -> Expected.FLAGGED
+                }
+                if (case.origin in exceptions) {
+                    assertEquals("Historical exception must match the actual 2.0 serializer: ${case.origin}",
+                        expected, nativeExpectation(case.sql, connection))
                 }
                 assertVerdict(case.origin, expected, verdict)
             }

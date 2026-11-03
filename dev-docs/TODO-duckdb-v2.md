@@ -41,8 +41,52 @@ historical context, not an instruction to restore the old engine pins or EXPLAIN
   existing two deprecated, sixteen experimental and one approved internal usage. Experimental/
   internal reports match the existing 0.5.1 baseline byte-for-byte on the three prior targets.
   Evidence: /tmp/opencode/ddb20-067-fixes/final-committed-gates.log and final-sdk-counts.json.
-  This is helper-fix qualification with current pinned libraries, not the integrated release
-  candidate, manual installed-plugin smoke, live routing or uncommitted Quack qualification.
+  This is historical helper-only qualification with the then-pinned libraries. Those runs excluded
+  the then-unconfirmed Quack working changes; they do not prove combined Quack 0.12.0 behavior,
+  manual installed-plugin smoke, live routing or the next integrated shared-library catch-up.
+
+### Included Quack adoption and combined plugin qualification
+
+- [x] User clarification: Quack JDBC 0.12.0 adoption is intended release content, not excluded
+  work. Include the preferred downloadable artifact, test dependency, older selectable choices,
+  cancellation/result-kind regressions and current documentation together with the helper fixes.
+  Preserve existing URLs, credential templates, settings and project-owned grammar preferences.
+  The earlier standalone adoption run passed 38 focused tests; its evidence is separate from
+  the committed-only helper runs above: /tmp/opencode/quack-0.12.0-adoption/adoption-evidence.json.
+- [x] Qualify the combined current candidate on IDE 261/262/263, including all 45 helper safety
+  regressions and the Quack driver/default, result classification and cancellation checks. Use
+  isolated signed local fixtures, never user connections. Do not retry mutations or add an executor.
+  Completed in the full 2026-11-03 test matrix below, with the newly authorized released pins.
+- [x] Verify the combined distribution, packaged ABI/dependencies and platform compatibility
+  without increasing Internal/Experimental API risk. The interrupted 0.20.1/0.2.4 qualification
+  did not complete; the fresh 0.23.0/0.4.0/Quack 0.12.1 gates below supersede that attempted run.
+
+### Authorized released-library candidate, 2026-11-03
+
+- [x] Adopt the user's released Maven Central versions: SQL/metadata/verifier 0.23.0;
+  SQL IntelliJ common support, JDBC adapter and test support 0.4.0; Quack JDBC 0.12.1.
+  Retain DuckDB engine/JDBC 2.0.0/2.0.0.0, plugin base 0.5.1 and older selectable drivers.
+  These replace the prior qualification pins, not the historical evidence recorded above.
+- [x] Run the full configured test suites, including native grammar/Quack fixtures and the
+  CI Kotlin-present/absent runtime matrix. IDE 261: 423 tests, 9 skipped; IDE 262/263 without
+  Kotlin: 335 each, 9 skipped each; Brikk tests with Kotlin on 262/263: 88 each, no skips.
+  Total: 1,242 passed, 27 skipped, zero failures/errors. The skips are external-server opt-ins;
+  no user server was contacted. The separately reviewed compiler-plugin fixture and sibling-plugin
+  isolation remain the normal CI's existing opt-in exclusions, not silently passing tests.
+  Stale assertions were reconciled against the real 2.0 serializer/function registry and published
+  support 0.4.0 PSI behavior. The 263 picker regression still invokes the actual public UI method;
+  only its test adapter changed, not the plugin's production API usage or safety guards.
+- [x] After tests pass, verify the packaged distribution on all five configured IDE targets.
+  Compare Internal/Experimental API usage by exact call site with the existing helper baseline;
+  compatible verdicts alone do not prove no additional restricted API usage.
+  DB-261.24374.56, IU-262.10968.63, DB-262.10315.132, IU-263.4732.28 and IU-263.7307.44 all
+  report Compatible, with 2 deprecated / 16 experimental / 1 existing approved internal usage.
+  All three usage-report files match the prior helper baseline byte-for-byte on all five targets.
+  Distribution, build-logic and release-dependency checks pass. Packaged dependency JARs match
+  Maven Central byte-for-byte. Core/metadata/verify API retain Java 17; the native verifier and
+  IntelliJ adapters fit the unchanged Java 21 plugin baseline and 261 compile SDK.
+  Exact candidate, hashes, commands, full test reports and API comparisons:
+  /tmp/opencode/duckdb-023-040-adoption/final-evidence.json.
 
 ### Still deferred or separately unqualified
 
@@ -55,11 +99,22 @@ historical context, not an instruction to restore the old engine pins or EXPLAIN
   by these guards. Unverifiable local module identities fail closed. No new cloning mechanism.
 - DDB20-070: a future chunked/native executor and vector/composite ownership implementation.
   Review release-relevant existing client behavior separately; do not start a new executor.
-- Existing uncommitted Quack 0.12/cancellation/result work is user work. Its intended release
-  inclusion and qualification remain a separate decision; do not silently commit or overwrite it.
-- Main/Java-17/version reconciliation, actual integrated candidate JARs, packaged ABI/dependency
-  checks, plugin IDE/Verifier/install gates, exact release versions and publication remain pending.
-  No consumer pin changes, merge, tag or publication are implied by a helper safety fix.
+- Installed-plugin smoke, the actual IDE Stop action/separate JDBC helper process, external-server
+  JDBC metadata and live routing are not established by the isolated Quack fixture or helper tests.
+- The released SQL 0.23.0/support 0.4.0 consumer pins are now explicitly authorized. Their full
+  configured plugin test/Verifier qualification and packaged Java/ABI checks passed above. The older
+  45-test helper and 38-test Quack runs are retained as history, not relabelled for new dependencies.
+  The adoption request did not itself authorize a version bump or publication. The subsequent
+  0.6.0 GitHub-release authorization is recorded below; Marketplace upload remains separate.
+
+### 0.6.0 release checkpoint
+
+The user subsequently authorized plugin 0.6.0 and its GitHub release, with the local checkout ready
+for the user to run `publishPlugin` from the same release. Marketplace upload is not delegated.
+The full tests and five-target API comparison above qualify the production payload; the release
+version/notes change must preserve its class bytes and relevant descriptor registrations.
+Release preparation lands on main, then `release/0.6.0` runs the repository's artifact-only GitHub
+workflow. Preserve existing release artifacts, exact API approvals and all deferred scope above.
 
 ## Historical preview checklist (retained)
 

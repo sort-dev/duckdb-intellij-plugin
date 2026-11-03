@@ -26,7 +26,7 @@ import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 
-/** Real 0.11.1 JDBC-over-v3 tests, never a user's server or a native Quack ATTACH client. */
+/** Real 0.12.1 JDBC-over-v3 tests, never a user's server or a native Quack ATTACH client. */
 class QuackV3CancellationTest {
     @get:Rule val temporary = TemporaryFolder()
 
@@ -39,11 +39,83 @@ class QuackV3CancellationTest {
     @Test(timeout = 60_000)
     fun `GenericJdbcHelper remote statement cancel reaches the v3 driver`() = cancellation(true)
 
+    @Test(timeout = 60_000)
+    fun `JDBC preserves count-shaped rows and separates DML counts from end of results`() {
+        Server().use { server ->
+            server.connect().use { jdbc ->
+                assertEquals("0.12.1", jdbc.metaData.driverVersion)
+                jdbc.createStatement().use { statement ->
+                    statement.execute("CREATE TABLE result_kind (id BIGINT)")
+                    fun rows(sql: String, expected: List<Long>) {
+                        assertTrue("Must remain a result set: $sql", statement.execute(sql))
+                        assertEquals(-1, statement.updateCount)
+                        val values = mutableListOf<Long>()
+                        statement.resultSet.use { while (it.next()) values += it.getLong(1) }
+                        assertEquals(sql, expected, values)
+                        assertFalse(statement.moreResults)
+                        assertEquals("Draining must terminate", -1, statement.updateCount)
+                    }
+                    fun count(sql: String, expected: Int) {
+                        assertFalse("Must be an affected-row count: $sql", statement.execute(sql))
+                        assertNull(statement.resultSet)
+                        assertEquals(sql, expected, statement.updateCount)
+                        assertFalse(statement.moreResults)
+                        assertEquals("Draining must terminate", -1, statement.updateCount)
+                    }
+                    for (label in listOf("Count", "rows_affected", "count_star()")) {
+                        rows("SELECT 7::BIGINT AS \"$label\"", listOf(7L))
+                    }
+                    rows("SELECT count(*) FROM range(3)", listOf(3L))
+                    rows("SELECT -1::BIGINT AS rows_affected", listOf(-1L))
+                    rows("SELECT 1::BIGINT AS Count WHERE false", emptyList())
+                    rows("SELECT i::BIGINT AS Count FROM range(3) t(i) ORDER BY i", listOf(0L, 1L, 2L))
+                    count("INSERT INTO result_kind VALUES (1), (2)", 2)
+                    count("UPDATE result_kind SET id = id + 10", 2)
+                    count("DELETE FROM result_kind WHERE false", 0)
+                    count("WITH vals AS (SELECT 3 AS id) INSERT INTO result_kind SELECT id FROM vals", 1)
+                    rows("INSERT INTO result_kind VALUES (4) RETURNING id AS Count", listOf(4L))
+                    rows("UPDATE result_kind SET id = 5 WHERE id = 4 RETURNING id AS rows_affected", listOf(5L))
+                    println("Quack 0.12.1 JDBC SELECT/RETURNING rows, DML counts and bounded result draining passed")
+                }
+            }
+        }
+    }
+
+    @Test(timeout = 60_000)
+    fun `IDE remote wrapper preserves result sets and terminates DML draining`() {
+        Server().use { server ->
+            server.connect().use { jdbc ->
+                val remote = RemoteConnectionImpl(jdbc, GenericJdbcHelper())
+                val statement = remote.createStatement()
+                try {
+                    statement.execute("CREATE TABLE remote_result_kind (id BIGINT)")
+                    assertFalse(statement.execute("INSERT INTO remote_result_kind VALUES (1), (2)"))
+                    assertEquals(2, statement.updateCount)
+                    assertFalse(statement.moreResults)
+                    assertEquals(-1, statement.updateCount)
+                    for (sql in listOf("SELECT 7::BIGINT AS Count", "SELECT count(*) FROM remote_result_kind",
+                        "INSERT INTO remote_result_kind VALUES (3) RETURNING id AS rows_affected")) {
+                        assertTrue("IDE must receive rows for $sql", statement.execute(sql))
+                        assertEquals(-1, statement.updateCount)
+                        assertNotNull(statement.resultSet)
+                        statement.resultSet.close()
+                        assertFalse(statement.moreResults)
+                        assertEquals(-1, statement.updateCount)
+                    }
+                    println("Quack 0.12.1 GenericJdbcHelper result-kind and end-of-results checks passed")
+                } finally {
+                    statement.close()
+                    remote.close()
+                }
+            }
+        }
+    }
+
     private fun cancellation(remotePath: Boolean) {
         Server().use { server ->
             server.connect().use { jdbc ->
                 assertEquals(3L, (jdbc as QuackConnection).session().protocolVersion())
-                assertEquals("0.11.1", jdbc.metaData.driverVersion)
+                assertEquals("0.12.1", jdbc.metaData.driverVersion)
                 val sessionId = jdbc.session().connectionId()
                 server.connect().use { control ->
                     control.createStatement().use { it.execute("CREATE SEQUENCE cancel_started") }
@@ -83,7 +155,7 @@ class QuackV3CancellationTest {
                         jdbc.createStatement().use { s ->
                             s.executeQuery("SELECT 42").use { assertTrue(it.next()); assertEquals(42, it.getInt(1)) }
                         }
-                        println("Quack 0.11.1 v3 ${if (remotePath) "RemoteStatement/GenericJdbcHelper" else "Statement"}.cancel: ${elapsedMs}ms; same-session SELECT 42 passed")
+                        println("Quack 0.12.1 v3 ${if (remotePath) "RemoteStatement/GenericJdbcHelper" else "Statement"}.cancel: ${elapsedMs}ms; same-session SELECT 42 passed")
                     } finally {
                         pool.shutdownNow()
                         // Kill our server first even if cancel regresses, so close cannot strand a query.
@@ -111,7 +183,7 @@ class QuackV3CancellationTest {
                     val elapsedMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - begin)
                     assertTrue("Expected an HTTP request timeout, got $failure", causes(failure).any { it is HttpTimeoutException })
                     assertTrue("requestTimeout must bound the request: ${elapsedMs}ms", elapsedMs in 500..8_000)
-                    println("Quack 0.11.1 requestTimeout=PT1S: ${elapsedMs}ms; JDBC queryTimeout remains unsupported")
+                    println("Quack 0.12.1 requestTimeout=PT1S: ${elapsedMs}ms; JDBC queryTimeout remains unsupported")
                 }
             }
         }
@@ -164,7 +236,7 @@ class QuackV3CancellationTest {
                             assertTrue("Unconfirmed cancellation must close the session", jdbc.isClosed)
                             assertThrows(SQLException::class.java) { jdbc.createStatement() }
                             assertNotNull("The running query must not finish successfully", query.get(6, TimeUnit.SECONDS))
-                            println("Quack 0.11.1 stalled CANCEL: ${elapsedMs}ms; unconfirmed session closed")
+                            println("Quack 0.12.1 stalled CANCEL: ${elapsedMs}ms; unconfirmed session closed")
                         } finally {
                             release.countDown()
                             pool.shutdownNow()

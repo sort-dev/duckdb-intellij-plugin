@@ -94,7 +94,10 @@ open class BrikkRelationEditingTest : BrikkDuckdbInjectionTest() {
         val slot = calls.single { it.nameElement?.name == "events" }
         val scalar = calls.single { it.nameElement?.name == "lower" }
         assertNotNull(dev.brikk.house.sql.intellij.relation.RelationTableTypes.of(slot, DuckdbRelationProfile))
-        assertEquals("com.intellij.sql.psi.impl.SqlFunctionCallExpressionImpl", scalar.javaClass.name)
+        // The shared 0.4.0 factory subclasses the stock call node to type engine builtins.
+        // A scalar must still use the platform scalar contract, never a relation-slot table type.
+        assertTrue(scalar is com.intellij.sql.psi.impl.SqlFunctionCallExpressionImpl)
+        assertNull(dev.brikk.house.sql.intellij.relation.RelationTableTypes.of(scalar, DuckdbRelationProfile))
         assertFalse(scalar.dasType is com.intellij.sql.psi.SqlTableType)
         assertEquals("text", scalar.dasType.specification)
     }

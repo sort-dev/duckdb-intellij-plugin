@@ -73,10 +73,9 @@ class DuckdbCompletionInsertionTest : BasePlatformTestCase() {
         }
     }
 
-    fun testAcceptedRemovalsDoNotReachOfflineFunctionCompletion() {
+    fun testNonCallableHelpersDoNotReachOfflineFunctionCompletion() {
         for ((prefix, removed) in listOf(
             "show_t" to setOf("show_tables"),
-            "icu_collate_" to setOf("icu_collate_fy", "icu_collate_lij", "icu_collate_nso", "icu_collate_st", "icu_collate_tn"),
             "pandas_" to setOf("pandas_scan"),
             "python_" to setOf("python_map_function"),
             "create_fts" to setOf("create_fts_index"),
@@ -85,6 +84,22 @@ class DuckdbCompletionInsertionTest : BasePlatformTestCase() {
             val entries = myFixture.completeBasic().orEmpty().mapNotNull { it.`object` as? FunctionPresentation }
             assertFalse(entries.toString(), entries.any { it.name in removed })
         }
+    }
+
+    fun testDuckdb2IcuFunctionsReachOfflineCompletion() {
+        val expected = setOf("icu_collate_fy", "icu_collate_lij", "icu_collate_nso", "icu_collate_st", "icu_collate_tn")
+        val native = mutableSetOf<String>()
+        java.sql.DriverManager.getConnection("jdbc:duckdb:").use { connection ->
+            connection.createStatement().use { statement ->
+                statement.executeQuery("SELECT function_name FROM duckdb_functions() WHERE function_type = 'scalar' AND function_name LIKE 'icu_collate_%'").use { rows ->
+                    while (rows.next()) native += rows.getString(1)
+                }
+            }
+        }
+        assertTrue("DuckDB 2.0 must actually register the restored ICU functions", native.containsAll(expected))
+        myFixture.configureByText("icu.sql", "SELECT icu_collate_<caret>")
+        val entries = myFixture.completeBasic().orEmpty().mapNotNull { it.`object` as? FunctionPresentation }
+        assertTrue("Offline completion must match the 2.0 registry", entries.map { it.name }.toSet().containsAll(expected))
     }
 
     fun testMetadataKeywordsReachExpressionCompletion() {

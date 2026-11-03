@@ -6,7 +6,9 @@ import com.intellij.database.dataSource.LocalDataSourceManager
 import com.intellij.database.dataSource.artifacts.DatabaseArtifactManager
 import com.intellij.ide.util.PropertiesComponent
 import com.intellij.openapi.actionSystem.Separator
+import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
+import com.intellij.util.Consumer
 
 class DuckdbDriverPickerIconTest : BasePlatformTestCase() {
     fun testEmbeddedDriverInNewAndRecentPickers() = checkPicker("duckdb-brikk-native")
@@ -16,10 +18,10 @@ class DuckdbDriverPickerIconTest : BasePlatformTestCase() {
     fun testQuackDriverUsesPreferredArtifact() {
         val driver = checkNotNull(DatabaseDriverManager.getInstance().getDriver("duckdb-brikk-quack"))
         val artifact = checkNotNull(DatabaseArtifactManager.resolveVersion(driver, driver.artifacts.single()))
-        assertEquals("The IDE's default rolling Quack artifact must use the current release", "0.11.1", artifact.version.toString())
-        assertTrue(artifact.items.toString(), artifact.items.any { it.url == "dev.brikk.duckdb:quack-jdbc:0.11.1" })
+        assertEquals("The IDE's default rolling Quack artifact must use the current release", "0.12.1", artifact.version.toString())
+        assertTrue(artifact.items.toString(), artifact.items.any { it.url == "dev.brikk.duckdb:quack-jdbc:0.12.1" })
         val config = requireNotNull(javaClass.getResource("/config/duckdb-brikk-artifacts.xml")).readText()
-        for (version in listOf("0.11.0", "0.8.0", "0.5.0", "0.4.0", "0.3.0")) {
+        for (version in listOf("0.12.0", "0.11.1", "0.11.0", "0.8.0", "0.5.0", "0.4.0", "0.3.0")) {
             assertTrue("Older Quack $version must remain selectable", config.contains("<version version=\"$version\">"))
         }
     }
@@ -45,7 +47,14 @@ class DuckdbDriverPickerIconTest : BasePlatformTestCase() {
             for (recent in listOf(false, true)) {
                 properties.unsetValue(key)
                 if (recent) DatabaseViewActions.addToLRUNames(project, 10, key, manager.getDriverKey(driver))
-                val actions = manager.getCreateDataSourceActions(listOf(driver)) { error("The picker must not create a data source") }
+                // 263 moved this public UI method from the service base to its implementation.
+                // Resolve only the actual service's public method; keep testing the real picker,
+                // without a production ABI reference or a private implementation-class dependency.
+                val createActions = manager.javaClass.getMethod("getCreateDataSourceActions",
+                    Collection::class.java, Consumer::class.java)
+                val actions = (createActions.invoke(manager, listOf(driver),
+                    Consumer<com.intellij.database.dataSource.LocalDataSource> { error("The picker must not create a data source") }) as List<*>)
+                    .map { it as AnAction }
                 val entry = actions.filterNot { it is Separator }.single()
                 assertSame("$id picker icon must match its data-source DBMS icon; recent=$recent", expected, entry.templatePresentation.icon)
             }

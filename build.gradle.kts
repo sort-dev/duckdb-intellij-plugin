@@ -3,7 +3,7 @@ plugins {
 }
 
 group = "dev.sort.duckdb"
-version = "0.5.1"
+version = "0.6.0"
 
 sqlDialectPlugin {
     embeddedLibraries = with(libs.versions) {
@@ -39,7 +39,7 @@ dependencies {
     }
     testImplementation(libs.brikk.sql.intellij.test.support)
     testImplementation(libs.duckdb.jdbc)
-    testImplementation("dev.brikk.duckdb:quack-jdbc:0.11.1")
+    testImplementation("dev.brikk.duckdb:quack-jdbc:0.12.1")
     testImplementation("dev.brikk.ducklake:slt-format:0.3.0")
 }
 

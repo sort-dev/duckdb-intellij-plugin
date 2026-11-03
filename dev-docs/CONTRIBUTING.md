@@ -39,7 +39,7 @@ To run the optional live Quack tests, provide a server URL with a token:
 
 ## Isolated Quack v3 cancellation test
 
-This gate uses the actual Quack JDBC 0.11.1 client and DuckDB JDBC 2.0.0.0 to start its own
+This gate uses the actual Quack JDBC 0.12.1 client and DuckDB JDBC 2.0.0.0 to start its own
 signed-extension server in a child JVM. Provide signed, matching DuckDB 2.0 Linux extension binaries:
 
 ```bash
@@ -60,6 +60,9 @@ button or a remote JDBC helper process. A separate real-query check bounds `requ
 an injected stalled cancellation transport checks the control deadline and closed-session fallback.
 `Statement.setQueryTimeout` is still a no-op and an HTTP timeout is not proof of server cancellation.
 The older external-URL metadata suite retains its historical major-1 server expectations.
+The same isolated fixture also checks 0.12.0 result classification through standard JDBC and the
+IDE wrapper: SELECT/RETURNING count-shaped columns remain rows, DML returns affected-row counts,
+and draining results terminates with update count -1.
 
 ## Native grammar integration test
 
@@ -101,6 +104,12 @@ Build a release-labelled artifact with:
 ```
 
 Release preparation must land on `main` before creating `release/<version>` from that commit. Pushing the release branch runs `.github/workflows/release.yml`, verifies the plugin, and creates the GitHub release. It does not upload to JetBrains Marketplace.
+
+Marketplace publication is a separate, explicit action. With the Marketplace token configured,
+`./gradlew publishPlugin -Prelease=true` publishes a locally built release, not a development ZIP.
+To publish the exact GitHub asset instead, use the checked download and archive override supplied
+with the release handoff. Local and CI rebuilds can differ in JVM/OS manifest metadata even when
+all production classes and dependencies match. Do not assume their ZIP hashes are interchangeable.
 
 ## Updating DuckDB
 
