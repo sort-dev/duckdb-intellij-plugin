@@ -40,6 +40,7 @@ internal class IdeGrammarConnection(private val connection: DatabaseConnectionCo
 internal class DuckdbGrammarRuntime(private val project: Project) {
     internal class Runtime(connection: DatabaseConnectionCore, val sourceId: String, val login: Pair<String?, String?>) {
         val connection = WeakReference(connection)
+        val configuration = recoverEditorOperation { DuckdbGrammarConfiguration.capture(connection.connectionPoint.dataSource) }.getOrNull()
         @Volatile var snapshot = DuckdbGrammarSnapshot(unavailable = "Grammar state has not been read")
         @Volatile var initializationError: String? = null
         @Volatile var routed = false
@@ -112,8 +113,18 @@ internal class DuckdbGrammarRuntime(private val project: Project) {
         return connections.values.filter { current(it, source) }.maxByOrNull { it.observedAt }
     }
 
+    /** A bound console may be stale, but it must not be replaced by another console
+     * when explaining why verification is unavailable. */
+    @Synchronized
+    fun verificationRuntime(source: LocalDataSource, session: DatabaseSession?): Runtime? {
+        val known: (Runtime) -> Boolean = { it.sourceId == source.uniqueId && it.connection.get() != null }
+        if (session != null) return sessions[session]?.get()?.let(connections::get)?.takeIf(known)
+        return runtime(source) ?: connections.values.filter(known).maxByOrNull { it.observedAt }
+    }
+
     private fun current(runtime: Runtime, source: LocalDataSource) = runtime.sourceId == source.uniqueId &&
-        runtime.login == (source.url to source.username) && runtime.connection.get() != null
+        runtime.login == (source.url to source.username) && runtime.connection.get() != null &&
+        runtime.configuration?.matches(source) == true
 
     @Synchronized
     fun sessionIdentity(session: DatabaseSession?) = session?.let { sessionIds.getOrPut(it) { Any() } }

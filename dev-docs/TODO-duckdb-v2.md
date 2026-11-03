@@ -21,8 +21,15 @@ historical context, not an instruction to restore the old engine pins or EXPLAIN
   rechecked even before a revision notification, so another console cannot bypass routing.
   Five focused real IDE console tests pass. The routing flag is controlled by the regression;
   this does not qualify live remote routing or enable the still-deferred helper modes.
-- [ ] R2: capture connection/driver configuration identity and reject stale helpers/cache results
-  after same-URL property, working-directory or module changes. Do not reconnect or replay settings.
+- [x] R2: capture opaque in-memory connection/driver configuration and declared module/file
+  identity. Reject changed source properties, working directory, driver descriptors and manual
+  module file stamps before helper use and when applying results. Snapshot helper URL/properties
+  while retaining the original source/driver handles needed by the shared JDBC process.
+  No user reconnect, startup-script replay, transaction change or sensitive value logging.
+  Presentation/introspection preferences are not connection identity. The 45-test baseline
+  integration run passes without skips, including a replaced private module and genuine native
+  PSQL/autocomplete. Driver/data-source copying failed the same-file lock gate and was discarded;
+  its failed evidence is retained, not treated as matching-instance proof.
 - [ ] Qualify these guards with genuine native autocomplete/grammar integration and supported IDE
   targets. Keep source-level findings distinct from freshly executed integration evidence.
 
@@ -32,6 +39,9 @@ historical context, not an instruction to restore the old engine pins or EXPLAIN
   This is explicitly post-release; retain top-level schemas, including literal dotted names.
 - General DDB20-067: exact follow-console, unnamed/named-memory and remote matching helpers.
   They remain unavailable; native SQL execution and ordinary completion are separate features.
+- Single-connection isolation, non-local/directory classpath identities, cryptographic binary
+  attestation and arbitrary per-session/template/runtime-setting equivalence are not qualified
+  by these guards. Unverifiable local module identities fail closed. No new cloning mechanism.
 - DDB20-070: a future chunked/native executor and vector/composite ownership implementation.
   Review release-relevant existing client behavior separately; do not start a new executor.
 - Existing uncommitted Quack 0.12/cancellation/result work is user work. Its intended release

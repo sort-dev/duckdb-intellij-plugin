@@ -704,6 +704,56 @@ class DuckdbLiveCatalogConsoleTest : DuckdbCatalogTestCase() {
         }
     }
 
+    fun testManagedHelperDiscardsSameUrlConfigurationChangesWithoutTouchingTheConsole() {
+        val a=console("managed-config")
+        a.run("CREATE TEMP TABLE preserved_config(n INTEGER)")
+        a.grammarRuntime()
+        val original=a.connectionIdentity()
+        val factory=project.service<DuckdbGrammarVerification>()
+        val before=requireNotNull(factory.target(a.file))
+        assertTrue(factory.isCurrent(before))
+        val url=target.url
+        target.workingDir=directory.resolve("changed-working-directory").toString()
+        assertFalse(factory.isCurrent(before))
+        assertNull(factory.openHelper(before))
+        assertTrue(a.verifyGrammar("SELECT 42") is VerifyResult.Unavailable)
+        assertTrue(requireNotNull(factory.identity(a.file)).unavailable.orEmpty().contains("configuration changed"))
+        assertEquals(url,target.url)
+        assertSame(original.first,a.connectionIdentity().first)
+        assertSame(original.second,a.connectionIdentity().second)
+        assertEquals("1",a.scalar("SELECT count(*) FROM duckdb_tables() WHERE temporary AND table_name='preserved_config'"))
+    }
+
+    fun testManagedHelperDoesNotClaimIsolationWhenSingleConnectionModeIsEnabled() {
+        target.isSingleConnection=true
+        val a=console("managed-single-connection")
+        a.run("SELECT 1");a.grammarRuntime()
+        assertTrue(a.verifyGrammar("SELECT 42") is VerifyResult.Unavailable)
+        assertTrue(requireNotNull(project.service<DuckdbGrammarVerification>().identity(a.file)).unavailable.orEmpty().contains("single-connection"))
+    }
+
+    fun testManagedHelperRejectsReplacedManualModuleWithoutChangingTheSourceUrl() {
+        val marker=directory.resolve("driver-module-marker.jar").toAbsolutePath()
+        val manifest=java.util.jar.Manifest().apply { mainAttributes[java.util.jar.Attributes.Name.MANIFEST_VERSION]="1.0" }
+        java.util.jar.JarOutputStream(Files.newOutputStream(marker),manifest).use {
+            it.putNextEntry(java.util.jar.JarEntry("module-fixture.txt"));it.write("before".toByteArray());it.closeEntry()
+        }
+        driver.setAdditionalClasspathElements(driver.additionalClasspathElements + SimpleClasspathElementFactory.createElements("jar://$marker!/"))
+        val a=console("managed-module-change")
+        a.run("SELECT 1");a.grammarRuntime()
+        val factory=project.service<DuckdbGrammarVerification>()
+        val before=requireNotNull(factory.target(a.file))
+        assertTrue(factory.isCurrent(before))
+        val originalUrl=target.url
+        Files.writeString(marker,"replaced module contents")
+        assertFalse(factory.isCurrent(before))
+        assertNull(factory.openHelper(before))
+        assertTrue(requireNotNull(factory.identity(a.file)).unavailable.orEmpty().contains("module files changed"))
+        assertTrue(a.verifyGrammar("SELECT 42") is VerifyResult.Unavailable)
+        assertEquals(originalUrl,target.url)
+        assertEquals("42",a.scalar("SELECT 42"))
+    }
+
     fun testManagedRoutedConsoleCannotBorrowAnotherConsolesRuntime() {
         val a=console("managed-routed-a")
         val b=console("managed-unrouted-b")

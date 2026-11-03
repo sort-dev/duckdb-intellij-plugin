@@ -9,7 +9,6 @@ import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.runBlockingMaybeCancellable
 import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiFile
-import dev.brikk.house.sql.intellij.catalog.HelperConnectionPoint
 import dev.brikk.house.sql.intellij.catalog.helperRequestor
 import dev.brikk.house.sql.intellij.pipe.NativeSqlValidator
 import dev.brikk.house.sql.intellij.recoverEditorOperation
@@ -28,6 +27,7 @@ internal data class GrammarIdentity(
     val runtime: Any?,
     val revision: Long,
     val unavailable: String?,
+    val configuration: Any? = null,
 )
 
 internal data class GrammarTarget(val identity: GrammarIdentity, val source: WeakReference<LocalDataSource>,
@@ -52,12 +52,12 @@ internal class DuckdbGrammarVerification(private val owner: Project) {
         val follow = runtime.follows(session)
         // Managed profile selection is independent of console routing. A bound
         // console must never borrow another console's more recent runtime.
-        val state = runtime.runtime(source, session)
+        val state = runtime.verificationRuntime(source, session)
         val configured = owner.service<DuckdbGrammarSettings>().profile(source)
         val profile = if (follow) DuckdbGrammarProfile(state?.snapshot?.effective.orEmpty()) else configured
         val reason = unavailable(source,state,follow)
         val identity = GrammarIdentity(source.uniqueId, source.url, source.username, profile, follow,
-            runtime.sessionIdentity(session), state, runtime.stamp, reason)
+            runtime.sessionIdentity(session), state, runtime.stamp, reason,state?.configuration)
         return GrammarTarget(identity, WeakReference(source), session?.let(::WeakReference))
     }
 
@@ -77,6 +77,7 @@ internal class DuckdbGrammarVerification(private val owner: Project) {
     fun isCurrent(target: GrammarTarget): Boolean {
         if (owner.isDisposed) return false
         val source = target.source.get() ?: return false
+        if (!DuckdbGrammarSources.accepts(source)) return false
         val session = target.session?.get()
         val identity = target.identity
         if (identity.session != null && session == null) return false
@@ -84,8 +85,9 @@ internal class DuckdbGrammarVerification(private val owner: Project) {
         val runtime = owner.service<DuckdbGrammarRuntime>()
         if (runtime.stamp != identity.revision || runtime.follows(session) != identity.follow ||
             runtime.sessionIdentity(session) !== identity.session) return false
-        val state = runtime.runtime(source, session)
+        val state = runtime.verificationRuntime(source, session)
         if (state == null || state !== identity.runtime) return false
+        if (state.configuration !== identity.configuration || state.configuration?.matches(source) != true) return false
         val profile = if (identity.follow) DuckdbGrammarProfile(state.snapshot.effective)
             else owner.service<DuckdbGrammarSettings>().profile(source)
         return profile == identity.profile && unavailable(source,state,identity.follow) == identity.unavailable
@@ -93,10 +95,13 @@ internal class DuckdbGrammarVerification(private val owner: Project) {
 
     private fun unavailable(source: LocalDataSource, state: DuckdbGrammarRuntime.Runtime?, follow: Boolean): String? = when {
         state == null -> "Connect the data source and refresh its grammar state"
+        state.configuration?.matches(source) != true -> "Validation unavailable: connection configuration changed or cannot be verified; the existing connection was left untouched"
         !state.snapshot.supported -> state.snapshot.unavailable
         state.routed -> "Validation unavailable after session routing changes: no matching isolated helper is established"
         follow -> "Follow-console validation unavailable: the IDE cannot duplicate the source runtime using the currently supported APIs"
         !isFileBacked(source.url) -> "Validation unavailable: a matching in-memory or remote helper cannot be established"
+        source.isSingleConnection -> "Validation unavailable: an isolated helper is not qualified in single-connection mode"
+        state.configuration?.modulesCurrent() != true -> "Validation unavailable: driver module files changed or their identity cannot be verified"
         else -> null
     }
 
@@ -105,8 +110,9 @@ internal class DuckdbGrammarVerification(private val owner: Project) {
             target.identity.unavailable?.let { throw SQLException(it) }
             val source = target.source.get() ?: return@recoverEditorOperation null
             if (!isCurrent(target)) return@recoverEditorOperation null
+            val configuration=(target.identity.runtime as? DuckdbGrammarRuntime.Runtime)?.configuration ?: return@recoverEditorOperation null
             val ref = runBlockingMaybeCancellable {
-                DatabaseConnectionManager.getInstance().build(owner, HelperConnectionPoint(source))
+                DatabaseConnectionManager.getInstance().build(owner, configuration.helperPoint(source))
                     .setRequestor(helperRequestor()).setAskPassword(false).create()
             } ?: return@recoverEditorOperation null
             val helper = DuckdbGrammarHelper(ref.get(), { ref.close() }, target.identity.profile, { isCurrent(target) })
