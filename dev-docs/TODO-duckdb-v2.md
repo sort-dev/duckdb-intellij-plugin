@@ -14,6 +14,8 @@ historical context, not an instruction to restore the old engine pins or EXPLAIN
 - [x] R3: require the one reviewed autocomplete-extension origin/signature; reject application
   UDFs, unknown metadata and mixed/shadowed registrations before binding or invoking completion.
   Eight focused keyword tests pass, including a real Java UDF with zero bind/init/apply callbacks.
+  Registry JSON conversions are system-qualified too; a shadowed public to_json macro leaves
+  its sequence sentinel untouched. Missing metadata fields are not treated as trusted NULLs.
 - [x] R1: correlate every bound console with its actual runtime even in managed-profile mode;
   retain weak console correlation and session-specific cache identities. Availability is
   rechecked even before a revision notification, so another console cannot bypass routing.

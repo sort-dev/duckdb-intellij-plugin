@@ -44,8 +44,8 @@ internal data class NativeKeywordPrefix(val sql: String, val start: Int, val car
 
 internal object DuckdbNativeKeywords {
     const val FOREIGN_CATALOGS = "SELECT type FROM system.main.duckdb_databases() WHERE type IS NULL OR type <> 'duckdb' LIMIT 1"
-    const val REGISTERED = "SELECT extension_name, to_json(parameters)::VARCHAR AS parameters, " +
-        "to_json(parameter_types)::VARCHAR AS parameter_types, varargs FROM system.main.duckdb_functions() " +
+    const val REGISTERED = "SELECT extension_name, system.main.to_json(parameters)::VARCHAR AS parameters, " +
+        "system.main.to_json(parameter_types)::VARCHAR AS parameter_types, varargs FROM system.main.duckdb_functions() " +
         "WHERE database_name = 'system' AND schema_name = 'main' AND function_name = 'sql_auto_complete' AND function_type = 'table' LIMIT 2"
     const val LIMIT = 64
     fun sql(prefix: String) = "SELECT suggestion, suggestion_start, suggestion_type, suggestion_score, extra_char " +
@@ -76,7 +76,7 @@ internal object DuckdbNativeKeywords {
 
     // A same-named Java UDF can live in system.main and report internal=true.
     // Check the one reviewed native overload, and refuse mixed/shadowed registries.
-    private fun trusted(row: Map<String, Any?>): Boolean = row["extension_name"]?.toString() == "autocomplete" &&
+    private fun trusted(row: Map<String, Any?>): Boolean = row.containsKey("varargs") && row["extension_name"]?.toString() == "autocomplete" &&
         row["varargs"] == null && strings(row["parameters"]) == listOf("sql", "max_suggestion_count", "max_file_suggestion_count", "max_exact_suggestion_count") &&
         strings(row["parameter_types"]) == listOf("VARCHAR", "UBIGINT", "UBIGINT", "UBIGINT")
 

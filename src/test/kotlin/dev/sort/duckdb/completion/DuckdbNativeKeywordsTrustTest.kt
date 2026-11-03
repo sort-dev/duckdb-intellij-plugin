@@ -17,7 +17,7 @@ class DuckdbNativeKeywordsTrustTest {
         val native = trusted()
         for(registrations in listOf(listOf(native + ("extension_name" to null)),listOf(native + ("extension_name" to "app")),
             listOf(native + ("parameters" to "[]")),listOf(native + ("parameter_types" to "[\"VARCHAR\",\"BIGINT\",\"UBIGINT\",\"UBIGINT\"]")),
-            listOf(native + ("varargs" to "VARCHAR")),listOf(native + ("parameters" to "not-json")),
+            listOf(native + ("varargs" to "VARCHAR")),listOf(native - "varargs"),listOf(native + ("parameters" to "not-json")),
             listOf(native + ("parameter_types" to "[null]")),listOf(native,native),listOf(native,native + ("extension_name" to null)))) {
             val calls=mutableListOf<String>()
             val result=DuckdbNativeKeywords.query(requireNotNull(NativeKeywordPrefix.capture("SELECT WH",9))) { sql,_ ->
@@ -42,6 +42,10 @@ class DuckdbNativeKeywordsTrustTest {
             val url="jdbc:duckdb:${root.resolve("fixture.duckdb")}"
             DriverManager.getConnection(url,properties).use { source -> DriverManager.getConnection(url,properties).use { helper ->
                 val callbacks=AtomicInteger()
+                source.createStatement().use {
+                    it.execute("CREATE SEQUENCE metadata_untouched START 42")
+                    it.execute("CREATE MACRO to_json(x) AS nextval('metadata_untouched')::VARCHAR")
+                }
                 DuckDBFunctions.tableFunction().use { builder ->
                     builder.withName("sql_auto_complete").withParameter(String::class.java)
                         .withNamedParameter("max_file_suggestion_count",DuckDBColumnType.UBIGINT)
@@ -62,6 +66,7 @@ class DuckdbNativeKeywordsTrustTest {
                 }
                 assertTrue(result.status.orEmpty().contains("could not be verified"))
                 assertEquals(0,callbacks.get())
+                source.createStatement().use { s -> s.executeQuery("SELECT nextval('metadata_untouched')").use { r -> assertTrue(r.next());assertEquals(42,r.getInt(1)) } }
                 assertEquals(listOf(DuckdbNativeKeywords.FOREIGN_CATALOGS,DuckdbNativeKeywords.REGISTERED),calls)
             } }
         }finally { Files.walk(root).use { it.sorted(Comparator.reverseOrder()).forEach(Files::deleteIfExists) } }
