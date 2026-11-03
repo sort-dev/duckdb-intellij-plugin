@@ -34,8 +34,15 @@ historical context, not an instruction to restore the old engine pins or EXPLAIN
   avoids a binary reference to the removed method; unexpected access failures still fail closed.
   No private fields/APIs or warning suppressions are used. The 263 test fixture drains queued
   console UI callbacks before editor disposal; original assertions/errors remain enforced.
-- [ ] Qualify these guards with genuine native autocomplete/grammar integration and supported IDE
-  targets. Keep source-level findings distinct from freshly executed integration evidence.
+- [x] Qualify these guards with genuine native autocomplete/grammar integration: committed-only
+  b17e63d snapshot passes 45 affected tests each on IDE 261/262/263, zero failures/errors/skips.
+  Distribution checks pass; Plugin Verifier reports compatibility on DB-261.24374.56,
+  IU-262.10968.63, DB-262.10315.132, IU-263.4732.28 and IU-263.7307.44. Each retains the
+  existing two deprecated, sixteen experimental and one approved internal usage. Experimental/
+  internal reports match the existing 0.5.1 baseline byte-for-byte on the three prior targets.
+  Evidence: /tmp/opencode/ddb20-067-fixes/final-committed-gates.log and final-sdk-counts.json.
+  This is helper-fix qualification with current pinned libraries, not the integrated release
+  candidate, manual installed-plugin smoke, live routing or uncommitted Quack qualification.
 
 ### Still deferred or separately unqualified
 
