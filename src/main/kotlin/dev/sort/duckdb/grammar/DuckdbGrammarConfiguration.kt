@@ -62,7 +62,7 @@ internal class DuckdbGrammarConfiguration private constructor(
         private fun sourceShape(source: LocalDataSource) = SourceShape(source.uniqueId,source.url,source.username,source.driverClass,
             source.connectionProperties.toMap(),source.workingDir,source.vmOptions,source.vmEnv.toMap(),
             source.additionalPropertiesNames.associateWith(source::getAdditionalProperty),source.isReadOnly,source.isAutoCommit,
-            source.txIsolation,source.authProviderId,source.initScript,source.isSingleConnection)
+            source.txIsolation,source.authProviderId,source.initScript,DuckdbSingleConnectionMode.requested(source))
 
         private fun shape(driver: DatabaseDriver?): DriverShape? = driver?.let {
             DriverShape(it.id,it.driverClass,it.vmOptions,it.vmEnv.toMap(),it.driverProperties.toMap(),

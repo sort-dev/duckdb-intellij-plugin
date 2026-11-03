@@ -100,7 +100,7 @@ internal class DuckdbGrammarVerification(private val owner: Project) {
         state.routed -> "Validation unavailable after session routing changes: no matching isolated helper is established"
         follow -> "Follow-console validation unavailable: the IDE cannot duplicate the source runtime using the currently supported APIs"
         !isFileBacked(source.url) -> "Validation unavailable: a matching in-memory or remote helper cannot be established"
-        source.isSingleConnection -> "Validation unavailable: an isolated helper is not qualified in single-connection mode"
+        DuckdbSingleConnectionMode.requested(source) -> "Validation unavailable: an isolated helper is not qualified in single-connection mode"
         state.configuration?.modulesCurrent() != true -> "Validation unavailable: driver module files changed or their identity cannot be verified"
         else -> null
     }

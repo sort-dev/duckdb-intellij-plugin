@@ -113,6 +113,7 @@ class DuckdbLiveCatalogConsoleTest : DuckdbCatalogTestCase() {
     }
 
     override fun tearDown() = RunAll(
+        { PlatformTestUtil.dispatchAllInvocationEventsInIdeEventQueue() },
         { consoles.forEach { DatabaseSessionViewService.getInstance().destroyView(it.console); Disposer.dispose(it.console); Disposer.dispose(it.session) } },
         { notifications.forEach(Notification::expire) },
         { assertEmpty(executionErrors) },
@@ -136,6 +137,9 @@ class DuckdbLiveCatalogConsoleTest : DuckdbCatalogTestCase() {
         val request = requireNotNull(ConsoleDataRequest.newConsoleRequest(console, myFixture.editor, console.scriptModel, false))
         session.messageBus.dataProducer.processRequest(request)
         PlatformTestUtil.waitWithEventsDispatching("'$sql' finishes", { request in finished }, 30)
+        // The engine can finish before its queued console UI callback is dispatched.
+        // Keep this editor alive until that callback runs, especially on 263.
+        PlatformTestUtil.dispatchAllInvocationEventsInIdeEventQueue()
         assertEmpty(executionErrors)
         errors.assertNone()
     }
@@ -725,7 +729,12 @@ class DuckdbLiveCatalogConsoleTest : DuckdbCatalogTestCase() {
     }
 
     fun testManagedHelperDoesNotClaimIsolationWhenSingleConnectionModeIsEnabled() {
-        target.isSingleConnection=true
+        val setter=runCatching { LocalDataSource::class.java.getMethod("setSingleConnection",Boolean::class.javaPrimitiveType) }.getOrNull()
+        if (setter == null) {
+            assertFalse("The old flag is absent on this SDK",dev.sort.duckdb.grammar.DuckdbSingleConnectionMode.requested(target))
+            return
+        }
+        setter.invoke(target,true)
         val a=console("managed-single-connection")
         a.run("SELECT 1");a.grammarRuntime()
         assertTrue(a.verifyGrammar("SELECT 42") is VerifyResult.Unavailable)

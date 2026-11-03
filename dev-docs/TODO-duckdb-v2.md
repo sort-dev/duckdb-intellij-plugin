@@ -30,6 +30,10 @@ historical context, not an instruction to restore the old engine pins or EXPLAIN
   integration run passes without skips, including a replaced private module and genuine native
   PSQL/autocomplete. Driver/data-source copying failed the same-file lock gate and was discarded;
   its failed evidence is retained, not treated as matching-instance proof.
+  SDK 263 removed the old single-connection flag/getter. A cached lookup of that public getter
+  avoids a binary reference to the removed method; unexpected access failures still fail closed.
+  No private fields/APIs or warning suppressions are used. The 263 test fixture drains queued
+  console UI callbacks before editor disposal; original assertions/errors remain enforced.
 - [ ] Qualify these guards with genuine native autocomplete/grammar integration and supported IDE
   targets. Keep source-level findings distinct from freshly executed integration evidence.
 
