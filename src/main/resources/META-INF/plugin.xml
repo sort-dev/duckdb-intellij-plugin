@@ -84,6 +84,12 @@
     ]]></description>
 
     <change-notes><![CDATA[
+        <b>0.6.1</b> - Live-catalog refresh ordering fixes with SQL IntelliJ support 0.4.1.
+        <ul>
+            <li>Aligns SQL IntelliJ common/JDBC/test support at 0.4.1. SQL/metadata/verifier 0.23.0, Quack JDBC 0.12.1 and DuckDB JDBC 2.0.0.0 are unchanged.</li>
+            <li>Prevents late catalog reads from restoring forgotten metadata or overwriting newer complete harvests. Failed, incomplete and cancelled reads do not displace the last complete catalog; queued work cannot restore a forgotten catalog.</li>
+            <li>Existing connection settings, grammar preferences and native-helper limitations are unchanged. Older 0.6.0 assets remain available and are not replaced.</li>
+        </ul>
         <b>0.6.0</b> - DuckDB 2.0 language, metadata and Quack driver updates.
         <ul>
             <li>Uses Brikk SQL/metadata/verifier 0.23.0 and SQL IntelliJ support/JDBC/test support 0.4.0 from Maven Central. DuckDB engine/JDBC remains 2.0.0/2.0.0.0.</li>

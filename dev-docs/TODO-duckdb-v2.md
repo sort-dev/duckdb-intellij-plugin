@@ -116,6 +116,33 @@ version/notes change must preserve its class bytes and relevant descriptor regis
 Release preparation lands on main, then `release/0.6.0` runs the repository's artifact-only GitHub
 workflow. Preserve existing release artifacts, exact API approvals and all deferred scope above.
 
+### SQL IntelliJ support 0.4.1 dogfood follow-up
+
+The user requested a development build adopting SQL IntelliJ common/JDBC/test support 0.4.1.
+SQL/metadata/verifier remain 0.23.0, Quack JDBC remains 0.12.1 and DuckDB JDBC remains 2.0.0.0.
+The plugin base remains 0.6.0; this does not replace or republish the existing 0.6.0 release.
+The shared patch fences forgotten/cancelled catalog reads and orders successful harvest recording.
+Consumer regressions cover forgetting during a real harvest, a newer success finishing before an
+older read, and a newer failure not displacing an older successful result, including disk fallback.
+Qualification evidence for this follow-up belongs under
+/var/tmp/jayson/opencode/duckdb-ide-041/, separate from the 0.4.0 release evidence above.
+The full configured matrix passed: 426 tests on 261, 338 each on 262/263 without Kotlin,
+and 88 each on 262/263 with Kotlin; zero failures/errors, with the same 27 external-server
+opt-in skips across the three full suites. All three new ordering regressions ran on each IDE.
+All five Plugin Verifier targets are compatible, and their Internal/Experimental/Deprecated
+usage reports match the 0.4.0 dependency baseline byte-for-byte. Distribution/build-logic gates
+passed. The published 0.6.0 ZIPs are unchanged; this follow-up is dogfood only.
+
+### 0.6.1 release checkpoint
+
+The user subsequently requested the 0.4.1 adoption as a GitHub release via CI, using the quicker
+path rather than rerunning the full qualified matrix. Cut 0.6.1 and retain the dogfood results above
+through packaged class/dependency and descriptor-equivalence checks. Skip only the redundant main
+push test matrix, and explicitly dispatch the existing release workflow on `release/0.6.1`; its
+required build, actual Plugin Verifier and exact approved-internal-API gates still run normally.
+Download the exact GitHub asset to `build/release/duckdb-intellij-plugin-0.6.1.zip`.
+This does not authorize a Marketplace upload or replacement of any older release artifact.
+
 ## Historical preview checklist (retained)
 
 September 23, 2026. This is the work list for this repository, based on

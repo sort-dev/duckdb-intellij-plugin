@@ -41,9 +41,17 @@ use DuckDB's own parser with the selected active grammar order when that state c
 - **DuckDB PIPE (optional).** Write pipe-syntax queries and run them in the normal console. See
   [DuckDB PIPE](#duckdb-pipe).
 
+## 0.6.1 release changes
+
+This patch release uses **SQL IntelliJ common/JDBC/test support 0.4.1**. Live-catalog refresh
+ordering now prevents late reads from restoring forgotten metadata or overwriting a newer complete
+harvest. Failed, incomplete and cancelled reads do not displace the last complete catalog.
+Brikk SQL remains **0.23.0**, Quack JDBC **0.12.1** and DuckDB JDBC **2.0.0.0**. Existing connection
+settings and grammar preferences are unchanged. The published 0.6.0 assets remain unchanged.
+
 ## 0.6.0 release changes
 
-This build adopts **Brikk SQL 0.23.0**, **SQL IntelliJ support 0.4.0** and **Quack JDBC 0.12.1**.
+The 0.6.0 release adopted **Brikk SQL 0.23.0**, **SQL IntelliJ support 0.4.0** and **Quack JDBC 0.12.1**.
 DuckDB remains pinned to engine **2.0.0 LTS** and official JDBC **2.0.0.0**.
 
 - **Refreshed offline completion.** Functions, overloads, keywords and types come from the DuckDB
