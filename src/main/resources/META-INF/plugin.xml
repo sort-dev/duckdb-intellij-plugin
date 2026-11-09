@@ -96,6 +96,15 @@
     ]]></description>
 
     <change-notes><![CDATA[
+        <b>0.7.0</b> - Brikk SQL 1.0.1 and IntelliJ support 1.0.1.
+        <ul>
+            <li>Uses Brikk SQL/metadata/verifier 1.0.1 and SQL IntelliJ support/JDBC/test support 1.0.1 from Maven Central. Quack JDBC 0.12.1 and DuckDB JDBC 2.0.0.0 are unchanged.</li>
+            <li>Brings the bundled SQL parser and generator up to SQLGlot 30.29: new syntax nodes, nested XOR, SHA384/SHA512 handling, weighted-percentile warnings and updated operator precedence.</li>
+            <li>A number directly followed by a keyword now splits correctly: <code>SELECT 13END</code> reads as <code>13</code> then <code>END</code> instead of the number <code>13E</code>.</li>
+            <li>PIPE lowering keeps a VALUES alias in place before a nested join, so <code>LEFT JOIN (VALUES ...) t2(b) JOIN t3 ON ... ON ...</code> produces valid DuckDB SQL. DuckDB nested-join generation is fixed as well.</li>
+            <li>Brikk fragment checks report every Brikk SQL error type as an editor diagnostic.</li>
+            <li>Existing connection settings, grammar preferences and native-helper limitations are unchanged.</li>
+        </ul>
         <b>0.6.1</b> - Live-catalog refresh ordering fixes with SQL IntelliJ support 0.4.1.
         <ul>
             <li>Aligns SQL IntelliJ common/JDBC/test support at 0.4.1. SQL/metadata/verifier 0.23.0, Quack JDBC 0.12.1 and DuckDB JDBC 2.0.0.0 are unchanged.</li>

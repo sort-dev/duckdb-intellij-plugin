@@ -52,6 +52,21 @@ parse-only checks when a suitable local driver or matching helper is available.
 - **Optional PIPE syntax.** Write pipe queries and run them as ordinary DuckDB SQL. The plugin
   transpiles them before execution. See [PIPE syntax](#pipe-syntax).
 
+## 0.7.0 release changes
+
+This release moves to **Brikk SQL 1.0.1** and **SQL IntelliJ common/JDBC/test support 1.0.1**.
+Quack JDBC remains **0.12.1** and DuckDB JDBC **2.0.0.0**.
+
+- **SQLGlot 30.29 catch-up.** The bundled parser and generator gain new syntax nodes, nested XOR,
+  SHA384/SHA512 handling, weighted-percentile warnings and updated operator precedence.
+- **Number/keyword lexing.** `SELECT 13END` now reads as `13` followed by `END`, not the number `13E`.
+- **Nested joins in PIPE lowering.** A VALUES alias stays before a nested join, so
+  `LEFT JOIN (VALUES ...) t2(b) JOIN t3 ON ... ON ...` lowers to valid DuckDB SQL. DuckDB
+  nested-join generation is fixed as well.
+- **Brikk fragment checks** report every Brikk SQL error type as an editor diagnostic.
+
+Existing connection settings and grammar preferences are unchanged.
+
 ## 0.6.1 release changes
 
 This patch release uses **SQL IntelliJ common/JDBC/test support 0.4.1**. Live-catalog refresh

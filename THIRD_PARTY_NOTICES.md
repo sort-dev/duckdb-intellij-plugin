@@ -15,30 +15,30 @@ https://github.com/brikk/brikk-house, Apache License 2.0. The helper contains
 Brikk context/interpolation and copied relation-contract APIs. Kotlin/IntelliJ
 APIs and compiler plugins are not bundled by this dependency.
 
-## Brikk SQL IntelliJ support 0.4.1
+## Brikk SQL IntelliJ support 1.0.1
 
-This plugin embeds `dev.brikk.house:brikk-sql-intellij-support:0.4.1`.
+This plugin embeds `dev.brikk.house:brikk-sql-intellij-support:1.0.1`.
 Jayson Minard and Sortdev SRL, https://github.com/brikk/brikk-sql,
 Apache License 2.0. The helper provides cooperative Execute actions, promotion,
 document snapshots, translated script models and shared column presentation. No IntelliJ SDK, SQL engine,
 native driver or verifier is supplied transitively by this library.
 
-## Brikk SQL IntelliJ JDBC support 0.4.1
+## Brikk SQL IntelliJ JDBC support 1.0.1
 
-This plugin embeds `dev.brikk.house:brikk-sql-intellij-jdbc-support:0.4.1`,
+This plugin embeds `dev.brikk.house:brikk-sql-intellij-jdbc-support:1.0.1`,
 Copyright 2026 Sortdev SRL, https://github.com/brikk/brikk-sql, Apache License 2.0.
 This optional adapter routes DuckDB to JDBC introspection. It contains its LICENSE and NOTICE;
 IntelliJ SDK classes are compile-only and are not bundled.
 
-## brikk-sql and metadata 0.23.0
+## brikk-sql and metadata 1.0.1
 
-Bundled translator artifacts: `dev.brikk.house:brikk-sql-jvm:0.23.0` and
-`dev.brikk.house:brikk-sql-metadata-jvm:0.23.0`, by Jayson Minard and Sortdev SRL.
+Bundled translator artifacts: `dev.brikk.house:brikk-sql-jvm:1.0.1` and
+`dev.brikk.house:brikk-sql-metadata-jvm:1.0.1`, by Jayson Minard and Sortdev SRL.
 Project: https://github.com/brikk/brikk-sql. Apache License 2.0, with the
 third-party-derived portions below. No native database engine is bundled.
 
-Bundled parse-only verifier artifacts: `dev.brikk.house:brikk-sql-verify-api:0.23.0`
-and `dev.brikk.house:brikk-sql-verify-duckdb:0.23.0`, by Jayson Minard and
+Bundled parse-only verifier artifacts: `dev.brikk.house:brikk-sql-verify-api:1.0.1`
+and `dev.brikk.house:brikk-sql-verify-duckdb:1.0.1`, by Jayson Minard and
 Sortdev SRL, https://github.com/brikk/brikk-sql, Apache License 2.0. The DuckDB JDBC
 dependency is excluded; verification uses the user's driver and never executes authored SQL.
 

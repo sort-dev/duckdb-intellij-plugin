@@ -101,7 +101,8 @@ historical context, not an instruction to restore the old engine pins or EXPLAIN
   Review release-relevant existing client behavior separately; do not start a new executor.
 - Installed-plugin smoke, the actual IDE Stop action/separate JDBC helper process, external-server
   JDBC metadata and live routing are not established by the isolated Quack fixture or helper tests.
-- The released SQL 0.23.0/support 0.4.0 consumer pins are now explicitly authorized. Their full
+- The released SQL 0.23.0/support 0.4.0 consumer pins were explicitly authorized; the 0.7.0
+  checkpoint below replaces them with 1.0.1. Their full
   configured plugin test/Verifier qualification and packaged Java/ABI checks passed above. The older
   45-test helper and 38-test Quack runs are retained as history, not relabelled for new dependencies.
   The adoption request did not itself authorize a version bump or publication. The subsequent
@@ -142,6 +143,16 @@ push test matrix, and explicitly dispatch the existing release workflow on `rele
 required build, actual Plugin Verifier and exact approved-internal-API gates still run normally.
 Download the exact GitHub asset to `build/release/duckdb-intellij-plugin-0.6.1.zip`.
 This does not authorize a Marketplace upload or replacement of any older release artifact.
+
+### 0.7.0 release checkpoint
+
+The user requested plugin 0.7.0 against Brikk SQL/metadata/verifier 1.0.1 and SQL IntelliJ
+common/JDBC/test support 1.0.1 from Maven Central. These replace the 0.23.0/0.4.1 pins above.
+Quack JDBC remains 0.12.1 and DuckDB JDBC remains 2.0.0.0. A prior compatibility check against
+1.0.0 and 1.0.1-SNAPSHOT showed no test deltas. Two annotator regressions pin the 1.0.x PIPE
+lowering of `SELECT 13END` and of a VALUES alias before a nested join; both fail on 0.23.0.
+The Brikk fragment check catches `BrikkSqlError` after its range-aware `ParseError` branch.
+The release goes through main CI and then `release/0.7.0`; Marketplace upload is not delegated.
 
 ## Historical preview checklist (retained)
 
