@@ -272,6 +272,8 @@ What you get:
   IDEs.
 - [Trino SQL](https://plugins.jetbrains.com/plugin/33124-sql-dialect-for-trino) dialect for
   JetBrains IDEs.
+- [DataFusion and Spice.ai SQL](https://github.com/sort-dev/datafusion-spice-intellij-plugin)
+  dialect for JetBrains IDEs.
 - [SQL Transpiler](https://plugins.jetbrains.com/plugin/32900-sql-transpiler) translates SQL between
   supported database dialects in JetBrains IDEs.
 - [Trino Doris connector](https://github.com/brikk/trino-doris-connector) lets Trino query Doris.
