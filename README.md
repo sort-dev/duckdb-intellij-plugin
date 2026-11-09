@@ -1,13 +1,24 @@
-# DuckDB 2.0 support for DataGrip & IntelliJ IDEA
+# DuckDB SQL for DataGrip and IntelliJ IDEA
 
-A [DuckDB 2.0](https://duckdb.org) SQL dialect for DataGrip and IntelliJ IDEA Ultimate, with
-connections for embedded database files, in-memory databases and remote Quack protocol v3 servers.
-Custom PEG SQL grammar plugins, including `psql`, can also drive native validation and keyword
-completion on matching file-backed connections.
+A [DuckDB](https://duckdb.org) SQL dialect and connection plugin for DataGrip and IntelliJ IDEA Ultimate.
+It adds DuckDB-aware statement boundaries, editing, completion and database browsing, with execution
+connections for embedded database files, unnamed in-memory databases and remote Quack protocol v3 servers.
+This release targets **DuckDB 2.0.0** and defaults new embedded data sources to **DuckDB JDBC 2.0.0.0**;
+JDBC 1.5.5.0 remains selectable.
 
-Execution connectivity supports all three connection types. Native editor checking and custom-grammar
-keyword completion have a narrower scope: they require a file-backed helper that can reproduce the
-selected grammar profile. They are not currently available for memory, remote or follow-console modes.
+DuckDB editing combines the plugin's dialect with the bundled Brikk SQL parser and scope analysis. Native
+syntax checking uses DuckDB's own parser through the parse-only `json_serialize_sql` function when a local
+DuckDB JDBC driver is available; it never prepares, binds or executes the authored statement. On matching
+file-backed connections, an isolated helper can reproduce registered custom PEG grammars such as `psql`
+for native validation and keyword completion.
+
+For data-source-backed editors, native checking and custom-grammar keyword completion require a matching
+file-backed helper. They are not currently available for memory, remote or follow-console modes; those
+connection types still support SQL execution.
+
+Optional PIPE syntax is built in. Before execution, the plugin transpiles pipelines into ordinary DuckDB
+SQL and checks the generated SQL; when a local DuckDB JDBC driver is available, this includes DuckDB's
+parse-only syntax check. The generated statement, not the original pipeline, is sent for execution.
 
 > [!IMPORTANT]
 > **Not affiliated with DuckDB.** This is an independent plugin by Sortdev SRL. It is not developed,
@@ -16,11 +27,11 @@ selected grammar profile. They are not currently available for memory, remote or
 > works with. The logo is used according to the
 > [DuckDB design manual](https://duckdb.org/design/manual/).
 
-## Why
+## Why a dedicated dialect?
 
-This plugin adds DuckDB-specific editing and execution support, live function metadata, and managed
-grammar profiles instead of treating DuckDB SQL as generic PostgreSQL syntax. Native helper features
-use DuckDB's own parser with the selected active grammar order when that state can be reproduced.
+DuckDB has its own SQL syntax, functions and extension grammars. This plugin provides dedicated editing
+and connections instead of treating DuckDB as generic PostgreSQL, and uses DuckDB itself for native
+parse-only checks when a suitable local driver or matching helper is available.
 
 ## Features
 
@@ -32,14 +43,14 @@ use DuckDB's own parser with the selected active grammar order when that state c
 - **Correct statement boundaries** and run buttons for multi-statement scripts.
 - **Parse-only native error checking** on matching file-backed helpers. Checking never prepares,
   binds or executes your SQL; unsupported serialization or missing state remains unverified/unavailable.
-- **Native grammar keyword completion** through explicitly loaded `autocomplete`, independent of
-  the optional Brikk PIPE feature. Existing identifier and function completion remains available.
+- **Native grammar keyword completion** through explicitly loaded `autocomplete`, independently of
+  optional PIPE transpilation. Existing identifier and function completion remains available.
 - **Live function/keyword metadata** based on your connected engine and loaded extensions.
 - **Database tree** with tables, views, columns, keys and attached databases.
 - **Ready-made data sources** for embedded DuckDB and Quack servers. The plugin downloads the JDBC
   driver from Maven Central.
-- **DuckDB PIPE (optional).** Write pipe-syntax queries and run them in the normal console. See
-  [DuckDB PIPE](#duckdb-pipe).
+- **Optional PIPE syntax.** Write pipe queries and run them as ordinary DuckDB SQL. The plugin
+  transpiles them before execution. See [PIPE syntax](#pipe-syntax).
 
 ## 0.6.1 release changes
 
@@ -176,10 +187,10 @@ console refresh. Discovery skips open console transactions. Unknown or uncorrela
 refreshes invalidate diagnostics but cannot guarantee grammar rediscovery. Runtime facts disappear
 on disconnect; managed configuration persists. Unsupported discovery is shown explicitly.
 
-The native integration tests use DuckDB JDBC 2.0.0.0 and load the signed community `psql` grammar with the plugin's
-PIPE feature off. Managed helpers accept original pipe SQL only when `psql` is enabled, reject
-malformed pipe SQL, leave the source's activation unchanged, and parse a sequence-backed table
-function without binding or executing it. See [the native test command](dev-docs/CONTRIBUTING.md#native-grammar-integration-test).
+With the signed community `psql` grammar loaded and enabled, managed helpers accept original pipe SQL,
+reject malformed pipe SQL and leave the source console's activation unchanged. They can parse a
+sequence-backed table function without binding or executing it. This native grammar path works with
+**DuckDB PIPE** off and does not transpile your SQL.
 
 ## Native grammar keyword completion
 
@@ -213,10 +224,11 @@ limitations above. Requests are cancellable and bounded; stale document/profile 
 In particular, `jdbc:duckdb:` is an unnamed in-memory source. Loading psql or autocomplete does not
 remove that helper limitation; its status is distinct from a missing autocomplete module on a file source.
 
-## DuckDB PIPE
+## PIPE syntax
 
 Write queries in [pipe syntax](https://cloud.google.com/bigquery/docs/pipe-syntax-guide) and run
-them on DuckDB.
+them as ordinary DuckDB SQL. This is client-side transpilation: your embedded engine or server does
+not need a PIPE grammar for this feature.
 
 ```sql
 FROM range(5) AS t(i)
@@ -225,19 +237,23 @@ FROM range(5) AS t(i)
 |> ORDER BY doubled;
 ```
 
-When you run it, the plugin converts the pipe query to plain DuckDB SQL and sends that to the
-database.
+After normal console parameter substitution and before submission, the plugin transpiles each claimed
+pipeline into DuckDB SQL. The bundled Brikk translator refuses unsupported conversions and tokenizes the
+generated SQL to ensure no PIPE syntax remains. When a local DuckDB JDBC driver is available, the plugin
+also checks the generated SQL with DuckDB's parse-only serializer before submission. A native parser
+rejection blocks execution; unsupported serialization remains unverified. This check does not prepare,
+bind or execute the generated query. Remote PIPE execution does not require a local driver.
 
-**Turn it on** in **Settings → Tools → Database → DuckDB PIPE**. It's off by default.
+**Turn it on** in **Settings → Tools → Database → DuckDB PIPE**. It's off by default and set per project.
+No SQL Transpiler plugin is required. Ordinary FROM-first DuckDB queries are unchanged.
 
 What you get:
 
-- Right-click → **DuckDB PIPE → Preview Generated SQL** shows the DuckDB SQL before you run
-  it.
-- Right-click → **DuckDB PIPE → Run Stages up to Caret** runs the pipeline only up to the stage
-  at your cursor.
-- If the conversion fails, nothing runs. The plugin never sends invalid pipe syntax to the
-  database.
+- Right-click → **DuckDB PIPE → Preview Generated SQL** shows the DuckDB SQL before you run it.
+- Right-click → **DuckDB PIPE → Run Stages up to Caret** runs the pipeline only up to the stage at your
+  cursor.
+- If transpilation fails or an available native parser rejects the generated SQL, execution is blocked.
+  Raw PIPE is never submitted as a fallback.
 
 ## Known limitations
 
@@ -256,8 +272,8 @@ What you get:
   IDEs.
 - [Trino SQL](https://plugins.jetbrains.com/plugin/33124-sql-dialect-for-trino) dialect for
   JetBrains IDEs.
-- [SQL Transpiler](https://plugins.jetbrains.com/plugin/32900-sql-transpiler) converts SQL between
-  dialects in JetBrains IDEs.
+- [SQL Transpiler](https://plugins.jetbrains.com/plugin/32900-sql-transpiler) translates SQL between
+  supported database dialects in JetBrains IDEs.
 - [Trino Doris connector](https://github.com/brikk/trino-doris-connector) lets Trino query Doris.
 - [Trino DuckLake catalog](https://github.com/brikk/ducklake-integrations/tree/main/jvm/trino-ducklake)
   with read and write support.
@@ -267,11 +283,10 @@ What you get:
 
 Found a bug or SQL the plugin gets wrong?
 [Open an issue](https://github.com/sort-dev/duckdb-intellij-plugin/issues). A small, anonymized SQL
-sample helps a lot. Want to build or change the plugin? See
-[dev-docs/CONTRIBUTING.md](dev-docs/CONTRIBUTING.md).
+sample helps a lot.
 
 ## License
 
-Apache License 2.0, see [LICENSE](LICENSE). Copyright 2026 Sortdev SRL. Bundled third-party parts,
-including the GizmoSQL `quack-jdbc` credit, are listed in
+Licensed under the Apache License 2.0. See [LICENSE](LICENSE). Copyright 2026 Sortdev SRL. Bundled
+third-party parts, including the GizmoSQL `quack-jdbc` credit, are listed in
 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

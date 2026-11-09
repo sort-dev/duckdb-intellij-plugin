@@ -4,50 +4,62 @@
     <vendor url="https://sort.dev" email="jayson@sort.dev">Sortdev SRL</vendor>
 
     <description><![CDATA[
-        <p><b>DuckDB 2.0 SQL support</b> for DataGrip and IntelliJ IDEA Ultimate: execute SQL against
-        <b>embedded database files</b>, <b>in-memory databases</b> and <b>remote Quack protocol v3 servers</b>.
-        Custom PEG SQL grammar plugins, including <code>psql</code>, can also drive native parser
-        checking and keyword completion on matching <b>file-backed</b> connections.</p>
+        <p><b>DuckDB SQL for DataGrip and IntelliJ IDEA Ultimate.</b> A dedicated dialect and connection
+        plugin for <b>embedded database files</b>, <b>in-memory databases</b> and
+        <b>remote Quack protocol v3 servers</b>. This release targets <b>DuckDB 2.0.0</b> and defaults
+        new embedded data sources to <b>DuckDB JDBC 2.0.0.0</b>; JDBC 1.5.5.0 remains selectable.</p>
+
+        <p>DuckDB editing combines the plugin's dialect with the bundled Brikk SQL parser and scope
+        analysis. Native syntax checking uses DuckDB's own parser through the parse-only
+        <code>json_serialize_sql</code> function when a local DuckDB JDBC driver is available; it never
+        prepares, binds or executes the authored statement. On matching <b>file-backed</b> connections,
+        an isolated helper can reproduce registered custom PEG grammars such as <code>psql</code> for
+        native validation and keyword completion.</p>
+
+        <p>Optional PIPE syntax is built in. After parameter substitution and before execution, the plugin
+        transpiles pipelines into ordinary DuckDB SQL. The bundled Brikk translator rejects unsupported
+        conversions and residual PIPE syntax. For statements supported by DuckDB's serializer, an available
+        local JDBC driver provides an additional parse-only syntax check. Refused conversions and native
+        parser rejections block submission. The generated statement, not the original pipeline, is sent
+        for execution.</p>
+
+        <p>Compatible with the 2026.1 through 2026.3 IDE lines.</p>
 
         <ul>
-            <li><b>Custom grammar profiles:</b> open Data Sources and Drivers, select a DuckDB source,
-                then its <i>Grammars</i> tab. Registered grammar names are separate from installed extension
-                binaries. New registrations start enabled; explicit disabled choices and activation order
-                are remembered per project and source. <i>Apply grammar changes</i> updates idle sessions
-                without reconnecting, losing temporary data, or replaying scripts. Busy or transactional
-                sessions retain pending changes until safe.</li>
+            <li><b>DuckDB editing:</b> statement and run-block boundaries for
+                <code>SELECT * EXCLUDE(...)</code>, <code>QUALIFY</code>, <code>GROUP BY ALL</code>,
+                struct/list literals, lambdas, <code>PIVOT</code>/<code>UNPIVOT</code>, FROM-first queries,
+                <code>ATTACH</code>, <code>SUMMARIZE</code> and <code>CREATE MACRO/SECRET</code>.
+                Historical parser evidence covers 226/226 sampled syntax families at DuckDB 1.5.5;
+                this is not a full DuckDB 2.0 census.</li>
+            <li><b>Custom grammar profiles:</b> manage registered PEG grammars in the data source's
+                <i>Grammars</i> tab, separately from installed extension binaries. New registrations start
+                enabled; disabled choices and activation order are remembered per project and source.
+                <i>Apply grammar changes</i> updates idle sessions without reconnecting, losing temporary
+                data or replaying scripts. Busy or transactional sessions retain pending changes until safe.</li>
             <li><b>Native grammar-aware checking:</b> isolated file-backed helpers apply and read back
                 the exact managed grammar order before calling DuckDB's parse-only JSON serializer.
-                Authored SQL is never prepared, bound or executed for editor checking. Missing grammars,
-                unmatched connection state and unsupported serialization produce no syntax verdict,
-                rather than a rejection from an unrelated base parser.</li>
+                Missing grammars, unmatched connection state and unsupported serialization produce no
+                syntax verdict rather than a rejection from an unrelated base parser.</li>
             <li><b>Native keyword completion:</b> explicitly <code>LOAD autocomplete</code> on the connected
-                source to get engine keyword suggestions for its active grammar, including native
-                <code>psql</code> pipe stages. This is independent of the Brikk PIPE toggle. Existing
-                identifier and function completion stays available. Missing prerequisites are visible in
-                the Grammars tab, console status action and manual completion notifications.</li>
-            <li><b>Optional Brikk PIPE authoring:</b> enable under Settings &gt; Tools &gt; Database &gt; DuckDB PIPE,
-                write <code>FROM t |&gt; WHERE ... |&gt; SELECT ...</code>, and execute as
-                DuckDB SQL. Includes generated-SQL preview and run-to-stage. No SQL Transpiler
-                plugin required; ordinary FROM-first queries are unchanged.</li>
-            <li><b>DuckDB editing:</b> statement and run-block boundaries for
-                the DuckDB statement surface — <code>SELECT * EXCLUDE(...)</code>,
-                <code>QUALIFY</code>, <code>GROUP BY ALL</code>, struct/list literals, lambdas,
-                <code>PIVOT</code>/<code>UNPIVOT</code>, FROM-first queries, <code>ATTACH</code>,
-                <code>SUMMARIZE</code>, <code>CREATE MACRO/SECRET</code>. Historical parser evidence covers
-                226/226 sampled syntax families at DuckDB 1.5.5; this is not a full DuckDB 2.0 census.</li>
-            <li><b>Completion that follows your engine:</b> on connect the catalog is harvested
-                live from <code>duckdb_functions()</code> — your engine version, your loaded
-                extensions. Run <code>INSTALL</code>/<code>LOAD</code> and completion updates
-                itself; autoloaded extensions arrive via <i>Refresh DuckDB Catalog</i> (editor
-                right-click). Offline you get bundled version-aware metadata, plus
-                <i>"requires &lt;extension&gt;"</i> hints for extension functions.</li>
-            <li><b>Refreshed DuckDB 2.0 metadata:</b> bundled functions, overloads, keywords and types
-                include the 2.0 JSON/VARIANT and ICU inventory. Window, aggregate, scalar and table-valued
-                functions keep distinct completion kinds. Shared builtin typing preserves ordinary scalar
-                expressions and does not invent reader-output column layouts.</li>
-            <li><b>Ready-to-use connections:</b> the embedded driver defaults to DuckDB JDBC 2.0.0.0;
-                1.5.5.0 remains selectable. Quack servers use <code>jdbc:quack://</code>, default port 9494,
+                source for engine keyword suggestions, including native <code>psql</code> pipe stages.
+                This is independent of optional PIPE transpilation, and existing identifier/function
+                completion stays available. Missing prerequisites appear in the Grammars tab, console
+                status action and manual completion notifications.</li>
+            <li><b>Optional PIPE tools:</b> enable under Settings &gt; Tools &gt; Database &gt; DuckDB PIPE,
+                write <code>FROM t |&gt; WHERE ... |&gt; SELECT ...</code>, preview generated SQL and
+                run stages up to the caret. No SQL Transpiler plugin is required; ordinary FROM-first
+                queries are unchanged, and remote execution does not require a local DuckDB driver.</li>
+            <li><b>Engine-aware completion and offline metadata:</b> live functions come from
+                <code>duckdb_functions()</code> on your connected engine and loaded extensions. Completion
+                refreshes after <code>INSTALL</code>/<code>LOAD</code>; use <i>Refresh DuckDB Catalog</i>
+                for autoloaded extensions. Offline metadata includes DuckDB 2.0 JSON/VARIANT and ICU
+                functions, overloads, keywords and types, with extension hints and distinct window,
+                aggregate, scalar and table-valued kinds. Builtin typing preserves scalar expressions
+                and does not invent reader-output column layouts.</li>
+            <li><b>Database tree:</b> browse tables, views, columns, keys and attached databases.</li>
+            <li><b>Ready-to-use connections:</b> embedded and Quack templates download their drivers
+                from Maven Central. Quack servers use <code>jdbc:quack://</code>, default port 9494,
                 through Sortdev's Arrow-free <code>quack-jdbc</code> fork with protocol v3 support.</li>
         </ul>
 
