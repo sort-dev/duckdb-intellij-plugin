@@ -10,7 +10,11 @@ import dev.brikk.house.sql.intellij.diagnostics.NativeErrorProfile
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.components.service
 import com.intellij.psi.PsiDocumentManager
+import dev.sort.duckdb.pipes.DuckdbPipeDialect
 import dev.sort.duckdb.pipes.DuckdbPipesSettings
+import dev.brikk.house.sql.intellij.pipe.PipeTranslation
+import dev.brikk.house.sql.intellij.pipe.lower
+import dev.brikk.house.sql.verify.VerifyResult
 import dev.sort.duckdb.brikk.BrikkDuckdbProfile
 import dev.brikk.house.sql.intellij.testing.setSqlDialectMapping
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
@@ -127,6 +131,32 @@ class DuckdbErrorAnnotatorTest : BasePlatformTestCase() {
             file.putUserData(BrikkDuckdbProfile.KEY, BrikkDuckdbProfile(emptyList(), listOf("other"), listOf("pending")))
             assertTrue(DuckdbNativeErrorProfile.modificationCount(file) > revision)
             assertEmpty(appliedRanges(file, annotator, brikkResult))
+        } finally { settings.enabled = false }
+    }
+
+    fun testPipeLoweringSplitsNumberBeforeEndKeyword() {
+        assertPipeLowersCleanly("FROM range(1) |> SELECT 13END", "13 AS \"END\"")
+    }
+
+    fun testPipeLoweringKeepsValuesAliasBeforeNestedJoin() {
+        assertPipeLowersCleanly(
+            "FROM t1 LEFT JOIN (VALUES (1)) t2(b) JOIN t3 ON t3.c = t2.b ON t1.a = t2.b |> SELECT *",
+            "LEFT JOIN (VALUES\n      (1)) AS t2(b)\n    JOIN t3\n      ON t3.c = t2.b\n      ON t1.a = t2.b",
+        )
+    }
+
+    private fun assertPipeLowersCleanly(sql: String, expected: String) {
+        val settings = project.service<DuckdbPipesSettings>()
+        try {
+            settings.enabled = true
+            val file = file(sql)
+            val annotator = DuckdbErrorAnnotator()
+            val result = requireNotNull(annotator.doAnnotate(annotator.collectInformation(file)))
+            assertEmpty(appliedAnnotations(file, annotator, result).map { it.message })
+            val lowered = DuckdbPipeDialect.lower(sql) as PipeTranslation.Lowered
+            assertNull(lowered.blocker)
+            assertTrue(lowered.sql, lowered.sql.contains(expected))
+            assertEquals(VerifyResult.Accepted, DuckdbEngineValidator.verdicts(listOf(lowered.sql)).single())
         } finally { settings.enabled = false }
     }
 

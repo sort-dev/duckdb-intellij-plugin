@@ -4,6 +4,7 @@ import com.intellij.lang.Language
 import com.intellij.openapi.components.service
 import com.intellij.openapi.util.Key
 import com.intellij.psi.PsiFile
+import dev.brikk.house.sql.BrikkSqlError
 import dev.brikk.house.sql.diagnostics.DiagnosticSeverity
 import dev.brikk.house.sql.diagnostics.DiagnosticSource
 import dev.brikk.house.sql.diagnostics.SqlDiagnostic
@@ -17,8 +18,6 @@ import dev.brikk.house.sql.intellij.recoverEditorOperation
 import dev.brikk.house.sql.parser.ParseError
 import dev.brikk.house.sql.parser.SqlStatementRange
 import dev.brikk.house.sql.parser.SyntacticRange
-import dev.brikk.house.sql.parser.TokenError
-import dev.brikk.house.sql.shape.ShapeError
 import dev.sort.duckdb.brikk.BrikkDuckdbProfile
 import dev.sort.duckdb.brikk.DuckdbHostSql
 import dev.brikk.house.sql.shape.SqlFragment
@@ -79,10 +78,8 @@ internal object DuckdbNativeErrorProfile : NativeErrorProfile {
                 val first = e.errors.firstOrNull()
                 PipeTranslation.Refused(first?.start?.let { SyntacticRange(it, first.end ?: it + 1) },
                     first?.description ?: "Invalid Brikk SQL")
-            } catch (e: TokenError) {
-                PipeTranslation.Refused(null, e.message ?: "Invalid SQL token")
-            } catch (e: ShapeError) {
-                PipeTranslation.Refused(null, e.message ?: "Brikk SQL requires exactly one statement")
+            } catch (e: BrikkSqlError) {
+                PipeTranslation.Refused(null, e.message ?: "Invalid Brikk SQL")
             }
             return refusal?.let { listOf(diagnostic(script, 0, it, "DuckDB Brikk")) } ?: emptyList()
         }
