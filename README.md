@@ -52,6 +52,15 @@ parse-only checks when a suitable local driver or matching helper is available.
 - **Optional PIPE syntax.** Write pipe queries and run them as ordinary DuckDB SQL. The plugin
   transpiles them before execution. See [PIPE syntax](#pipe-syntax).
 
+## 0.8.0 release changes
+
+This release requires **IDE 2026.2 or later** (through 2026.3); the 2026.1 line is dropped. The
+plugin is built as Java 25 bytecode and runs on the IDE's Java 25 runtime. Brikk SQL and SQL IntelliJ
+common/JDBC/test support remain **1.0.1**, Quack JDBC **0.12.1** and DuckDB JDBC **2.0.0.0**. The
+plugin isolation test now reads the bundled support jar version from the build.
+
+Existing connection settings and grammar preferences are unchanged.
+
 ## 0.7.0 release changes
 
 This release moves to **Brikk SQL 1.0.1** and **SQL IntelliJ common/JDBC/test support 1.0.1**.

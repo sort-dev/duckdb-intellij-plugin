@@ -96,9 +96,12 @@
     ]]></description>
 
     <change-notes><![CDATA[
-        <b>Unreleased</b> - IDE line 2026.1 dropped.
+        <b>0.8.0</b> - IDE 2026.2 and later on Java 25.
         <ul>
-            <li>Requires IDE 2026.2 or later (through 2026.3) and runs on the IDE's Java 25.</li>
+            <li>Requires IDE 2026.2 or later (through 2026.3); the 2026.1 line is dropped.</li>
+            <li>Built as Java 25 bytecode and runs on the IDE's Java 25 runtime.</li>
+            <li>Brikk SQL and SQL IntelliJ support remain 1.0.1. Quack JDBC 0.12.1 and DuckDB JDBC 2.0.0.0 are unchanged.</li>
+            <li>The plugin isolation test now reads the bundled support jar version from the build instead of a hard-coded name.</li>
         </ul>
         <b>0.7.0</b> - Brikk SQL 1.0.1 and IntelliJ support 1.0.1.
         <ul>
