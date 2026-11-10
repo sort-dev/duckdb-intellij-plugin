@@ -48,6 +48,7 @@ tasks.withType<Test>().configureEach {
     systemProperty("java.io.tmpdir", testTmp.absolutePath)
     doFirst { check(testTmp.isDirectory || testTmp.mkdirs()) }
     systemProperty("test.brikkSqlVersion", libs.versions.brikk.sql.core.get())
+    systemProperty("test.brikkSqlIntellijSupportVersion", libs.versions.brikk.sql.intellij.support.get())
     systemProperty("corpus.dir", layout.projectDirectory.dir("src/test/resources/corpus").asFile.absolutePath)
     val quackExtension = providers.gradleProperty("test.quackExtension").orNull
     val httpfsExtension = providers.gradleProperty("test.httpfsExtension").orNull
