@@ -107,7 +107,7 @@ does not change those IDE limits, and the historical 1.5.5 parser census is not 
 
 ## Requirements
 
-- DataGrip or IntelliJ IDEA Ultimate, **2026.1 to 2026.3**.
+- DataGrip or IntelliJ IDEA Ultimate, **2026.2 to 2026.3**.
 - DuckDB JDBC **2.0.0.0** for the new grammar-profile/native-keyword features. Existing data sources
   may need their driver files upgraded; the older 1.5.5.0 artifact remains selectable.
 

@@ -12,7 +12,7 @@ import pathlib
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 CORPUS = ROOT / "src/test/resources/relation-corpus"
-reports = {lane: json.loads((ROOT / f"build/relation-corpus/duckdb-{lane}-261.json").read_text())
+reports = {lane: json.loads((ROOT / f"build/relation-corpus/duckdb-{lane}-262.json").read_text())
            for lane in ("native", "brikk")}
 cases = {case["id"]: case for case in map(json.loads, (CORPUS / "cases.jsonl").read_text().splitlines())}
 old = json.loads((CORPUS / "duckdb-disagreements.json").read_text())

@@ -23,7 +23,7 @@
         parser rejections block submission. The generated statement, not the original pipeline, is sent
         for execution.</p>
 
-        <p>Compatible with the 2026.1 through 2026.3 IDE lines.</p>
+        <p>Compatible with the 2026.2 and 2026.3 IDE lines.</p>
 
         <ul>
             <li><b>DuckDB editing:</b> statement and run-block boundaries for
@@ -96,6 +96,10 @@
     ]]></description>
 
     <change-notes><![CDATA[
+        <b>Unreleased</b> - IDE line 2026.1 dropped.
+        <ul>
+            <li>Requires IDE 2026.2 or later (through 2026.3) and runs on the IDE's Java 25.</li>
+        </ul>
         <b>0.7.0</b> - Brikk SQL 1.0.1 and IntelliJ support 1.0.1.
         <ul>
             <li>Uses Brikk SQL/metadata/verifier 1.0.1 and SQL IntelliJ support/JDBC/test support 1.0.1 from Maven Central. Quack JDBC 0.12.1 and DuckDB JDBC 2.0.0.0 are unchanged.</li>

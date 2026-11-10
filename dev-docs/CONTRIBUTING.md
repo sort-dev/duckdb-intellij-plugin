@@ -2,11 +2,11 @@
 
 ## Requirements
 
-- JDK 21
+- JDK 25
 - Git
 - Network access for Gradle to download the IntelliJ SDK and dependencies
 
-The build targets IntelliJ Platform 2026.1 and checks compatibility with 2026.2 and 2026.3.
+The build compiles against IntelliJ Platform 2026.2 (build 262) and checks compatibility with 2026.2 and 2026.3. Both IDE lines run on Java 25, so the plugin is built as Java 25 bytecode.
 
 ## Build and test
 

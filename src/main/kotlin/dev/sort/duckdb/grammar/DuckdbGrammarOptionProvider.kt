@@ -12,7 +12,7 @@ class DuckdbGrammarOptionProvider : DbOptionProvider.LocalDataSourceOptionProvid
     override fun getDisplayName() = "Grammars"
     override fun getDescription() = "DuckDB grammar activation for this data source in the current project"
     override fun getLocation() = DbOptionProvider.UiLocation.NEW_TAB
-    // Added to DbOptionProvider in 263, absent from the 261 compile SDK. Keep the erased
+    // Added to DbOptionProvider in 263, absent from the 262 compile SDK. Keep the erased
     // Object -> Object ABI explicitly: a LocalDataSource/Boolean overload would lack its bridge.
     // This is only the native dialog's placeholder, never the project-owned grammar profile.
     fun getStoredDefault(target: Any?): Any = false
