@@ -39,7 +39,7 @@ To run the optional live Quack tests, provide a server URL with a token:
 
 ## Isolated Quack v3 cancellation test
 
-This gate uses the actual Quack JDBC 0.12.1 client and DuckDB JDBC 2.0.0.0 to start its own
+This gate uses the actual Quack JDBC 0.14.0 client and DuckDB JDBC 2.0.0.0 to start its own
 signed-extension server in a child JVM. Provide signed, matching DuckDB 2.0 Linux extension binaries:
 
 ```bash

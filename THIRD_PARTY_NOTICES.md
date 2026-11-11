@@ -3,7 +3,7 @@
 ## Quack JDBC driver
 
 GizmoSQL created the original `quack-jdbc` driver. The remote data source downloads
-Sortdev's fork, `dev.brikk.duckdb:quack-jdbc`, from Maven Central, preferring version 0.12.1. Sortdev has extended
+Sortdev's fork, `dev.brikk.duckdb:quack-jdbc`, from Maven Central, preferring version 0.14.0. Sortdev has extended
 the fork through Quack protocol v3 for DuckDB 2.0; the original GizmoSQL driver does not
 support protocol v3. The driver is distributed under the MIT License.
 

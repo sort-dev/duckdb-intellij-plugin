@@ -22,7 +22,7 @@ class QuackDriverFactsTest {
         assertTrue("expected the quack driver on the test classpath", drivers.isNotEmpty())
         val quack = drivers.single { it.javaClass.name == "com.gizmodata.quack.jdbc.sql.QuackDriver" }
         assertEquals(0, quack.majorVersion)
-        assertEquals(12, quack.minorVersion)
+        assertEquals(14, quack.minorVersion)
         assertTrue(quack.acceptsURL("jdbc:quack://localhost:9494/"))
         val properties = quack.getPropertyInfo("jdbc:quack://localhost:9494/", Properties()).associateBy { it.name }
         assertTrue(properties.keys.toString(), properties.keys.containsAll(listOf("token", "tokenEnv", "tokenFile", "tls", "connectTimeout", "requestTimeout")))

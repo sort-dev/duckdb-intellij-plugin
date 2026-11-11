@@ -81,7 +81,7 @@
         <p>GizmoSQL created the original <code>quack-jdbc</code> driver. The Sortdev fork used
         here adds protocol v3 support for DuckDB 2.0; the original driver does not support it.</p>
 
-        <p><b>Query cancellation:</b> the preferred Quack JDBC 0.12.1 driver supports standard JDBC
+        <p><b>Query cancellation:</b> the preferred Quack JDBC 0.14.0 driver supports standard JDBC
         cancellation on Quack v3 servers. Existing sources may need their driver files upgraded;
         the older 0.8.0 driver silently ignores cancellation. JDBC statement query timeouts are not
         enforced by this driver; <code>requestTimeout</code> bounds individual HTTP requests.</p>
@@ -96,6 +96,10 @@
     ]]></description>
 
     <change-notes><![CDATA[
+        <b>Unreleased</b> - Prefers Quack JDBC 0.14.0.
+        <ul>
+            <li>Quack result values that cannot be read as the requested type now raise an SQL error instead of a silent <code>false</code> or an unchecked exception. Connection URLs, v3 cancellation and supported servers are unchanged; 0.12.1 and older drivers remain selectable.</li>
+        </ul>
         <b>0.8.0</b> - IDE 2026.2 and later on Java 25.
         <ul>
             <li>Requires IDE 2026.2 or later (through 2026.3); the 2026.1 line is dropped.</li>

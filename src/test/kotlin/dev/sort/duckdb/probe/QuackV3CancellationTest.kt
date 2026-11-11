@@ -26,7 +26,7 @@ import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 
-/** Real 0.12.1 JDBC-over-v3 tests, never a user's server or a native Quack ATTACH client. */
+/** Real 0.14.0 JDBC-over-v3 tests, never a user's server or a native Quack ATTACH client. */
 class QuackV3CancellationTest {
     @get:Rule val temporary = TemporaryFolder()
 
@@ -43,7 +43,7 @@ class QuackV3CancellationTest {
     fun `JDBC preserves count-shaped rows and separates DML counts from end of results`() {
         Server().use { server ->
             server.connect().use { jdbc ->
-                assertEquals("0.12.1", jdbc.metaData.driverVersion)
+                assertEquals("0.14.0", jdbc.metaData.driverVersion)
                 jdbc.createStatement().use { statement ->
                     statement.execute("CREATE TABLE result_kind (id BIGINT)")
                     fun rows(sql: String, expected: List<Long>) {
@@ -75,7 +75,7 @@ class QuackV3CancellationTest {
                     count("WITH vals AS (SELECT 3 AS id) INSERT INTO result_kind SELECT id FROM vals", 1)
                     rows("INSERT INTO result_kind VALUES (4) RETURNING id AS Count", listOf(4L))
                     rows("UPDATE result_kind SET id = 5 WHERE id = 4 RETURNING id AS rows_affected", listOf(5L))
-                    println("Quack 0.12.1 JDBC SELECT/RETURNING rows, DML counts and bounded result draining passed")
+                    println("Quack 0.14.0 JDBC SELECT/RETURNING rows, DML counts and bounded result draining passed")
                 }
             }
         }
@@ -102,7 +102,7 @@ class QuackV3CancellationTest {
                         assertFalse(statement.moreResults)
                         assertEquals(-1, statement.updateCount)
                     }
-                    println("Quack 0.12.1 GenericJdbcHelper result-kind and end-of-results checks passed")
+                    println("Quack 0.14.0 GenericJdbcHelper result-kind and end-of-results checks passed")
                 } finally {
                     statement.close()
                     remote.close()
@@ -115,7 +115,7 @@ class QuackV3CancellationTest {
         Server().use { server ->
             server.connect().use { jdbc ->
                 assertEquals(3L, (jdbc as QuackConnection).session().protocolVersion())
-                assertEquals("0.12.1", jdbc.metaData.driverVersion)
+                assertEquals("0.14.0", jdbc.metaData.driverVersion)
                 val sessionId = jdbc.session().connectionId()
                 server.connect().use { control ->
                     control.createStatement().use { it.execute("CREATE SEQUENCE cancel_started") }
@@ -155,7 +155,7 @@ class QuackV3CancellationTest {
                         jdbc.createStatement().use { s ->
                             s.executeQuery("SELECT 42").use { assertTrue(it.next()); assertEquals(42, it.getInt(1)) }
                         }
-                        println("Quack 0.12.1 v3 ${if (remotePath) "RemoteStatement/GenericJdbcHelper" else "Statement"}.cancel: ${elapsedMs}ms; same-session SELECT 42 passed")
+                        println("Quack 0.14.0 v3 ${if (remotePath) "RemoteStatement/GenericJdbcHelper" else "Statement"}.cancel: ${elapsedMs}ms; same-session SELECT 42 passed")
                     } finally {
                         pool.shutdownNow()
                         // Kill our server first even if cancel regresses, so close cannot strand a query.
@@ -183,7 +183,7 @@ class QuackV3CancellationTest {
                     val elapsedMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - begin)
                     assertTrue("Expected an HTTP request timeout, got $failure", causes(failure).any { it is HttpTimeoutException })
                     assertTrue("requestTimeout must bound the request: ${elapsedMs}ms", elapsedMs in 500..8_000)
-                    println("Quack 0.12.1 requestTimeout=PT1S: ${elapsedMs}ms; JDBC queryTimeout remains unsupported")
+                    println("Quack 0.14.0 requestTimeout=PT1S: ${elapsedMs}ms; JDBC queryTimeout remains unsupported")
                 }
             }
         }
@@ -236,7 +236,7 @@ class QuackV3CancellationTest {
                             assertTrue("Unconfirmed cancellation must close the session", jdbc.isClosed)
                             assertThrows(SQLException::class.java) { jdbc.createStatement() }
                             assertNotNull("The running query must not finish successfully", query.get(6, TimeUnit.SECONDS))
-                            println("Quack 0.12.1 stalled CANCEL: ${elapsedMs}ms; unconfirmed session closed")
+                            println("Quack 0.14.0 stalled CANCEL: ${elapsedMs}ms; unconfirmed session closed")
                         } finally {
                             release.countDown()
                             pool.shutdownNow()

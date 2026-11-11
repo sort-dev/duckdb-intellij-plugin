@@ -153,7 +153,7 @@ Create a **DuckDB via Quack (sort.dev)** data source.
 The connection uses Sortdev's fork of GizmoSQL's `quack-jdbc` driver. The fork adds Quack protocol
 v3 support for DuckDB 2.0, which the original driver doesn't have.
 
-The preferred Quack JDBC driver is **0.12.1**. It supports `Statement.cancel()` on Quack v3 servers.
+The preferred Quack JDBC driver is **0.14.0**. It supports `Statement.cancel()` on Quack v3 servers.
 Existing sources may need their driver files upgraded under **Data Sources and Drivers > Drivers >
 DuckDB via Quack > Driver files**. Older driver choices remain available; URLs, credentials and grammar
 preferences are not migrated. Cancellation control requests have a two-second deadline. If the server

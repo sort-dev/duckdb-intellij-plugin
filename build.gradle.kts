@@ -39,7 +39,7 @@ dependencies {
     }
     testImplementation(libs.brikk.sql.intellij.test.support)
     testImplementation(libs.duckdb.jdbc)
-    testImplementation("dev.brikk.duckdb:quack-jdbc:0.12.1")
+    testImplementation("dev.brikk.duckdb:quack-jdbc:0.14.0")
     testImplementation("dev.brikk.ducklake:slt-format:0.3.0")
 }
 

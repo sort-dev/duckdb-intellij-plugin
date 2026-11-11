@@ -14,7 +14,7 @@ import java.sql.Statement
  * NATIVE driver in-process (:memory:). Cancel, grid-shaped statements, and transaction semantics.
  *
  * The archived REPORT-stage6-console.md records the older Quack driver's no-op cancel bytecode.
- * Quack JDBC 0.12.1 v3 cancellation is covered separately by QuackV3CancellationTest using its own
+ * Quack JDBC 0.14.0 v3 cancellation is covered separately by QuackV3CancellationTest using its own
  * local server. This suite measures only the embedded native driver.
  */
 class DuckdbConsoleTruthTest {
